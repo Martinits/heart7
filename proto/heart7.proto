@@ -6,7 +6,8 @@ service Heart7 {
         rpc NewRoom (PlayerInfo) returns (RoomInfo);
         rpc JoinRoom (RoomReq) returns (RoomInfo);
         rpc RoomStatus (RoomReq) returns (RoomInfo);
-        rpc GameReady (RoomReq) returns (CommonReply);
+        rpc GameReady (RoomReq) returns (GameInfo);
+        rpc GameMessage (RoomReq) returns (stream GameMsg);
         rpc GameStatus (RoomReq) returns (GameInfo);
         rpc PlayCard (PlayReq) returns (CommonReply);
         rpc ExitGame (RoomReq) returns (CommonReply);
@@ -81,10 +82,32 @@ message GameInfo {
         HeldCards held = 6;
 }
 
+enum GameMsgType {
+        PLAY = 0;
+        CHAT = 1;
+        ACTION = 2;
+}
+
+message MsgPlay {
+        int32 player = 1;
+        PlayOne play = 2;
+}
+
+message GameMsg {
+        GameMsgType type = 1;
+        oneof msg {
+                MsgPlay play = 2;
+        }
+}
+
+message PlayOne {
+        bool discard_or_hold = 1;
+        Card card = 2;
+}
+
 message PlayReq {
         RoomReq roomreq = 1;
-        bool discard_or_hold = 2;
-        Card card = 3;
+        PlayOne play = 2;
 }
 
 message CommonReply {
