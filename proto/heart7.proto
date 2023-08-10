@@ -1,0 +1,93 @@
+syntax = "proto3";
+
+package heart7;
+
+service Heart7 {
+        rpc NewRoom (PlayerInfo) returns (RoomInfo);
+        rpc JoinRoom (RoomReq) returns (RoomInfo);
+        rpc RoomStatus (RoomReq) returns (RoomInfo);
+        rpc GameReady (RoomReq) returns (CommonReply);
+        rpc GameStatus (RoomReq) returns (GameInfo);
+        rpc PlayCard (PlayReq) returns (CommonReply);
+        rpc ExitGame (RoomReq) returns (CommonReply);
+        rpc ExitRoom (RoomReq) returns (CommonReply);
+}
+
+message PlayerInfo {
+        string name = 1;
+}
+
+enum RoomState {
+        NOT_FULL = 0;
+        GAMING = 1;
+}
+
+message RoomInfo {
+        string roomid = 1;
+        repeated PlayerInfo players = 2;
+        RoomState state = 3;
+}
+
+message RoomReq {
+        string roomid = 1;
+        PlayerInfo player = 2;
+}
+
+enum CardSuit {
+        SPADE = 0;
+        HEART = 1;
+        CLUB = 2;
+        DIAMOND = 3;
+}
+
+message Card {
+        CardSuit suit = 1;
+        int32 num = 2;
+}
+
+message Chain {
+        bool null = 1;
+        Card head = 2;
+        int32 head_thisround = 3;
+        Card tail = 4;
+        int32 tail_thisround = 5;
+}
+
+message Desk {
+        Chain spade = 1;
+        Chain heart = 2;
+        Chain club = 3;
+        Chain diamond = 4;
+}
+
+message HeldCards {
+        repeated Card my = 1;
+        repeated int32 others = 2;
+}
+
+enum GameState {
+        NOTREADY = 0;
+        WAIT = 1;
+        MYTURN = 2;
+        ENDGAME =3;
+}
+
+message GameInfo {
+        GameState state = 1;
+        repeated bool ready = 2;
+        repeated int32 cards = 3;
+        int32 waitfor = 4;
+        Desk desk = 5;
+        HeldCards held = 6;
+}
+
+message PlayReq {
+        RoomReq roomreq = 1;
+        bool discard_or_hold = 2;
+        Card card = 3;
+}
+
+message CommonReply {
+        bool success = 1;
+        string msg = 2;
+}
