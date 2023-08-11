@@ -73,11 +73,12 @@ impl Heart7 for Heart7D {
 
         debug!("Got NewRoom request: {:?}", request);
 
-        let room = self.rm.new_room().await?;
+        let aroom = self.rm.new_room().await?;
+        let mut room = aroom.write().await;
 
-        // room.add_player(request.get_ref()).await?;
+        room.add_player(request.get_ref())?;
 
-        let room_info = room.read().await.get_room_info()?;
+        let room_info = room.get_room_info()?;
 
         Ok(Response::new(room_info))
     }

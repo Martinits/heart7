@@ -21,7 +21,6 @@ pub struct Room {
 #[derive(Debug, Default, Clone)]
 struct Player {
     name: String,
-    score: i32,
 }
 
 type RMResult<T> = Result<T, tonic::Status>;
@@ -74,6 +73,7 @@ impl RoomManager {
     }
 }
 
+// must hold Room lock before calling
 impl Room {
     pub fn get_room_info(&self) -> RMResult<RoomInfo> {
         Ok(RoomInfo {
@@ -83,5 +83,12 @@ impl Room {
             ).collect(),
             state: self.state as i32,
         })
+    }
+
+    pub fn add_player(&mut self, p: &PlayerInfo) -> RMResult<()> {
+        self.players.push(Player{
+            name: p.name.clone(),
+        });
+        Ok(())
     }
 }
