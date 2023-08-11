@@ -16,6 +16,12 @@ tonic = "0.9"
 prost = "0.11"
 tokio = { version = "1.0", features = ["macros", "rt-multi-thread"] }
 tokio-stream = { version = "0.1" }
+log = "0.4.19"
+env_logger = "0.10.0"
+
+[dependencies.uuid]
+version = "1.4.1"
+features = ["v4", "fast-rng", "macro-diagnostics"]
 
 [build-dependencies]
 tonic-build = "0.9"

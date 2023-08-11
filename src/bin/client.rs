@@ -1,8 +1,8 @@
-use heart7::heart7_client::Heart7Client;
-use heart7::{PlayerInfo, RoomInfo};
+use heart7_package::heart7_client::Heart7Client;
+use heart7_package::PlayerInfo;
 
-pub mod heart7 {
-    tonic::include_proto!("heart7");
+pub mod heart7_package {
+    tonic::include_proto!("heart7_rpc");
 }
 
 #[tokio::main]

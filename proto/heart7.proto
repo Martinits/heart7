@@ -1,12 +1,12 @@
 syntax = "proto3";
 
-package heart7;
+package heart7_rpc;
 
 service Heart7 {
         rpc NewRoom (PlayerInfo) returns (RoomInfo);
         rpc JoinRoom (RoomReq) returns (RoomInfo);
         rpc RoomStatus (RoomReq) returns (RoomInfo);
-        rpc GameReady (RoomReq) returns (GameInfo);
+        rpc GameReady (RoomReq) returns (stream GameMsg);
         rpc GameMessage (RoomReq) returns (stream GameMsg);
         rpc GameStatus (RoomReq) returns (GameInfo);
         rpc PlayCard (PlayReq) returns (CommonReply);
@@ -70,7 +70,7 @@ enum GameState {
         NOTREADY = 0;
         WAIT = 1;
         MYTURN = 2;
-        ENDGAME =3;
+        ENDGAME = 3;
 }
 
 message GameInfo {
@@ -84,8 +84,9 @@ message GameInfo {
 
 enum GameMsgType {
         PLAY = 0;
-        CHAT = 1;
-        ACTION = 2;
+        INFO = 1;
+        CHAT = 2;
+        ACTION = 3;
 }
 
 message MsgPlay {
@@ -97,6 +98,7 @@ message GameMsg {
         GameMsgType type = 1;
         oneof msg {
                 MsgPlay play = 2;
+                GameInfo info = 3;
         }
 }
 

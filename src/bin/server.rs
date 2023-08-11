@@ -1,14 +1,13 @@
-use tonic::{transport::Server, Request, Response, Status};
-use heart7::{*, heart7_server::*, game_msg::*};
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
-
-pub mod heart7 {
-    tonic::include_proto!("heart7");
-}
+use heart7::room::RoomManager;
+use heart7::*;
+use log::{debug, error, info};
 
 #[derive(Debug, Default)]
-pub struct Heart7D {}
+pub struct Heart7D {
+    rm: RoomManager,
+}
 
 impl Heart7D {
     fn new_card(&self) -> Card {
@@ -72,15 +71,15 @@ impl Heart7 for Heart7D {
         request: Request<PlayerInfo>,
     ) -> Result<Response<RoomInfo>, Status> {
 
-        println!("Got a request: {:?}", request);
+        debug!("Got NewRoom request: {:?}", request);
 
-        let reply = RoomInfo {
-            roomid: format!("Hello!").into(),
-            players: Vec::new(),
-            state: RoomState::NotFull as i32,
-        };
+        let room = self.rm.new_room().await?;
 
-        Ok(Response::new(reply))
+        // room.add_player(request.get_ref()).await?;
+
+        let room_info = room.read().await.get_room_info()?;
+
+        Ok(Response::new(room_info))
     }
 
     async fn join_room(
@@ -88,7 +87,7 @@ impl Heart7 for Heart7D {
         request: Request<RoomReq>,
     ) -> Result<Response<RoomInfo>, Status> {
 
-        println!("Got a request: {:?}", request);
+        debug!("Got a request: {:?}", request);
 
         let reply = RoomInfo {
             roomid: format!("Hello!").into(),
@@ -104,7 +103,7 @@ impl Heart7 for Heart7D {
         request: Request<RoomReq>,
     ) -> Result<Response<RoomInfo>, Status> {
 
-        println!("Got a request: {:?}", request);
+        debug!("Got a request: {:?}", request);
 
         let reply = RoomInfo {
             roomid: format!("Hello!").into(),
@@ -115,24 +114,36 @@ impl Heart7 for Heart7D {
         Ok(Response::new(reply))
     }
 
+    type GameReadyStream = ReceiverStream<Result<GameMsg, Status>>;
+
     async fn game_ready(
         &self,
         request: Request<RoomReq>,
-    ) -> Result<Response<GameInfo>, Status> {
+    ) -> Result<Response<Self::GameReadyStream>, Status> {
 
-        println!("Got a request: {:?}", request);
+        debug!("Got a request: {:?}", request);
 
-        Ok(Response::new(self.new_game_info()))
+        let (tx, rx) = mpsc::channel(4);
+
+        let gmsg = self.new_game_msg();
+
+        tokio::spawn(async move {
+            for _ in 0..100 {
+                tx.send(Ok(gmsg.clone())).await.unwrap();
+            }
+        });
+
+        Ok(Response::new(ReceiverStream::new(rx)))
     }
 
     type GameMessageStream = ReceiverStream<Result<GameMsg, Status>>;
 
     async fn game_message(
         &self,
-        request: tonic::Request<RoomReq>,
+        request: Request<RoomReq>,
     ) -> Result<Response<Self::GameMessageStream>, Status> {
 
-        println!("Got a request: {:?}", request);
+        debug!("Got a request: {:?}", request);
 
         let (tx, rx) = mpsc::channel(4);
 
@@ -152,7 +163,7 @@ impl Heart7 for Heart7D {
         request: Request<RoomReq>,
     ) -> Result<Response<GameInfo>, Status> {
 
-        println!("Got a request: {:?}", request);
+        debug!("Got a request: {:?}", request);
 
         Ok(Response::new(self.new_game_info()))
     }
@@ -162,7 +173,7 @@ impl Heart7 for Heart7D {
         request: Request<PlayReq>,
     ) -> Result<Response<CommonReply>, Status> {
 
-        println!("Got a request: {:?}", request);
+        debug!("Got a request: {:?}", request);
 
         let reply = CommonReply {
             success: true,
@@ -177,7 +188,7 @@ impl Heart7 for Heart7D {
         request: Request<RoomReq>,
     ) -> Result<Response<CommonReply>, Status> {
 
-        println!("Got a request: {:?}", request);
+        debug!("Got a request: {:?}", request);
 
         let reply = CommonReply {
             success: true,
@@ -192,7 +203,7 @@ impl Heart7 for Heart7D {
         request: Request<RoomReq>,
     ) -> Result<Response<CommonReply>, Status> {
 
-        println!("Got a request: {:?}", request);
+        debug!("Got a request: {:?}", request);
 
         let reply = CommonReply {
             success: true,
@@ -205,6 +216,8 @@ impl Heart7 for Heart7D {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    env_logger::init();
+
     let addr = "localhost:20007".parse()?;
     let server = Heart7D::default();
 
