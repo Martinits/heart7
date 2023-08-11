@@ -130,10 +130,7 @@ impl Heart7 for Heart7D {
     async fn game_message(
         &self,
         request: tonic::Request<RoomReq>,
-    ) -> std::result::Result<
-        tonic::Response<Self::GameMessageStream>,
-        tonic::Status,
-    > {
+    ) -> Result<Response<Self::GameMessageStream>, Status> {
 
         println!("Got a request: {:?}", request);
 
@@ -143,7 +140,7 @@ impl Heart7 for Heart7D {
 
         tokio::spawn(async move {
             for _ in 0..100 {
-                    tx.send(Ok(gmsg.clone())).await.unwrap();
+                tx.send(Ok(gmsg.clone())).await.unwrap();
             }
         });
 
