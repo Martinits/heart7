@@ -21,6 +21,16 @@ pub struct Room {
     gamemsg_tx: Option<MsgTX>,
     gamemsg_rx: Option<MsgRX>,
     ready_cnt: u32,
+    next: usize,
+    result: GameResult,
+}
+
+#[derive(Debug, Default, PartialEq)]
+pub enum RoomState {
+    #[default] NotFull,
+    WaitReady,
+    Gaming,
+    EndGame,
 }
 
 #[derive(Debug, Default, Clone)]
@@ -34,34 +44,38 @@ impl RoomManager {
     pub async fn new_room(&self) -> RPCResult<ARoom> {
         let id = uuid::Uuid::new_v4().to_string();
 
-        let hellomsg = GameMsg {
-            msg: Some(Msg::Hello("Hello".into()))
-        };
-
-        let (tx, rx) = watch::channel(Ok(hellomsg));
-
-        let r = Room {
+        let mut r = Room {
             state: RoomState::NotFull,
             players: Vec::new(),
             id: id.clone(),
-            gamemsg_tx: Some(tx),
-            gamemsg_rx: Some(rx),
+            gamemsg_tx: None,
+            gamemsg_rx: None,
             ready_cnt: 0,
+            next: 0,
+            result: Default::default(),
         };
 
         let mut rooms = self.rooms.write().await;
 
         if let Some(_) = rooms.get(&id) {
-            Err(Status::new(
+            return Err(Status::new(
                 Code::AlreadyExists,
                 format!("Room {} already exists!", id),
-            ))
-        } else {
-            let ar = Arc::new(RwLock::new(r));
-            rooms.insert(id.clone(), ar.clone());
-            Ok(ar)
+            ));
         }
 
+        let initmsg = GameMsg {
+            msg: Some(Msg::RoomInfo(r.get_room_info()?))
+        };
+
+        let (tx, rx) = watch::channel(Ok(initmsg));
+
+        r.gamemsg_tx = Some(tx);
+        r.gamemsg_rx = Some(rx);
+
+        let ar = Arc::new(RwLock::new(r));
+        rooms.insert(id.clone(), ar.clone());
+        Ok(ar)
     }
 
     pub async fn get_room(&self, id: &String) -> RPCResult<ARoom> {
@@ -99,7 +113,12 @@ impl Room {
             players: self.players.iter().map(
                 |p| PlayerInfo{ name: p.name.clone() }
             ).collect(),
-            state: self.state as i32,
+            state: Some(match self.state {
+                RoomState::NotFull => State::NotFull(self.players.len() as u32),
+                RoomState::WaitReady => State::WaitReady(self.ready_cnt),
+                RoomState::Gaming => State::Gaming(self.next as u32),
+                RoomState::EndGame => State::EndGame(self.result.clone()),
+            })
         })
     }
 
@@ -123,6 +142,16 @@ impl Room {
         Ok(self.players.len() - 1)
     }
 
+    pub fn send_gamemsg(&self, msg: GameMsg) {
+        if let Some(tx) = self.gamemsg_tx.as_ref() {
+            if let Err(e) = tx.send(Ok(msg)) {
+                error!("Cannot send gamemsg: {:?}", e);
+            }
+        } else {
+            error!("No channel created for this room");
+        }
+    }
+
     pub fn player_ready(&mut self, pid: usize) -> RPCResult<u32> {
         if self.state != RoomState::WaitReady {
             return Err(Status::new(
@@ -143,8 +172,12 @@ impl Room {
         }
     }
 
-    pub fn start_game(&mut self) -> RPCResult<()> {
-        Ok(())
+    pub fn start_game(&mut self) {
+        if self.state != RoomState::WaitReady {
+            error!("Room {} is not full or game has begun!", &self.id);
+        }
+
+        self.state = RoomState::Gaming;
     }
 
     pub fn get_gamemsg_rx(&self) -> RPCResult<MsgRX> {
@@ -157,8 +190,4 @@ impl Room {
             ))
         }
     }
-}
-
-pub fn start_game(rid: String) {
-
 }

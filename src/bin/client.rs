@@ -16,5 +16,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     println!("RESPONSE={:?}", response);
 
+    // new room
+    // join room -> stream
+    // room status -> draw first
+    // listen stream and draw: should not be able to read first initmsg
     Ok(())
 }

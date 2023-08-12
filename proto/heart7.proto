@@ -27,16 +27,19 @@ message JoinRoomReq {
         string roomid = 2;
 }
 
-enum RoomState {
-        NOT_FULL = 0;
-        WAIT_READY = 1;
-        GAMING = 2;
+message GameResult {
+        uint32 winner = 1;
 }
 
 message RoomInfo {
         string roomid = 1;
         repeated PlayerInfo players = 2;
-        RoomState state = 3;
+        oneof state {
+                uint32 not_full = 3;
+                uint32 wait_ready = 4;
+                uint32 gaming = 5;
+                GameResult end_game = 6;
+        }
 }
 
 message RoomReq {
@@ -57,15 +60,15 @@ enum CardSuit {
 
 message CardInfo {
         CardSuit suit = 1;
-        int32 num = 2;
+        uint32 num = 2;
 }
 
 message Chain {
         bool null = 1;
         CardInfo head = 2;
-        int32 head_thisround = 3;
+        uint32 head_thisround = 3;
         CardInfo tail = 4;
-        int32 tail_thisround = 5;
+        uint32 tail_thisround = 5;
 }
 
 message Desk {
@@ -77,43 +80,35 @@ message Desk {
 
 message HeldCards {
         repeated CardInfo my = 1;
-        repeated int32 others = 2;
-}
-
-enum GameState {
-        NOTREADY = 0;
-        WAIT = 1;
-        MYTURN = 2;
-        ENDGAME = 3;
+        repeated uint32 others = 2;
 }
 
 message GameInfo {
-        GameState state = 1;
-        repeated bool ready = 2;
         repeated int32 cards = 3;
-        int32 waitfor = 4;
         Desk desk = 5;
         HeldCards held = 6;
 }
 
 enum GameMsgType {
-        WAITING = 0;
-        PLAY = 1;
-        INFO = 2;
-        CHAT = 3;
-        ACTION = 4;
+        ROOMINFO = 0;
+        READY = 1;
+        GAMEINFO = 2;
+        PLAY = 3;
+        CHAT = 4;
+        ACTION = 5;
 }
 
 message MsgPlay {
-        int32 player = 1;
+        uint32 player = 1;
         PlayOne play = 2;
 }
 
 message GameMsg {
         oneof msg {
-                string hello = 1;
-                MsgPlay play = 2;
-                GameInfo info = 3;
+                RoomInfo room_info = 1;
+                uint32 who_ready = 2;
+                GameInfo game_info = 3;
+                MsgPlay play = 4;
         }
 }
 

@@ -1,7 +1,6 @@
 use tokio_stream::wrappers::WatchStream;
 use heart7::room::RoomManager;
 use heart7::{*, heart7_server::*};
-use log::{debug, error, info};
 use std::error::Error;
 
 #[derive(Debug, Default)]
@@ -29,10 +28,7 @@ impl Heart7D {
 
     fn new_game_info(&self) -> GameInfo {
         GameInfo {
-            state: GameState::Notready as i32,
-            ready: Vec::new(),
             cards: Vec::new(),
-            waitfor: 0,
             desk: Some(Desk {
                 spade: Some(self.new_chain()),
                 heart: Some(self.new_chain()),
@@ -57,9 +53,7 @@ impl Heart7 for Heart7D {
         debug!("Got NewRoom request: {:?}", request);
 
         let aroom = self.rm.new_room().await?;
-        let mut room = aroom.write().await;
-
-        room.add_player(request.get_ref())?;
+        let room = aroom.read().await;
 
         Ok(Response::new(NewRoomReply{
             roomid: room.get_id()
@@ -85,7 +79,16 @@ impl Heart7 for Heart7D {
             )
         )?;
 
-        room.add_player(&player)?;
+        if 3 == room.add_player(&player)? {
+            let ar = aroom.clone();
+            tokio::spawn(async move {
+                let room = ar.read().await;
+                let msg = GameMsg {
+                    msg: Some(Msg::RoomInfo(room.get_room_info().unwrap()))
+                };
+                room.send_gamemsg(msg);
+            });
+        }
 
         Ok(Response::new(WatchStream::new(room.get_gamemsg_rx()?)))
     }
@@ -114,11 +117,23 @@ impl Heart7 for Heart7D {
         let mut room = aroom.write().await;
 
         let left = room.player_ready(request.get_ref().playerid as usize)?;
-        let rid = room.get_id();
+
+        {
+            let ar = aroom.clone();
+            tokio::spawn(async move {
+                let room = ar.read().await;
+                let msg = GameMsg {
+                    msg: Some(Msg::WhoReady(request.get_ref().playerid))
+                };
+                room.send_gamemsg(msg);
+            });
+        }
 
         if left == 0 {
+            let ar = aroom.clone();
             tokio::spawn(async move {
-                room::start_game(rid);
+                let mut room = ar.write().await;
+                room.start_game();
             });
         }
 
