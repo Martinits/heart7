@@ -1,6 +1,4 @@
-use tokio::sync::mpsc;
-use tonic::Code;
-use tokio_stream::wrappers::ReceiverStream;
+use tokio_stream::wrappers::WatchStream;
 use heart7::room::RoomManager;
 use heart7::{*, heart7_server::*};
 use log::{debug, error, info};
@@ -12,8 +10,8 @@ pub struct Heart7D {
 }
 
 impl Heart7D {
-    fn new_card(&self) -> Card {
-        Card {
+    fn new_card(&self) -> CardInfo {
+        CardInfo {
             suit: CardSuit::Spade as i32,
             num: 1,
         }
@@ -47,23 +45,6 @@ impl Heart7D {
             }),
         }
     }
-
-    fn new_msg_play(&self) -> MsgPlay {
-        MsgPlay {
-            player: 0,
-            play: Some(PlayOne {
-                discard_or_hold: true,
-                card: Some(self.new_card()),
-            })
-        }
-    }
-
-    fn new_game_msg(&self) -> GameMsg {
-        GameMsg {
-            r#type: GameMsgType::Play as i32,
-            msg: Some(Msg::Play(self.new_msg_play())),
-        }
-    }
 }
 
 #[tonic::async_trait]
@@ -71,7 +52,7 @@ impl Heart7 for Heart7D {
     async fn new_room(
         &self,
         request: Request<PlayerInfo>,
-    ) -> Result<Response<RoomInfo>, Status> {
+    ) -> Result<Response<NewRoomReply>, Status> {
 
         debug!("Got NewRoom request: {:?}", request);
 
@@ -80,17 +61,22 @@ impl Heart7 for Heart7D {
 
         room.add_player(request.get_ref())?;
 
-        let room_info = room.get_room_info()?;
-
-        Ok(Response::new(room_info))
+        Ok(Response::new(NewRoomReply{
+            roomid: room.get_id()
+        }))
     }
+
+    type JoinRoomStream = WatchStream<Result<GameMsg, Status>>;
 
     async fn join_room(
         &self,
-        request: Request<RoomReq>,
-    ) -> Result<Response<RoomInfo>, Status> {
+        request: Request<JoinRoomReq>,
+    ) -> Result<Response<Self::JoinRoomStream>, Status> {
 
         debug!("Got JoinRoom request: {:?}", request);
+
+        let aroom = self.rm.get_room(&request.get_ref().roomid).await?;
+        let mut room = aroom.write().await;
 
         let player = request.get_ref().player.as_ref().ok_or(
             Status::new(
@@ -99,14 +85,9 @@ impl Heart7 for Heart7D {
             )
         )?;
 
-        let aroom = self.rm.get_room(&request.get_ref().roomid).await?;
-        let mut room = aroom.write().await;
+        room.add_player(&player)?;
 
-        room.add_player(player)?;
-
-        let room_info = room.get_room_info()?;
-
-        Ok(Response::new(room_info))
+        Ok(Response::new(WatchStream::new(room.get_gamemsg_rx()?)))
     }
 
     async fn room_status(
@@ -122,48 +103,42 @@ impl Heart7 for Heart7D {
         Ok(Response::new(room_info))
     }
 
-    type GameReadyStream = ReceiverStream<Result<GameMsg, Status>>;
-
     async fn game_ready(
         &self,
         request: Request<RoomReq>,
-    ) -> Result<Response<Self::GameReadyStream>, Status> {
+    ) -> Result<Response<GameReadyReply>, Status> {
 
-        debug!("Got a request: {:?}", request);
+        debug!("Got GameReady request: {:?}", request);
 
-        let (tx, rx) = mpsc::channel(4);
+        let aroom = self.rm.get_room(&request.get_ref().roomid).await?;
+        let mut room = aroom.write().await;
 
-        let gmsg = self.new_game_msg();
+        let left = room.player_ready(request.get_ref().playerid as usize)?;
+        let rid = room.get_id();
 
-        tokio::spawn(async move {
-            for _ in 0..100 {
-                tx.send(Ok(gmsg.clone())).await.unwrap();
-            }
-        });
+        if left == 0 {
+            tokio::spawn(async move {
+                room::start_game(rid);
+            });
+        }
 
-        Ok(Response::new(ReceiverStream::new(rx)))
+        Ok(Response::new(GameReadyReply { left }))
     }
 
-    type GameMessageStream = ReceiverStream<Result<GameMsg, Status>>;
+    type GameMessageStream = WatchStream<Result<GameMsg, Status>>;
 
     async fn game_message(
         &self,
         request: Request<RoomReq>,
     ) -> Result<Response<Self::GameMessageStream>, Status> {
 
-        debug!("Got a request: {:?}", request);
+        debug!("Got GameMessage request: {:?}", request);
 
-        let (tx, rx) = mpsc::channel(4);
+        let aroom = self.rm.get_room(&request.get_ref().roomid).await?;
 
-        let gmsg = self.new_game_msg();
+        let rx = aroom.read().await.get_gamemsg_rx()?;
 
-        tokio::spawn(async move {
-            for _ in 0..100 {
-                tx.send(Ok(gmsg.clone())).await.unwrap();
-            }
-        });
-
-        Ok(Response::new(ReceiverStream::new(rx)))
+        Ok(Response::new(WatchStream::new(rx)))
     }
 
     async fn game_status(

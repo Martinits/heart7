@@ -3,10 +3,10 @@ syntax = "proto3";
 package heart7_rpc;
 
 service Heart7 {
-        rpc NewRoom (PlayerInfo) returns (RoomInfo);
-        rpc JoinRoom (RoomReq) returns (RoomInfo);
+        rpc NewRoom (PlayerInfo) returns (NewRoomReply);
+        rpc JoinRoom (JoinRoomReq) returns (stream GameMsg);
         rpc RoomStatus (RoomReq) returns (RoomInfo);
-        rpc GameReady (RoomReq) returns (stream GameMsg);
+        rpc GameReady (RoomReq) returns (GameReadyReply);
         rpc GameMessage (RoomReq) returns (stream GameMsg);
         rpc GameStatus (RoomReq) returns (GameInfo);
         rpc PlayCard (PlayReq) returns (CommonReply);
@@ -18,9 +18,19 @@ message PlayerInfo {
         string name = 1;
 }
 
+message NewRoomReply {
+        string roomid = 1;
+}
+
+message JoinRoomReq {
+        PlayerInfo player = 1;
+        string roomid = 2;
+}
+
 enum RoomState {
         NOT_FULL = 0;
-        GAMING = 1;
+        WAIT_READY = 1;
+        GAMING = 2;
 }
 
 message RoomInfo {
@@ -31,7 +41,11 @@ message RoomInfo {
 
 message RoomReq {
         string roomid = 1;
-        PlayerInfo player = 2;
+        uint32 playerid = 2;
+}
+
+message GameReadyReply {
+        uint32 left = 1;
 }
 
 enum CardSuit {
@@ -41,16 +55,16 @@ enum CardSuit {
         DIAMOND = 3;
 }
 
-message Card {
+message CardInfo {
         CardSuit suit = 1;
         int32 num = 2;
 }
 
 message Chain {
         bool null = 1;
-        Card head = 2;
+        CardInfo head = 2;
         int32 head_thisround = 3;
-        Card tail = 4;
+        CardInfo tail = 4;
         int32 tail_thisround = 5;
 }
 
@@ -62,7 +76,7 @@ message Desk {
 }
 
 message HeldCards {
-        repeated Card my = 1;
+        repeated CardInfo my = 1;
         repeated int32 others = 2;
 }
 
@@ -83,10 +97,11 @@ message GameInfo {
 }
 
 enum GameMsgType {
-        PLAY = 0;
-        INFO = 1;
-        CHAT = 2;
-        ACTION = 3;
+        WAITING = 0;
+        PLAY = 1;
+        INFO = 2;
+        CHAT = 3;
+        ACTION = 4;
 }
 
 message MsgPlay {
@@ -95,8 +110,8 @@ message MsgPlay {
 }
 
 message GameMsg {
-        GameMsgType type = 1;
         oneof msg {
+                string hello = 1;
                 MsgPlay play = 2;
                 GameInfo info = 3;
         }
@@ -104,7 +119,7 @@ message GameMsg {
 
 message PlayOne {
         bool discard_or_hold = 1;
-        Card card = 2;
+        CardInfo card = 2;
 }
 
 message PlayReq {
