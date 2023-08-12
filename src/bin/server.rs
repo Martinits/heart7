@@ -1,4 +1,5 @@
 use tokio::sync::mpsc;
+use tonic::Code;
 use tokio_stream::wrappers::ReceiverStream;
 use heart7::room::RoomManager;
 use heart7::{*, heart7_server::*};
@@ -89,15 +90,23 @@ impl Heart7 for Heart7D {
         request: Request<RoomReq>,
     ) -> Result<Response<RoomInfo>, Status> {
 
-        debug!("Got a request: {:?}", request);
+        debug!("Got JoinRoom request: {:?}", request);
 
-        let reply = RoomInfo {
-            roomid: format!("Hello!").into(),
-            players: Vec::new(),
-            state: RoomState::NotFull as i32,
-        };
+        let player = request.get_ref().player.as_ref().ok_or(
+            Status::new(
+                Code::InvalidArgument,
+                "Empty PlayerInfo!"
+            )
+        )?;
 
-        Ok(Response::new(reply))
+        let aroom = self.rm.get_room(&request.get_ref().roomid).await?;
+        let mut room = aroom.write().await;
+
+        room.add_player(player)?;
+
+        let room_info = room.get_room_info()?;
+
+        Ok(Response::new(room_info))
     }
 
     async fn room_status(
@@ -105,15 +114,12 @@ impl Heart7 for Heart7D {
         request: Request<RoomReq>,
     ) -> Result<Response<RoomInfo>, Status> {
 
-        debug!("Got a request: {:?}", request);
+        debug!("Got RoomStatus request: {:?}", request);
 
-        let reply = RoomInfo {
-            roomid: format!("Hello!").into(),
-            players: Vec::new(),
-            state: RoomState::NotFull as i32,
-        };
+        let aroom = self.rm.get_room(&request.get_ref().roomid).await?;
+        let room_info = aroom.write().await.get_room_info()?;
 
-        Ok(Response::new(reply))
+        Ok(Response::new(room_info))
     }
 
     type GameReadyStream = ReceiverStream<Result<GameMsg, Status>>;
