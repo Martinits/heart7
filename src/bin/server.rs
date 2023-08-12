@@ -1,8 +1,9 @@
 use tokio::sync::mpsc;
 use tokio_stream::wrappers::ReceiverStream;
 use heart7::room::RoomManager;
-use heart7::*;
+use heart7::{*, heart7_server::*};
 use log::{debug, error, info};
+use std::error::Error;
 
 #[derive(Debug, Default)]
 pub struct Heart7D {
@@ -216,15 +217,15 @@ impl Heart7 for Heart7D {
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> Result<(), Box<dyn Error>> {
     env_logger::init();
 
-    let addr = "localhost:20007".parse()?;
+    let sock_addr = format!("0.0.0.0:{}", DEFAULT_PORT).parse()?;
     let server = Heart7D::default();
 
     Server::builder()
         .add_service(Heart7Server::new(server))
-        .serve(addr)
+        .serve(sock_addr)
         .await?;
 
     Ok(())

@@ -1,13 +1,12 @@
-use heart7_package::heart7_client::Heart7Client;
-use heart7_package::PlayerInfo;
-
-pub mod heart7_package {
-    tonic::include_proto!("heart7_rpc");
-}
+use heart7::{*, heart7_client::*};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let mut client = Heart7Client::connect("http://localhost:20007").await?;
+    let server_ip = "127.0.0.1";
+
+    let mut client = Heart7Client::connect(
+        format!("http://{}:{}", server_ip, DEFAULT_PORT)
+    ).await?;
 
     let request = tonic::Request::new(PlayerInfo {
         name: "Martinits".into(),
