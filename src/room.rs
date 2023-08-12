@@ -3,6 +3,7 @@ use tokio::sync::RwLock;
 use std::sync::Arc;
 use tokio::sync::watch::{self, Sender, Receiver};
 use crate::{*, game::*};
+use rand::{thread_rng, seq::SliceRandom};
 
 type ARoom = Arc<RwLock<Room>>;
 type MsgTX = Sender<Result<GameMsg, Status>>;
@@ -183,14 +184,6 @@ impl Room {
         }
     }
 
-    pub fn start_game(&mut self) {
-        if self.state != RoomState::WaitReady {
-            error!("Room {} is not full or game has begun!", &self.id);
-        }
-
-        self.state = RoomState::Gaming;
-    }
-
     pub fn get_gamemsg_rx(&self) -> RPCResult<MsgRX> {
         if let Some(ref rx) = self.gamemsg_rx {
             Ok(rx.clone())
@@ -200,5 +193,35 @@ impl Room {
                 "No channel created for this room"
             ))
         }
+    }
+
+    pub fn start_game(&mut self) {
+        if self.state != RoomState::WaitReady {
+            error!("Room {} is not full or game has begun!", &self.id);
+        } else if self.ready_cnt != 4 {
+            error!("Room {} not ready!", &self.id);
+        }
+ 
+        let _ = self.players.iter_mut().map(
+            |p| p.game.new_game()
+        );
+
+        let mut cards: Vec<u32> = (0..51).collect();
+        cards.shuffle(&mut thread_rng());
+
+        for pi in 0..3 {
+            for c in &cards[pi*13 .. (pi+1)*13-1] {
+                self.players[pi].game.add_card(c);
+                if *c == 19 {
+                    self.next = pi;
+                }
+            }
+        }
+
+        self.state = RoomState::Gaming;
+
+        self.send_gamemsg(GameMsg {
+            msg: Some(Msg::Start(self.next as u32))
+        });
     }
 }

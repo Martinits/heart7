@@ -294,6 +294,7 @@ dependencies = [
  "env_logger",
  "log",
  "prost",
+ "rand",
  "tokio",
  "tokio-stream",
  "tonic",

@@ -92,15 +92,6 @@ message GameInfo {
         HeldCards held = 6;
 }
 
-enum GameMsgType {
-        ROOMINFO = 0;
-        READY = 1;
-        GAMEINFO = 2;
-        PLAY = 3;
-        CHAT = 4;
-        ACTION = 5;
-}
-
 message MsgPlay {
         uint32 player = 1;
         PlayOne play = 2;
@@ -110,7 +101,7 @@ message GameMsg {
         oneof msg {
                 RoomInfo room_info = 1;
                 uint32 who_ready = 2;
-                GameInfo game_info = 3;
+                uint32 start = 3;
                 MsgPlay play = 4;
         }
 }
