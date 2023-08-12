@@ -34,9 +34,12 @@ message GameResult {
 message RoomInfo {
         string roomid = 1;
         repeated PlayerInfo players = 2;
+        message ReadyList {
+                repeated uint32 l = 1;
+        }
         oneof state {
                 uint32 not_full = 3;
-                uint32 wait_ready = 4;
+                ReadyList wait_ready = 4;
                 uint32 gaming = 5;
                 GameResult end_game = 6;
         }

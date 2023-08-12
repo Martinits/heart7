@@ -26,4 +26,8 @@ impl Game {
             Ok(())
         }
     }
+
+    pub fn is_ready(&self) -> bool {
+        self.ready
+    }
 }

@@ -107,6 +107,17 @@ impl Room {
         self.id.clone()
     }
 
+    fn get_ready_list(&self) -> ReadyList {
+        let mut l: Vec<u32> = Vec::new();
+        for (i, p) in self.players.iter().enumerate() {
+            if p.game.is_ready() {
+                l.push(i as u32);
+            }
+        }
+
+        ReadyList { l }
+    }
+
     pub fn get_room_info(&self) -> RPCResult<RoomInfo> {
         Ok(RoomInfo {
             roomid: self.id.clone(),
@@ -115,7 +126,7 @@ impl Room {
             ).collect(),
             state: Some(match self.state {
                 RoomState::NotFull => State::NotFull(self.players.len() as u32),
-                RoomState::WaitReady => State::WaitReady(self.ready_cnt),
+                RoomState::WaitReady => State::WaitReady(self.get_ready_list()),
                 RoomState::Gaming => State::Gaming(self.next as u32),
                 RoomState::EndGame => State::EndGame(self.result.clone()),
             })
