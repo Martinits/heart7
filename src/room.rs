@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, VecDeque};
 use tokio::sync::RwLock;
 use std::sync::Arc;
 use tokio::sync::watch::{self, Sender, Receiver};
@@ -23,11 +23,32 @@ pub struct Room {
     gamemsg_rx: Option<MsgRX>,
     ready_cnt: u32,
     next: usize,
+    desk: Desk,
+    thisround: Vec<Card>,
     result: GameResult,
 }
 
+#[derive(Debug)]
+struct Desk {
+    spade:   VecDeque<(Card, u32)>,
+    heart:   VecDeque<(Card, u32)>,
+    club:    VecDeque<(Card, u32)>,
+    diamond: VecDeque<(Card, u32)>,
+}
+
+impl Default for Desk {
+    fn default() -> Self {
+        Desk {
+            spade:   VecDeque::with_capacity(13),
+            heart:   VecDeque::with_capacity(13),
+            club:    VecDeque::with_capacity(13),
+            diamond: VecDeque::with_capacity(13),
+        }
+    }
+}
+
 #[derive(Debug, Default, PartialEq)]
-pub enum RoomState {
+enum RoomState {
     #[default] NotFull,
     WaitReady,
     Gaming,
@@ -53,7 +74,8 @@ impl RoomManager {
             gamemsg_rx: None,
             ready_cnt: 0,
             next: 0,
-            result: Default::default(),
+            ..Default::default()
+
         };
 
         let mut rooms = self.rooms.write().await;
@@ -223,5 +245,63 @@ impl Room {
         self.send_gamemsg(GameMsg {
             msg: Some(Msg::Start(self.next as u32))
         });
+    }
+
+    pub fn get_game_info(&self, pid: u32) -> RPCResult<GameInfo> {
+        let p = self.players.get(pid as usize).ok_or(
+            Status::new(
+                Code::NotFound,
+                format!("Player {} not found!", pid)
+            )
+        )?;
+
+        Ok(GameInfo {
+            cards: p.game.get_cards(),
+            holds: Some(HeldCards {
+                my: p.game.get_holds(),
+                eachone: self.players.iter().map(
+                    |p| p.game.get_holds_num()
+                ).collect(),
+            }),
+            desk: Some(self.desk.get_desk_info(&self.thisround)),
+        })
+    }
+}
+
+impl Desk {
+    fn get_desk_info(&self, thisround: &Vec<Card>) -> DeskInfo {
+        DeskInfo {
+            spade:   Desk::get_chain_info(thisround, &self.spade),
+            heart:   Desk::get_chain_info(thisround, &self.heart),
+            club:    Desk::get_chain_info(thisround, &self.club),
+            diamond: Desk::get_chain_info(thisround, &self.diamond),
+        }
+    }
+
+    fn get_chain_info(thisround: &Vec<Card>, chain: &VecDeque<(Card, u32)>)
+        -> Option<ChainInfo> {
+        if chain.len() == 0{
+            return None;
+        }
+
+        let head: Card = chain.back().unwrap().0.clone();
+        let tail: Card = chain.front().unwrap().0.clone();
+        let mut head_is_thisround = false;
+        let mut tail_is_thisround = false;
+
+        if let Some(_) = thisround.iter().find(|&cc| *cc == head) {
+            head_is_thisround = true;
+        }
+
+        if let Some(_) = thisround.iter().find(|&cc| *cc == tail) {
+            tail_is_thisround = true;
+        }
+
+        Some(ChainInfo {
+            head: Some(head.into()),
+            tail: Some(tail.into()),
+            head_is_thisround,
+            tail_is_thisround,
+        })
     }
 }

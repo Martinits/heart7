@@ -8,41 +8,6 @@ pub struct Heart7D {
     rm: RoomManager,
 }
 
-impl Heart7D {
-    fn new_card(&self) -> CardInfo {
-        CardInfo {
-            suit: CardSuit::Spade as i32,
-            num: 1,
-        }
-    }
-
-    fn new_chain(&self) -> Chain {
-        Chain {
-            null: true,
-            head: Some(self.new_card()),
-            tail: Some(self.new_card()),
-            head_thisround: 0,
-            tail_thisround: 0,
-        }
-    }
-
-    fn new_game_info(&self) -> GameInfo {
-        GameInfo {
-            cards: Vec::new(),
-            desk: Some(Desk {
-                spade: Some(self.new_chain()),
-                heart: Some(self.new_chain()),
-                club: Some(self.new_chain()),
-                diamond: Some(self.new_chain()),
-            }),
-            held: Some(HeldCards {
-                my: Vec::new(),
-                others: Vec::new(),
-            }),
-        }
-    }
-}
-
 #[tonic::async_trait]
 impl Heart7 for Heart7D {
     async fn new_room(
@@ -161,9 +126,13 @@ impl Heart7 for Heart7D {
         request: Request<RoomReq>,
     ) -> Result<Response<GameInfo>, Status> {
 
-        debug!("Got a request: {:?}", request);
+        debug!("Got GameStatus request: {:?}", request);
 
-        Ok(Response::new(self.new_game_info()))
+        let aroom = self.rm.get_room(&request.get_ref().roomid).await?;
+
+        let room = aroom.read().await;
+
+        Ok(Response::new(room.get_game_info(request.get_ref().playerid)?))
     }
 
     async fn play_card(

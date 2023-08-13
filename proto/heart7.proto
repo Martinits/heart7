@@ -66,30 +66,29 @@ message CardInfo {
         uint32 num = 2;
 }
 
-message Chain {
-        bool null = 1;
+message ChainInfo {
         CardInfo head = 2;
-        uint32 head_thisround = 3;
+        bool head_is_thisround = 3;
         CardInfo tail = 4;
-        uint32 tail_thisround = 5;
+        bool tail_is_thisround = 5;
 }
 
-message Desk {
-        Chain spade = 1;
-        Chain heart = 2;
-        Chain club = 3;
-        Chain diamond = 4;
+message DeskInfo {
+        ChainInfo spade = 1;
+        ChainInfo heart = 2;
+        ChainInfo club = 3;
+        ChainInfo diamond = 4;
 }
 
 message HeldCards {
         repeated CardInfo my = 1;
-        repeated uint32 others = 2;
+        repeated uint32 eachone = 2;
 }
 
 message GameInfo {
-        repeated int32 cards = 3;
-        Desk desk = 5;
-        HeldCards held = 6;
+        repeated CardInfo cards = 1;
+        DeskInfo desk = 2;
+        HeldCards holds = 3;
 }
 
 message MsgPlay {

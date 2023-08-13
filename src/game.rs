@@ -9,9 +9,18 @@ pub struct Game {
 }
 
 #[derive(Debug, Default, Clone, PartialEq, Eq, Hash)]
-struct Card {
-    suit: CardSuit,
-    num: u32,
+pub struct Card {
+    pub suit: CardSuit,
+    pub num: u32,
+}
+
+impl Into<CardInfo> for Card {
+    fn into(self) -> CardInfo {
+        CardInfo {
+            suit: self.suit as i32,
+            num: self.num,
+        }
+    }
 }
 
 impl Game {
@@ -53,5 +62,21 @@ impl Game {
 
         self.cards.clear();
         self.holds.clear();
+    }
+
+    pub fn get_cards(&self) -> Vec<CardInfo> {
+        self.cards.clone().into_iter().map(
+            |c| c.into()
+        ).collect()
+    }
+
+    pub fn get_holds_num(&self) -> u32 {
+        self.holds.len() as u32
+    }
+
+    pub fn get_holds(&self) -> Vec<CardInfo> {
+        self.holds.clone().into_iter().map(
+            |c| c.into()
+        ).collect()
     }
 }
