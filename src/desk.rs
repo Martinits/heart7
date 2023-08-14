@@ -1,7 +1,7 @@
 use crate::{*, game::*};
 use std::collections::{VecDeque, HashSet};
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Desk {
     spade:   VecDeque<(Card, u32)>,
     heart:   VecDeque<(Card, u32)>,
@@ -16,6 +16,17 @@ impl Default for Desk {
             heart:   VecDeque::with_capacity(13),
             club:    VecDeque::with_capacity(13),
             diamond: VecDeque::with_capacity(13),
+        }
+    }
+}
+
+impl Into<DeskResult> for Desk {
+    fn into(self) -> DeskResult {
+        DeskResult{
+            spade: self.spade.into_iter().map(|c| c.into()).collect(),
+            heart: self.heart.into_iter().map(|c| c.into()).collect(),
+            club: self.club.into_iter().map(|c| c.into()).collect(),
+            diamond: self.diamond.into_iter().map(|c| c.into()).collect(),
         }
     }
 }

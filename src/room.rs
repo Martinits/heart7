@@ -261,7 +261,7 @@ impl Room {
         })
     }
 
-    pub fn play_card(&mut self, pid: u32, play: &Play) -> RPCResult<()> {
+    pub fn play_card(&mut self, pid: u32, play: &Play) -> RPCResult<u32> {
         if self.state != RoomState::Gaming {
             return Err(Status::new(
                 Code::PermissionDenied,
@@ -299,7 +299,42 @@ impl Room {
             self.thisround.push(Card::from_info(c));
         }
 
-        Ok(())
+        Ok(self.play_cnt)
+    }
+
+    pub fn end_game(&mut self) -> RPCResult<GameResult> {
+        if self.state != RoomState::Gaming {
+            Err(Status::new(
+                Code::PermissionDenied,
+                "Room is not gaming!"
+            ))
+        } else if self.play_cnt != 52 {
+            Err(Status::new(
+                Code::PermissionDenied,
+                "Game is not end!"
+            ))
+        } else if self.players.iter().any(|p| p.game.has_cards()) {
+            Err(Status::new(
+                Code::PermissionDenied,
+                "Try to get game result but someone still owns cards!"
+            ))
+        } else {
+            self.state = RoomState::EndGame;
+            Ok(self.get_game_result())
+        }
+    }
+
+    // this function doesn't check whether game is end !!!
+    fn get_game_result(&self) -> GameResult {
+        let mut hold = Vec::new();
+        self.players.iter().for_each(
+            |p| hold.push(p.game.get_hold_list())
+        );
+
+        GameResult{
+            desk: Some(self.desk.clone().into()),
+            hold,
+        }
     }
 
     pub fn exit_game(&mut self, pid: usize) -> RPCResult<()> {
@@ -311,6 +346,11 @@ impl Room {
                         "Room is not in a game!"
                     )),
                 RoomState::EndGame => {
+                    self.ready_cnt = 0;
+                    let _ = self.players.iter_mut().map(
+                        |p| p.game.unready()
+                    );
+                    self.state = RoomState::WaitReady;
                     Ok(())
                 },
                 _ => {

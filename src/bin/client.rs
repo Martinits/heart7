@@ -24,5 +24,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // get a whoready: someone get ready
     // get a start: server start game, and client should rpc GameStatus to get cards
     // continue listen stream
+    //
+    // handle when someone exits
     Ok(())
 }

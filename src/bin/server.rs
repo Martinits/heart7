@@ -165,9 +165,17 @@ impl Heart7 for Heart7D {
         let aroom = self.rm.get_room(&roomreq.roomid).await?;
         let mut room = aroom.write().await;
 
-        room.play_card(roomreq.playerid, play)?;
-
-        {
+        if 52 == room.play_card(roomreq.playerid, play)? {
+            let res = room.end_game()?;
+            let ar = aroom.clone();
+            tokio::spawn(async move {
+                let room = ar.read().await;
+                let msg = GameMsg {
+                    msg: Some(Msg::Endgame(res)),
+                };
+                room.send_gamemsg(msg);
+            });
+        } else {
             let ar = aroom.clone();
             let pid = roomreq.playerid;
             let pone = playone.clone();

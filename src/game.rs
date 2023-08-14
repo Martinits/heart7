@@ -23,6 +23,15 @@ impl Into<CardInfo> for Card {
     }
 }
 
+impl Into<CardResult> for (Card, u32) {
+    fn into(self) -> CardResult {
+        CardResult{
+            card: Some(self.0.into()),
+            whose: self.1
+        }
+    }
+}
+
 impl Card {
     pub fn from_info(cinfo: &CardInfo) -> Card {
         Card {
@@ -35,7 +44,15 @@ impl Card {
             num: cinfo.num,
         }
     }
+
+    pub fn into_result(self, pid: u32) -> CardResult {
+        CardResult{
+            card: Some(self.into()),
+            whose: pid,
+        }
+    }
 }
+
 
 impl Game {
     pub fn ready(&mut self) -> RPCResult<()> {
@@ -55,6 +72,10 @@ impl Game {
 
     pub fn unready(&mut self) {
         self.ready = false
+    }
+
+    pub fn has_cards(&self) -> bool {
+        self.cards.len() != 0
     }
 
     pub fn add_card(&mut self, c: &u32) {
@@ -96,6 +117,14 @@ impl Game {
         self.holds.clone().into_iter().map(
             |c| c.into()
         ).collect()
+    }
+
+    pub fn get_hold_list(&self) -> HoldList {
+        HoldList{
+            holds: self.holds.iter().map(
+                |c| c.clone().into()
+            ).collect()
+        }
     }
 
     fn has_card(&self, c: &Card) -> bool {
