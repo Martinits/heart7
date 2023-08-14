@@ -140,7 +140,50 @@ impl Heart7 for Heart7D {
         request: Request<PlayReq>,
     ) -> Result<Response<CommonReply>, Status> {
 
-        debug!("Got a request: {:?}", request);
+        debug!("Got PlayCard request: {:?}", request);
+
+        let roomreq = &request.get_ref().roomreq.as_ref().ok_or(
+            Status::new(
+                Code::InvalidArgument,
+                "Empty RoomReq!"
+            )
+        )?;
+
+        let playone = request.get_ref().playone.as_ref().ok_or(
+            Status::new(
+                Code::InvalidArgument,
+                "Empty PlayOne"
+            )
+        )?;
+        let play = playone.play.as_ref().ok_or(
+            Status::new(
+                Code::InvalidArgument,
+                "Empty PlayOne"
+            )
+        )?;
+
+        let aroom = self.rm.get_room(&roomreq.roomid).await?;
+        let mut room = aroom.write().await;
+
+        room.play_card(roomreq.playerid, play)?;
+
+        {
+            let ar = aroom.clone();
+            let pid = roomreq.playerid;
+            let pone = playone.clone();
+            tokio::spawn(async move {
+                let room = ar.read().await;
+                let playinfo = PlayInfo{
+                    player: pid,
+                    playone: Some(pone),
+                };
+                let msg = GameMsg {
+                    msg: Some(Msg::Play(playinfo)),
+                };
+                room.send_gamemsg(msg);
+            });
+        }
+
 
         let reply = CommonReply {
             success: true,

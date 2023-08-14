@@ -67,10 +67,10 @@ message CardInfo {
 }
 
 message ChainInfo {
-        CardInfo head = 2;
-        bool head_is_thisround = 3;
-        CardInfo tail = 4;
-        bool tail_is_thisround = 5;
+        CardInfo front = 2;
+        bool front_is_thisround = 3;
+        CardInfo back = 4;
+        bool back_is_thisround = 5;
 }
 
 message DeskInfo {
@@ -91,9 +91,16 @@ message GameInfo {
         HeldCards holds = 3;
 }
 
-message MsgPlay {
+message PlayOne {
+        oneof play {
+                CardInfo discard = 1;
+                CardInfo hold = 2;
+        }
+}
+
+message PlayInfo {
         uint32 player = 1;
-        PlayOne play = 2;
+        PlayOne playone = 2;
 }
 
 message GameMsg {
@@ -101,18 +108,13 @@ message GameMsg {
                 RoomInfo room_info = 1;
                 uint32 who_ready = 2;
                 uint32 start = 3;
-                MsgPlay play = 4;
+                PlayInfo play = 4;
         }
-}
-
-message PlayOne {
-        bool discard_or_hold = 1;
-        CardInfo card = 2;
 }
 
 message PlayReq {
         RoomReq roomreq = 1;
-        PlayOne play = 2;
+        PlayOne playone = 2;
 }
 
 message CommonReply {

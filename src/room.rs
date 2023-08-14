@@ -1,8 +1,8 @@
-use std::collections::{HashMap, VecDeque};
+use std::collections::HashMap;
 use tokio::sync::RwLock;
 use std::sync::Arc;
 use tokio::sync::watch::{self, Sender, Receiver};
-use crate::{*, game::*};
+use crate::{*, game::*, desk::*};
 use rand::{thread_rng, seq::SliceRandom};
 
 type ARoom = Arc<RwLock<Room>>;
@@ -26,25 +26,6 @@ pub struct Room {
     desk: Desk,
     thisround: Vec<Card>,
     result: GameResult,
-}
-
-#[derive(Debug)]
-struct Desk {
-    spade:   VecDeque<(Card, u32)>,
-    heart:   VecDeque<(Card, u32)>,
-    club:    VecDeque<(Card, u32)>,
-    diamond: VecDeque<(Card, u32)>,
-}
-
-impl Default for Desk {
-    fn default() -> Self {
-        Desk {
-            spade:   VecDeque::with_capacity(13),
-            heart:   VecDeque::with_capacity(13),
-            club:    VecDeque::with_capacity(13),
-            diamond: VecDeque::with_capacity(13),
-        }
-    }
 }
 
 #[derive(Debug, Default, PartialEq)]
@@ -248,6 +229,13 @@ impl Room {
     }
 
     pub fn get_game_info(&self, pid: u32) -> RPCResult<GameInfo> {
+        if self.state != RoomState::Gaming {
+            return Err(Status::new(
+                Code::PermissionDenied,
+                "Not gaming!"
+            ));
+        }
+
         let p = self.players.get(pid as usize).ok_or(
             Status::new(
                 Code::NotFound,
@@ -266,42 +254,43 @@ impl Room {
             desk: Some(self.desk.get_desk_info(&self.thisround)),
         })
     }
-}
 
-impl Desk {
-    fn get_desk_info(&self, thisround: &Vec<Card>) -> DeskInfo {
-        DeskInfo {
-            spade:   Desk::get_chain_info(thisround, &self.spade),
-            heart:   Desk::get_chain_info(thisround, &self.heart),
-            club:    Desk::get_chain_info(thisround, &self.club),
-            diamond: Desk::get_chain_info(thisround, &self.diamond),
-        }
-    }
-
-    fn get_chain_info(thisround: &Vec<Card>, chain: &VecDeque<(Card, u32)>)
-        -> Option<ChainInfo> {
-        if chain.len() == 0{
-            return None;
+    pub fn play_card(&mut self, pid: u32, play: &Play) -> RPCResult<()> {
+        if self.state != RoomState::Gaming {
+            return Err(Status::new(
+                Code::PermissionDenied,
+                "Not gaming!"
+            ));
+        } else if self.next != pid as usize {
+            return Err(Status::new(
+                Code::PermissionDenied,
+                format!("Not your turn! Waiting for player {}!", self.next)
+            ));
         }
 
-        let head: Card = chain.back().unwrap().0.clone();
-        let tail: Card = chain.front().unwrap().0.clone();
-        let mut head_is_thisround = false;
-        let mut tail_is_thisround = false;
+        let p = self.players.get_mut(pid as usize).ok_or(
+            Status::new(
+                Code::NotFound,
+                format!("Player {} not exist!", pid)
+            )
+        )?;
 
-        if let Some(_) = thisround.iter().find(|&cc| *cc == head) {
-            head_is_thisround = true;
+        p.game.is_valid_play(&self.desk, play)?;
+
+        p.game.play_card(play)?;
+
+        self.next += 1;
+        self.next %= 4;
+
+        self.desk.update(play, pid);
+
+        if pid == 0 {
+            self.thisround.clear();
+        }
+        if let Play::Discard(c) = play {
+            self.thisround.push(Card::from_info(c));
         }
 
-        if let Some(_) = thisround.iter().find(|&cc| *cc == tail) {
-            tail_is_thisround = true;
-        }
-
-        Some(ChainInfo {
-            head: Some(head.into()),
-            tail: Some(tail.into()),
-            head_is_thisround,
-            tail_is_thisround,
-        })
+        Ok(())
     }
 }

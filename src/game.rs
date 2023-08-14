@@ -1,4 +1,4 @@
-use crate::*;
+use crate::{*, desk::*};
 use std::collections::HashSet;
 
 #[derive(Debug, Default, Clone)]
@@ -19,6 +19,20 @@ impl Into<CardInfo> for Card {
         CardInfo {
             suit: self.suit as i32,
             num: self.num,
+        }
+    }
+}
+
+impl Card {
+    pub fn from_info(cinfo: &CardInfo) -> Card {
+        Card {
+            suit: match cinfo.suit {
+                0 => CardSuit::Spade,
+                1 => CardSuit::Heart,
+                2 => CardSuit::Club,
+                _ => CardSuit::Diamond,
+            },
+            num: cinfo.num,
         }
     }
 }
@@ -78,5 +92,78 @@ impl Game {
         self.holds.clone().into_iter().map(
             |c| c.into()
         ).collect()
+    }
+
+    fn has_card(&self, c: &Card) -> bool {
+        if let Some(_) = self.cards.iter().find(|&cc| cc == c) {
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn is_valid_play(&self, desk: &Desk, play: &Play) -> RPCResult<()>{
+        match play {
+            Play::Discard(ci) => {
+                let c = Card::from_info(ci);
+                if self.has_card(&c) {
+                    if desk.is_valid_discard(&c) {
+                        Ok(())
+                    } else {
+                        Err(Status::new(
+                            Code::PermissionDenied,
+                            "You can't discard this card!"
+                        ))
+                    }
+                } else {
+                    Err(Status::new(
+                        Code::PermissionDenied,
+                        "You don't own this card!"
+                    ))
+                }
+            },
+            Play::Hold(ci) => {
+                let c = Card::from_info(ci);
+                if self.has_card(&c) {
+                    let desk_cand = desk.discard_candidates();
+                    if desk_cand.intersection(&self.cards).any(|_| true) {
+                        Err(Status::new(
+                            Code::PermissionDenied,
+                            "You can't hold, since you have cards to discard!"
+                        ))
+                    } else {
+                        Ok(())
+                    }
+                } else {
+                    Err(Status::new(
+                        Code::PermissionDenied,
+                        "You don't own this card!"
+                    ))
+                }
+            }
+        }
+    }
+
+    // this function doesn't check whether is valid !!!
+    pub fn play_card(&mut self, play: &Play) -> RPCResult<()> {
+        match play {
+            Play::Discard(ci) => {
+                let c = Card::from_info(ci);
+                if !self.cards.remove(&c) {
+                    error!("Remove a card that player doesn't own!");
+                }
+                Ok(())
+            },
+            Play::Hold(ci) => {
+                let c = Card::from_info(ci);
+                if !self.cards.remove(&c) {
+                    error!("Remove a card that player doesn't own!");
+                }
+                if !self.holds.insert(c) {
+                    error!("Already held this card!");
+                }
+                Ok(())
+            }
+        }
     }
 }

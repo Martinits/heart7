@@ -3,12 +3,13 @@ pub mod heart7_rpc {
 }
 
 pub use tonic::{Code, transport::Server, Request, Response, Status};
-pub use heart7_rpc::{*, game_msg::*, room_info::*};
+pub use heart7_rpc::{*, game_msg::*, room_info::*, play_one::*};
 
 pub use log::{debug, error, info};
 
 pub mod room;
 pub mod game;
+pub mod desk;
 
 pub type RPCResult<T> = Result<T, tonic::Status>;
 
