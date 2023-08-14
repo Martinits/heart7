@@ -14,3 +14,5 @@ pub mod desk;
 pub type RPCResult<T> = Result<T, tonic::Status>;
 
 pub const DEFAULT_PORT: u16 = 20007;
+
+pub mod tui;
