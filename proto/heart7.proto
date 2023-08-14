@@ -27,10 +27,6 @@ message JoinRoomReq {
         string roomid = 2;
 }
 
-message GameResult {
-        uint32 winner = 1;
-}
-
 message RoomInfo {
         string roomid = 1;
         repeated PlayerInfo players = 2;
@@ -41,7 +37,7 @@ message RoomInfo {
                 uint32 not_full = 3;
                 ReadyList wait_ready = 4;
                 uint32 gaming = 5;
-                GameResult end_game = 6;
+                uint32 end_game = 6;
         }
 }
 
@@ -103,12 +99,34 @@ message PlayInfo {
         PlayOne playone = 2;
 }
 
+message CardResult {
+        CardInfo card = 1;
+        uint32 whose = 2;
+}
+
+message DeskResult {
+        repeated CardResult spade = 1;
+        repeated CardResult heart = 2;
+        repeated CardResult club = 3;
+        repeated CardResult diamond = 4;
+}
+
+message HoldList {
+        repeated CardInfo holds = 1;
+}
+
+message GameResult {
+        DeskResult desk = 1;
+        repeated HoldList hold = 2;
+}
+
 message GameMsg {
         oneof msg {
                 RoomInfo room_info = 1;
                 uint32 who_ready = 2;
                 uint32 start = 3;
                 PlayInfo play = 4;
+                GameResult endgame = 5;
         }
 }
 

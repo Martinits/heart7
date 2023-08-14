@@ -198,7 +198,12 @@ impl Heart7 for Heart7D {
         request: Request<RoomReq>,
     ) -> Result<Response<CommonReply>, Status> {
 
-        debug!("Got a request: {:?}", request);
+        debug!("Got ExitGame request: {:?}", request);
+
+        let aroom = self.rm.get_room(&request.get_ref().roomid).await?;
+        let mut room = aroom.write().await;
+
+        room.exit_game(request.get_ref().playerid as usize)?;
 
         let reply = CommonReply {
             success: true,
@@ -213,7 +218,17 @@ impl Heart7 for Heart7D {
         request: Request<RoomReq>,
     ) -> Result<Response<CommonReply>, Status> {
 
-        debug!("Got a request: {:?}", request);
+        debug!("Got ExitRoom request: {:?}", request);
+
+        let empty_room = {
+            let aroom = self.rm.get_room(&request.get_ref().roomid).await?;
+            let mut room = aroom.write().await;
+            room.exit_room(request.get_ref().playerid as usize)?
+        };
+
+        if empty_room == 0 {
+            self.rm.del_room(&request.get_ref().roomid).await?;
+        }
 
         let reply = CommonReply {
             success: true,

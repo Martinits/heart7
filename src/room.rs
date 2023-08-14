@@ -18,14 +18,14 @@ pub struct RoomManager {
 pub struct Room {
     players: Vec<Player>,
     state: RoomState,
+    ready_cnt: u32,
     id: String,
     gamemsg_tx: Option<MsgTX>,
     gamemsg_rx: Option<MsgRX>,
-    ready_cnt: u32,
     next: usize,
     desk: Desk,
     thisround: Vec<Card>,
-    result: GameResult,
+    play_cnt: u32,
 }
 
 #[derive(Debug, Default, PartialEq)]
@@ -132,7 +132,7 @@ impl Room {
                 RoomState::NotFull => State::NotFull(self.players.len() as u32),
                 RoomState::WaitReady => State::WaitReady(self.get_ready_list()),
                 RoomState::Gaming => State::Gaming(self.next as u32),
-                RoomState::EndGame => State::EndGame(self.result.clone()),
+                RoomState::EndGame => State::EndGame(0),
             })
         })
     }
@@ -209,6 +209,12 @@ impl Room {
             |p| p.game.new_game()
         );
 
+        self.desk = Default::default();
+
+        self.thisround.clear();
+
+        self.play_cnt = 0;
+
         let mut cards: Vec<u32> = (0..51).collect();
         cards.shuffle(&mut thread_rng());
 
@@ -282,6 +288,8 @@ impl Room {
         self.next += 1;
         self.next %= 4;
 
+        self.play_cnt += 1;
+
         self.desk.update(play, pid);
 
         if pid == 0 {
@@ -292,5 +300,50 @@ impl Room {
         }
 
         Ok(())
+    }
+
+    pub fn exit_game(&mut self, pid: usize) -> RPCResult<()> {
+        if pid < self.players.len() {
+            match self.state {
+                RoomState::NotFull =>
+                    Err(Status::new(
+                        Code::PermissionDenied,
+                        "Room is not in a game!"
+                    )),
+                RoomState::EndGame => {
+                    Ok(())
+                },
+                _ => {
+                    self.ready_cnt = 0;
+                    let _ = self.players.iter_mut().map(
+                        |p| p.game.unready()
+                    );
+                    self.state = RoomState::WaitReady;
+                    Ok(())
+                }
+            }
+        } else {
+            Err(Status::new(
+                Code::NotFound,
+                format!("Player {} not exist!", pid),
+            ))
+        }
+    }
+
+    pub fn exit_room(&mut self, pid: usize) -> RPCResult<usize> {
+        if pid < self.players.len() {
+            self.ready_cnt = 0;
+            self.players.remove(pid);
+            let _ = self.players.iter_mut().map(
+                |p| p.game.unready()
+            );
+            self.state = RoomState::NotFull;
+            Ok(self.players.len())
+        } else {
+            Err(Status::new(
+                Code::NotFound,
+                format!("Player {} not exist!", pid),
+            ))
+        }
     }
 }

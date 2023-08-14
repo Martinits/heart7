@@ -53,6 +53,10 @@ impl Game {
         self.ready
     }
 
+    pub fn unready(&mut self) {
+        self.ready = false
+    }
+
     pub fn add_card(&mut self, c: &u32) {
         let card = Card {
             suit: match c/13 {
