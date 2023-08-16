@@ -6,11 +6,11 @@ use std::io;
 use std::panic;
 use ratatui::backend::Backend;
 use ratatui::Terminal;
+use tokio_util::sync::CancellationToken;
 
 #[derive(Debug)]
 pub struct Tui<B: Backend> {
     terminal: Terminal<B>,
-    // pub events: EventHandler,
 }
 
 impl<B: Backend> Tui<B> {
@@ -18,15 +18,15 @@ impl<B: Backend> Tui<B> {
         Self { terminal }
     }
 
-    pub fn init(&mut self) -> AppResult<()> {
+    pub fn init(&mut self, cancel: &CancellationToken) -> AppResult<()> {
         terminal::enable_raw_mode()?;
         crossterm::execute!(io::stderr(), EnterAlternateScreen, EnableMouseCapture)?;
 
-        // Define a custom panic hook to reset the terminal properties.
-        // This way, you won't have your terminal messed up if an unexpected error happens.
+        let cancel_clone = cancel.clone();
         let panic_hook = panic::take_hook();
         panic::set_hook(Box::new(move |panic| {
-            Self::reset().expect("failed to reset the terminal");
+            cancel_clone.cancel();
+            Self::reset().expect("Failed to reset the terminal");
             panic_hook(panic);
         }));
 
@@ -35,28 +35,17 @@ impl<B: Backend> Tui<B> {
         Ok(())
     }
 
-    /// [`Draw`] the terminal interface by [`rendering`] the widgets.
-    ///
-    /// [`Draw`]: tui::Terminal::draw
-    /// [`rendering`]: crate::ui:render
     pub fn draw(&mut self, app: &mut App) -> AppResult<()> {
         self.terminal.draw(|frame| ui::render(app, frame))?;
         Ok(())
     }
 
-    /// Resets the terminal interface.
-    ///
-    /// This function is also used for the panic hook to revert
-    /// the terminal properties if unexpected errors occur.
     fn reset() -> AppResult<()> {
         terminal::disable_raw_mode()?;
         crossterm::execute!(io::stdout(), LeaveAlternateScreen, DisableMouseCapture)?;
         Ok(())
     }
 
-    /// Exits the terminal interface.
-    ///
-    /// It disables the raw mode and reverts back the terminal properties.
     pub fn exit(&mut self) -> AppResult<()> {
         Self::reset()?;
         self.terminal.show_cursor()?;

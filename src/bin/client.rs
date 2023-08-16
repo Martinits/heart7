@@ -6,34 +6,23 @@ use tui::tui::Tui;
 use std::io;
 use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
+use tokio_util::sync::CancellationToken;
 
 #[tokio::main]
 async fn main() -> AppResult<()> {
-
-    let mut app = App::new();
+    let cancel = CancellationToken::new();
 
     let backend = CrosstermBackend::new(io::stdout());
     let terminal = Terminal::new(backend)?;
     let mut tui = Tui::new(terminal);
-    tui.init()?;
+    tui.init(&cancel)?;
 
     let event = EventHandler::new();
-    event.run(64)?;
+    event.run(64, &cancel)?;
 
-    // spawn state manager + render task
-    // main task: rpc client
+    let mut app = App::new();
 
-
-    while app.running {
-        tui.draw(&mut app)?;
-        // match tui.events.next().await? {
-        //     Event::Tick => app.tick(),
-        //     Event::Key(key_event) => handle_key_events(key_event, &mut app)?,
-        //     Event::Mouse(_) => {}
-        //     Event::Resize(_, _) => {}
-        //     Event::Error => {}
-        // }
-    }
+    // main task: state manager + render task + rpc client
 
     tui.exit()?;
 

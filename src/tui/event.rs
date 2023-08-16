@@ -1,10 +1,11 @@
 use super::app::AppResult;
-use super::error::TuiError;
 use crossterm::event::{
     Event as CrosstermEvent,
     EventStream,
     KeyEvent,
     KeyEventKind,
+    KeyCode,
+    KeyModifiers,
     MouseEvent,
 };
 use futures::{FutureExt, StreamExt};
@@ -21,27 +22,18 @@ pub enum Event {
 }
 
 #[derive(Debug)]
-pub struct EventHandler {
-    // tx: mpsc::Sender<Event>,
-    // rx: mpsc::Receiver<Event>,
-    // handler: JoinHandle<()>,
-    cancel: CancellationToken,
-}
+pub struct EventHandler;
 
 impl EventHandler {
     pub fn new() -> Self {
-        let cancel = CancellationToken::new();
-
-        Self {
-            cancel,
-        }
+        Self {}
     }
 
-    pub fn run(&self, channel_buffer_size: usize) -> AppResult<()> {
+    pub fn run(&self, channel_buffer_size: usize, cancel: &CancellationToken) -> AppResult<()> {
         let (tx, mut rx) = mpsc::channel(channel_buffer_size);
 
         // spawn crossterm event poller task
-        let cancel_clone = self.cancel.clone();
+        let cancel_clone = cancel.clone();
         let tx = tx.clone();
         tokio::spawn(async move {
             let mut reader = EventStream::new();
@@ -69,7 +61,7 @@ impl EventHandler {
         });
 
         // spawn crossterm event handler task
-        let cancel_clone = self.cancel.clone();
+        let cancel_clone = cancel.clone();
         tokio::spawn(async move {
             loop {
                 tokio::select! {
@@ -93,10 +85,6 @@ impl EventHandler {
         Ok(())
     }
 
-    pub fn stop(&mut self) {
-        self.cancel.cancel();
-    }
-
     async fn crossterm_event_handler(evt: CrosstermEvent, tx: &mpsc::Sender<Event>) {
         match evt {
             CrosstermEvent::Key(key) => {
@@ -114,7 +102,17 @@ impl EventHandler {
     }
 
     pub async fn handle_key_events(key: KeyEvent) {
-
+        match key.code {
+            KeyCode::Esc | KeyCode::Char('q') => {}
+            KeyCode::Char('c') | KeyCode::Char('C') => {
+                if key.modifiers == KeyModifiers::CONTROL {
+                    // pass
+                }
+            }
+            KeyCode::Right => {}
+            KeyCode::Left => {}
+            _ => {}
+        }
     }
 }
 
