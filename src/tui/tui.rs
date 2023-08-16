@@ -1,5 +1,4 @@
 use super::app::{App, AppResult};
-use super::event::EventHandler;
 use super::ui;
 use crossterm::event::{DisableMouseCapture, EnableMouseCapture};
 use crossterm::terminal::{self, EnterAlternateScreen, LeaveAlternateScreen};
@@ -8,27 +7,17 @@ use std::panic;
 use ratatui::backend::Backend;
 use ratatui::Terminal;
 
-/// Representation of a terminal user interface.
-///
-/// It is responsible for setting up the terminal,
-/// initializing the interface and handling the draw events.
 #[derive(Debug)]
 pub struct Tui<B: Backend> {
-    /// Interface to the Terminal.
     terminal: Terminal<B>,
-    /// Terminal event handler.
-    pub events: EventHandler,
+    // pub events: EventHandler,
 }
 
 impl<B: Backend> Tui<B> {
-    /// Constructs a new instance of [`Tui`].
-    pub fn new(terminal: Terminal<B>, events: EventHandler) -> Self {
-        Self { terminal, events }
+    pub fn new(terminal: Terminal<B>) -> Self {
+        Self { terminal }
     }
 
-    /// Initializes the terminal interface.
-    ///
-    /// It enables the raw mode and sets terminal properties.
     pub fn init(&mut self) -> AppResult<()> {
         terminal::enable_raw_mode()?;
         crossterm::execute!(io::stderr(), EnterAlternateScreen, EnableMouseCapture)?;

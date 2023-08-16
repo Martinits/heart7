@@ -1,15 +1,42 @@
 use heart7::{*, heart7_client::*};
 
 use tui::app::{App, AppResult};
-use tui::event::{Event, EventHandler};
-use tui::handler::handle_key_events;
+use tui::event::EventHandler;
 use tui::tui::Tui;
 use std::io;
 use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> AppResult<()> {
+
+    let mut app = App::new();
+
+    let backend = CrosstermBackend::new(io::stdout());
+    let terminal = Terminal::new(backend)?;
+    let mut tui = Tui::new(terminal);
+    tui.init()?;
+
+    let event = EventHandler::new();
+    event.run(64)?;
+
+    // spawn state manager + render task
+    // main task: rpc client
+
+
+    while app.running {
+        tui.draw(&mut app)?;
+        // match tui.events.next().await? {
+        //     Event::Tick => app.tick(),
+        //     Event::Key(key_event) => handle_key_events(key_event, &mut app)?,
+        //     Event::Mouse(_) => {}
+        //     Event::Resize(_, _) => {}
+        //     Event::Error => {}
+        // }
+    }
+
+    tui.exit()?;
+
     let server_ip = "127.0.0.1";
 
     let mut client = Heart7Client::connect(
@@ -35,35 +62,5 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     //
     // handle when someone exits
     //
-    run_tui()?;
-    Ok(())
-}
-
-fn run_tui() -> AppResult<()> {
-    // Create an application.
-    let mut app = App::new();
-
-    // Initialize the terminal user interface.
-    let backend = CrosstermBackend::new(io::stderr());
-    let terminal = Terminal::new(backend)?;
-    let events = EventHandler::new(250);
-    let mut tui = Tui::new(terminal, events);
-    tui.init()?;
-
-    // Start the main loop.
-    while app.running {
-        // Render the user interface.
-        tui.draw(&mut app)?;
-        // Handle events.
-        match tui.events.next()? {
-            Event::Tick => app.tick(),
-            Event::Key(key_event) => handle_key_events(key_event, &mut app)?,
-            Event::Mouse(_) => {}
-            Event::Resize(_, _) => {}
-        }
-    }
-
-    // Exit the user interface.
-    tui.exit()?;
     Ok(())
 }

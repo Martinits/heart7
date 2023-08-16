@@ -1,28 +1,24 @@
-use std::error;
+use std::error::Error;
 
-/// Application result type.
-pub type AppResult<T> = std::result::Result<T, Box<dyn error::Error>>;
+pub type AppResult<T> = Result<T, Box<dyn Error>>;
 
-/// Application.
-#[derive(Debug)]
-pub struct App {
-    /// Is the application running?
-    pub running: bool,
-    /// counter
-    pub counter: u8,
+#[derive(Debug, Default)]
+pub enum AppState {
+    #[default] GetServer,
+    GetName,
+    GetRoom,
+    Gaming,
+    GameResult,
 }
 
-impl Default for App {
-    fn default() -> Self {
-        Self {
-            running: true,
-            counter: 0,
-        }
-    }
+#[derive(Debug, Default)]
+pub struct App {
+    pub running: bool,
+    pub counter: u8,
+    pub state: AppState,
 }
 
 impl App {
-    /// Constructs a new instance of [`App`].
     pub fn new() -> Self {
         Self::default()
     }
