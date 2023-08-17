@@ -1,5 +1,4 @@
-use super::app::AppResult;
-use crate::*;
+use super::app::{AppResult, Action};
 use crossterm::event::{
     Event as CrosstermEvent,
     EventStream,
@@ -30,7 +29,10 @@ impl EventHandler {
         Self {}
     }
 
-    pub fn run(&self, channel_buffer_size: usize, cancel: &CancellationToken) -> AppResult<()> {
+    pub fn run(&self, channel_buffer_size: usize,
+               cancel: &CancellationToken,
+               app_tx: mpsc::Sender<Action>,
+    ) -> AppResult<()> {
         let (tx, mut rx) = mpsc::channel(channel_buffer_size);
 
         // spawn crossterm event poller task
@@ -70,7 +72,9 @@ impl EventHandler {
                         match evt {
                             None => panic!("Channel to crossterm_event closed!"),
                             Some(Event::Tick) => {},
-                            Some(Event::Key(key)) => Self::handle_key_events(key, &cancel_clone).await,
+                            Some(Event::Key(key)) => {
+                                Self::handle_key_events(key, &app_tx).await;
+                            },
                             Some(Event::Mouse(_)) => {}
                             Some(Event::Resize(_, _)) => {}
                             Some(Event::Error) => {}
@@ -102,16 +106,28 @@ impl EventHandler {
         }
     }
 
-    async fn handle_key_events(key: KeyEvent, cancel: &CancellationToken) {
+    async fn handle_key_events(key: KeyEvent, tx: &mpsc::Sender<Action>) {
         match key.code {
-            KeyCode::Esc | KeyCode::Char('q') => {}
-            KeyCode::Char('c') | KeyCode::Char('C') => {
-                if key.modifiers == KeyModifiers::CONTROL {
-                    cancel.cancel();
+            KeyCode::Enter => {
+                tx.send(Action::Enter).await.expect("Send Action::Enter to app");
+            }
+            KeyCode::Esc => {
+                tx.send(Action::Esc).await.expect("Send Action::Esc to app");
+            }
+            KeyCode::Char(c) => {
+                if key.modifiers == KeyModifiers::CONTROL
+                   && (c == 'c' || c == 'C') {
+                    tx.send(Action::CtrlC).await.expect("Send Action::CtrlC to app");
+                } else {
+                    tx.send(Action::Type(c)).await.expect("Send Action::Type to app");
                 }
             }
-            KeyCode::Right => {}
-            KeyCode::Left => {}
+            KeyCode::Left => {
+                tx.send(Action::LeftArrow).await.expect("Send Action::LeftArrow to app");
+            }
+            KeyCode::Right => {
+                tx.send(Action::LeftArrow).await.expect("Send Action::RightArrow to app");
+            }
             _ => {}
         }
     }

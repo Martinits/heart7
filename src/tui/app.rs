@@ -1,6 +1,7 @@
 use std::error::Error;
 use crate::{*, heart7_client::*};
 use super::ui::UI;
+use tokio::sync::mpsc;
 use tokio_util::sync::CancellationToken;
 use ratatui::backend::Backend;
 use tui::tui::Tui;
@@ -12,8 +13,20 @@ pub enum AppState {
     #[default] GetServer,
     GetRoom,
     JoinRoom,
+    WaitPlayer,
+    WaitReady,
     Gaming,
     GameResult,
+}
+
+#[derive(Debug)]
+pub enum Action {
+    Enter,
+    LeftArrow,
+    RightArrow,
+    Esc,
+    CtrlC,
+    Type(char),
 }
 
 #[derive(Debug)]
@@ -28,7 +41,7 @@ impl<B: Backend> App<B> {
         Self {
             tui,
             cancel: cancel.clone(),
-            state: AppState::default()
+            state: AppState::GetServer,
         }
     }
 
@@ -37,15 +50,27 @@ impl<B: Backend> App<B> {
         Ok(())
     }
 
-    pub async fn run(&mut self) -> AppResult<()> {
+    pub async fn run(&mut self, mut rx: mpsc::Receiver<Action>) -> AppResult<()> {
 
-        // self.tui.draw() UI:draw_home();
-        self.tui.draw(|frame| UI::render(frame))?;
-
+        let mut draw_or_not = true;
         loop {
+            if draw_or_not {
+                self.draw()?;
+            }
             tokio::select! {
                 _ = self.cancel.cancelled() => {
                     break;
+                }
+                action = rx.recv() => {
+                    draw_or_not = match action {
+                        None => panic!("Channel to app closed!"),
+                        Some(Action::Esc) => self.handle_esc(),
+                        Some(Action::Enter) => self.handle_enter(),
+                        Some(Action::LeftArrow) => self.handle_arrow(true),
+                        Some(Action::RightArrow) => self.handle_arrow(false),
+                        Some(Action::Type(c)) => self.handle_type(c),
+                        Some(Action::CtrlC) => panic!("Got Ctrl-C!"),
+                    }
                 }
             }
         }
@@ -78,9 +103,30 @@ impl<B: Backend> App<B> {
         Ok(())
     }
 
+    fn draw(&mut self) -> AppResult<()> {
+        self.tui.draw(|frame| UI::render(frame, &self.state))?;
+        Ok(())
+    }
+
     pub fn exit(&mut self) -> AppResult<()> {
         // self.cancel.cancel();
         self.tui.exit()?;
         Ok(())
+    }
+
+    fn handle_enter(&self) -> bool {
+        true
+    }
+
+    fn handle_type(&self, c: char) -> bool {
+        true
+    }
+
+    fn handle_arrow(&self, is_left: bool) -> bool {
+        true
+    }
+
+    fn handle_esc(&self) -> bool {
+        true
     }
 }

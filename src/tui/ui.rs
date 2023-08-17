@@ -5,12 +5,13 @@ use ratatui::{
     widgets::{Block, BorderType, Borders, Paragraph},
     Frame,
 };
+use super::app::AppState;
 
 #[derive(Debug)]
 pub struct UI;
 
 impl UI {
-    pub fn render<B: Backend>(frame: &mut Frame<'_, B>) {
+    pub fn render<B: Backend>(frame: &mut Frame<'_, B>, appstate: &AppState) {
         frame.render_widget(
             Paragraph::new(format!(
                 "This is a tui template.\n\

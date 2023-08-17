@@ -6,6 +6,7 @@ use std::io;
 use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
 use tokio_util::sync::CancellationToken;
+use tokio::sync::mpsc;
 use log::LevelFilter;
 use log4rs::append::file::FileAppender;
 use log4rs::config::{Appender, Config, Root};
@@ -32,13 +33,14 @@ async fn main() -> AppResult<()> {
     let mut app = App::new(tui, &cancel);
     app.init()?;
 
+    let (tx, rx) = mpsc::channel(tui::DEFAULT_CHANNEL_SIZE);
     let event = EventHandler::new();
     info!("Starting event handler...");
-    event.run(64, &cancel)?;
+    event.run(tui::DEFAULT_CHANNEL_SIZE, &cancel, tx)?;
 
     info!("Starting main task...");
     // main task: state manager + render task + rpc client
-    app.run().await?;
+    app.run(rx).await?;
 
     info!("Exiting...");
     app.exit()?;
