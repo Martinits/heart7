@@ -1,4 +1,5 @@
 use super::app::AppResult;
+use crate::*;
 use crossterm::event::{
     Event as CrosstermEvent,
     EventStream,
@@ -69,7 +70,7 @@ impl EventHandler {
                         match evt {
                             None => panic!("Channel to crossterm_event closed!"),
                             Some(Event::Tick) => {},
-                            Some(Event::Key(key)) => Self::handle_key_events(key).await,
+                            Some(Event::Key(key)) => Self::handle_key_events(key, &cancel_clone).await,
                             Some(Event::Mouse(_)) => {}
                             Some(Event::Resize(_, _)) => {}
                             Some(Event::Error) => {}
@@ -88,7 +89,7 @@ impl EventHandler {
     async fn crossterm_event_handler(evt: CrosstermEvent, tx: &mpsc::Sender<Event>) {
         match evt {
             CrosstermEvent::Key(key) => {
-                if key.kind == KeyEventKind::Release {
+                if key.kind == KeyEventKind::Press {
                     tx.send(Event::Key(key)).await
                         .expect("Crossterm_event channel send failed");
                 }
@@ -101,12 +102,12 @@ impl EventHandler {
         }
     }
 
-    pub async fn handle_key_events(key: KeyEvent) {
+    async fn handle_key_events(key: KeyEvent, cancel: &CancellationToken) {
         match key.code {
             KeyCode::Esc | KeyCode::Char('q') => {}
             KeyCode::Char('c') | KeyCode::Char('C') => {
                 if key.modifiers == KeyModifiers::CONTROL {
-                    // pass
+                    cancel.cancel();
                 }
             }
             KeyCode::Right => {}
@@ -115,4 +116,3 @@ impl EventHandler {
         }
     }
 }
-

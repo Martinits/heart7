@@ -1,11 +1,11 @@
-use super::app::{App, AppResult};
-use super::ui;
+use super::app::AppResult;
 use crossterm::event::{DisableMouseCapture, EnableMouseCapture};
 use crossterm::terminal::{self, EnterAlternateScreen, LeaveAlternateScreen};
 use std::io;
 use std::panic;
 use ratatui::backend::Backend;
 use ratatui::Terminal;
+use ratatui::Frame;
 use tokio_util::sync::CancellationToken;
 
 #[derive(Debug)]
@@ -35,8 +35,12 @@ impl<B: Backend> Tui<B> {
         Ok(())
     }
 
-    pub fn draw(&mut self, app: &mut App) -> AppResult<()> {
-        self.terminal.draw(|frame| ui::render(app, frame))?;
+    pub fn draw<F>(&mut self, f: F) -> AppResult<()>
+    where
+        F: FnOnce(&mut Frame<B>),
+    {
+        self.terminal.draw(f)?;
+        // self.terminal.draw(|frame| UI::render(frame))?;
         Ok(())
     }
 

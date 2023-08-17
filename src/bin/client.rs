@@ -1,4 +1,4 @@
-use heart7::tui;
+use heart7::*;
 use tui::app::{App, AppResult};
 use tui::event::EventHandler;
 use tui::tui::Tui;
@@ -7,7 +7,6 @@ use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
 use tokio_util::sync::CancellationToken;
 use log::LevelFilter;
-use log::{info, debug, warn, error};
 use log4rs::append::file::FileAppender;
 use log4rs::config::{Appender, Config, Root};
 
@@ -28,20 +27,21 @@ async fn main() -> AppResult<()> {
 
     let backend = CrosstermBackend::new(io::stdout());
     let terminal = Terminal::new(backend)?;
-    let mut tui = Tui::new(terminal);
-    tui.init(&cancel)?;
+    let tui = Tui::new(terminal);
+
+    let mut app = App::new(tui, &cancel);
+    app.init()?;
 
     let event = EventHandler::new();
+    info!("Starting event handler...");
     event.run(64, &cancel)?;
 
-    let mut app = App::new();
-
+    info!("Starting main task...");
     // main task: state manager + render task + rpc client
     app.run().await?;
 
-    // cancel all spawned tasks
-    cancel.cancel();
-    tui.exit()?;
+    info!("Exiting...");
+    app.exit()?;
 
     Ok(())
 }
