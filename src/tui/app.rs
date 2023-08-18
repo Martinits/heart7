@@ -1,6 +1,6 @@
 use std::error::Error;
 use crate::{*, heart7_client::*};
-use crate::client::Client;
+use crate::client::{Client, GameStream};
 use super::ui;
 use tokio::sync::mpsc;
 use tokio_util::sync::CancellationToken;
@@ -35,7 +35,12 @@ pub enum AppState {
         msg: String,
         name: String,
     },
-    WaitPlayer,
+    WaitPlayer {
+        client: Client,
+        name: String,
+        msg: String,
+        stream: GameStream,
+    },
     WaitReady,
     Gaming,
     GameResult,
@@ -183,8 +188,9 @@ impl<B: Backend> App<B> {
                             self.state = AppState::JoinRoom {
                                 client: c.clone(),
                                 input: Input::new(roomid),
-                                msg: "Successfully created a room, ID is shown below.\n\
-                                        Please press ENTER to join room:".into(),
+                                msg: format!("Hello, {}!\n\
+                                        Successfully created a room, ID is shown below.\n\
+                                        Please press ENTER to join room:", input.value()),
                                 name: input.value().into(),
                             };
                         },
@@ -201,8 +207,30 @@ impl<B: Backend> App<B> {
                         name: input.value().into(),
                         input: Input::default(),
                         client: c.clone(),
-                        msg: "Join Room\n\
-                                Please enter room ID:".into(),
+                        msg: format!("Hello, {}!\n\
+                                Please enter room ID:", input.value()),
+                    }
+                }
+                true
+            }
+            AppState::JoinRoom {
+                ref input, ref mut msg, client: ref mut c, ref name
+            } => {
+                info!("Joining room {}", input.value());
+                match c.join_room(name.clone(), input.value().into()).await {
+                    Ok(stream) => {
+                        info!("Join room {}, enter WaitPlayer state", input.value());
+                        self.state = AppState::WaitPlayer {
+                            name: input.value().into(),
+                            client: c.clone(),
+                            msg: "Waiting for other players......".into(),
+                            stream,
+                        }
+                    }
+                    Err(s) => {
+                        *msg = format!("Making JoinRoom request to server failed:\n\
+                                        {}\n\
+                                        Please retry:", s);
                     }
                 }
                 true
@@ -223,7 +251,8 @@ impl<B: Backend> App<B> {
                 );
                 true
             }
-            AppState::GetRoom {ref mut input, ..} => {
+            AppState::GetRoom {ref mut input, ..}
+            | AppState::JoinRoom {ref mut input, ..} => {
                 input.handle_event(
                     &CrosstermEvent::Key(
                         KeyEvent::new(KeyCode::Char(c), KeyModifiers::NONE)
@@ -243,26 +272,19 @@ impl<B: Backend> App<B> {
                 input.handle_event(
                     &CrosstermEvent::Key(
                         KeyEvent::new(
-                            if is_left {
-                                KeyCode::Left
-                            } else {
-                                KeyCode::Right
-                            },
+                            if is_left {KeyCode::Left} else {KeyCode::Right},
                             KeyModifiers::NONE
                         )
                     )
                 );
                 true
             }
-            AppState::GetRoom {ref mut input, ..} => {
+            AppState::GetRoom {ref mut input, ..}
+            | AppState::JoinRoom {ref mut input, ..} => {
                 input.handle_event(
                     &CrosstermEvent::Key(
                         KeyEvent::new(
-                            if is_left {
-                                KeyCode::Left
-                            } else {
-                                KeyCode::Right
-                            },
+                            if is_left {KeyCode::Left} else {KeyCode::Right},
                             KeyModifiers::NONE
                         )
                     )
@@ -301,17 +323,14 @@ impl<B: Backend> App<B> {
         match self.state {
             AppState::GetServer {ref mut input, connecting, ..} if !connecting => {
                 input.handle_event(
-                    &CrosstermEvent::Key(
-                        KeyEvent::new(keycode, KeyModifiers::NONE)
-                    )
+                    &CrosstermEvent::Key(KeyEvent::new(keycode, KeyModifiers::NONE))
                 );
                 true
             }
-            AppState::GetRoom {ref mut input, ..} => {
+            AppState::GetRoom {ref mut input, ..}
+            | AppState::JoinRoom {ref mut input, ..}=> {
                 input.handle_event(
-                    &CrosstermEvent::Key(
-                        KeyEvent::new(keycode, KeyModifiers::NONE)
-                    )
+                    &CrosstermEvent::Key(KeyEvent::new(keycode, KeyModifiers::NONE))
                 );
                 true
             }

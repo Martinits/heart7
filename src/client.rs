@@ -4,12 +4,15 @@ use tokio::sync::mpsc;
 use tui::app::Action;
 use std::net::Ipv4Addr;
 use crate::tui::app::AppResult;
+use tonic::codec::Streaming;
 
 #[derive(Clone)]
 pub struct Client {
     c: Heart7Client<Channel>,
     addr: String,
 }
+
+pub type GameStream = Streaming<GameMsg>;
 
 impl Client {
     pub fn connect_spawn(addr: &str, tx: &mpsc::Sender<Action>) {
@@ -41,10 +44,19 @@ impl Client {
     }
 
     pub async fn new_room(&mut self, name: String) -> AppResult<String> {
-        let request = tonic::Request::new(PlayerInfo {
+        let request = Request::new(PlayerInfo {
             name
         });
 
         Ok(self.c.new_room(request).await?.into_inner().roomid)
+    }
+
+    pub async fn join_room(&mut self, name: String, roomid: String) -> AppResult<GameStream> {
+        let request = Request::new(JoinRoomReq{
+            player: Some(PlayerInfo { name }),
+            roomid
+        });
+
+        Ok(self.c.join_room(request).await?.into_inner())
     }
 }
