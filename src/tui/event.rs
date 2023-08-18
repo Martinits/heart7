@@ -76,8 +76,13 @@ impl EventHandler {
                                 Self::handle_key_events(key, &app_tx).await;
                             },
                             Some(Event::Mouse(_)) => {}
-                            Some(Event::Resize(_, _)) => {}
-                            Some(Event::Error) => {}
+                            Some(Event::Resize(x, y)) => {
+                                app_tx.send(Action::Resize(x, y)).await
+                                    .expect("Send Action::Resize to app");
+                            }
+                            Some(Event::Error) => {
+                                panic!("Received Error from crossterm_event!");
+                            }
                         }
                     }
                     _ = cancel_clone.cancelled() => {
@@ -118,6 +123,9 @@ impl EventHandler {
                 if key.modifiers == KeyModifiers::CONTROL
                    && (c == 'c' || c == 'C') {
                     tx.send(Action::CtrlC).await.expect("Send Action::CtrlC to app");
+                } else if key.modifiers == KeyModifiers::CONTROL
+                   && (c == 'l' || c == 'L') {
+                    tx.send(Action::Refresh).await.expect("Send Action::Refresh to app");
                 } else {
                     tx.send(Action::Type(c)).await.expect("Send Action::Type to app");
                 }
@@ -127,6 +135,12 @@ impl EventHandler {
             }
             KeyCode::Right => {
                 tx.send(Action::LeftArrow).await.expect("Send Action::RightArrow to app");
+            }
+            KeyCode::Backspace => {
+                tx.send(Action::Backspace).await.expect("Send Action::Backspace to app");
+            }
+            KeyCode::Delete => {
+                tx.send(Action::Delete).await.expect("Send Action::Delete to app");
             }
             _ => {}
         }
