@@ -18,7 +18,7 @@ impl Heart7 for Heart7D {
         request: Request<HelloMsg>,
     ) -> Result<Response<HelloMsg>, Status> {
 
-        debug!("Got Hello request: {:?}", request);
+        info!("Got Hello request: {:?}", request);
 
         if request.get_ref().msg == "Hello, server!" {
             Ok(Response::new(HelloMsg{ msg: "Hello, client!".into() }))
@@ -35,14 +35,17 @@ impl Heart7 for Heart7D {
         request: Request<PlayerInfo>,
     ) -> Result<Response<NewRoomReply>, Status> {
 
-        debug!("Got NewRoom request: {:?}", request);
+        info!("Got NewRoom request: {:?}", request);
 
         let aroom = self.rm.new_room().await?;
         let room = aroom.read().await;
 
-        Ok(Response::new(NewRoomReply{
+        let reply = NewRoomReply{
             roomid: room.get_id()
-        }))
+        };
+
+        info!("NewRoom response: {:?}", reply);
+        Ok(Response::new(reply))
     }
 
     type JoinRoomStream = WatchStream<Result<GameMsg, Status>>;
@@ -52,7 +55,7 @@ impl Heart7 for Heart7D {
         request: Request<JoinRoomReq>,
     ) -> Result<Response<Self::JoinRoomStream>, Status> {
 
-        debug!("Got JoinRoom request: {:?}", request);
+        info!("Got JoinRoom request: {:?}", request);
 
         let aroom = self.rm.get_room(&request.get_ref().roomid).await?;
         let mut room = aroom.write().await;
@@ -75,6 +78,7 @@ impl Heart7 for Heart7D {
             });
         }
 
+        info!("JoinRoom response: WatchStream");
         Ok(Response::new(WatchStream::new(room.get_gamemsg_rx()?)))
     }
 
@@ -83,11 +87,12 @@ impl Heart7 for Heart7D {
         request: Request<RoomReq>,
     ) -> Result<Response<RoomInfo>, Status> {
 
-        debug!("Got RoomStatus request: {:?}", request);
+        info!("Got RoomStatus request: {:?}", request);
 
         let aroom = self.rm.get_room(&request.get_ref().roomid).await?;
         let room_info = aroom.write().await.get_room_info()?;
 
+        info!("RoomStatus response: {:?}", room_info);
         Ok(Response::new(room_info))
     }
 
@@ -96,7 +101,7 @@ impl Heart7 for Heart7D {
         request: Request<RoomReq>,
     ) -> Result<Response<GameReadyReply>, Status> {
 
-        debug!("Got GameReady request: {:?}", request);
+        info!("Got GameReady request: {:?}", request);
 
         let aroom = self.rm.get_room(&request.get_ref().roomid).await?;
         let mut room = aroom.write().await;
@@ -122,7 +127,10 @@ impl Heart7 for Heart7D {
             });
         }
 
-        Ok(Response::new(GameReadyReply { left }))
+        let reply = GameReadyReply{ left };
+
+        info!("GameReady response: {:?}", reply);
+        Ok(Response::new(reply))
     }
 
     type GameMessageStream = WatchStream<Result<GameMsg, Status>>;
@@ -132,12 +140,13 @@ impl Heart7 for Heart7D {
         request: Request<RoomReq>,
     ) -> Result<Response<Self::GameMessageStream>, Status> {
 
-        debug!("Got GameMessage request: {:?}", request);
+        info!("Got GameMessage request: {:?}", request);
 
         let aroom = self.rm.get_room(&request.get_ref().roomid).await?;
 
         let rx = aroom.read().await.get_gamemsg_rx()?;
 
+        info!("GameMessage response: WatchStream");
         Ok(Response::new(WatchStream::new(rx)))
     }
 
@@ -146,13 +155,16 @@ impl Heart7 for Heart7D {
         request: Request<RoomReq>,
     ) -> Result<Response<GameInfo>, Status> {
 
-        debug!("Got GameStatus request: {:?}", request);
+        info!("Got GameStatus request: {:?}", request);
 
         let aroom = self.rm.get_room(&request.get_ref().roomid).await?;
 
         let room = aroom.read().await;
 
-        Ok(Response::new(room.get_game_info(request.get_ref().playerid)?))
+        let reply = room.get_game_info(request.get_ref().playerid)?;
+
+        info!("GameStatus response: {:?}", reply);
+        Ok(Response::new(reply))
     }
 
     async fn play_card(
@@ -160,7 +172,7 @@ impl Heart7 for Heart7D {
         request: Request<PlayReq>,
     ) -> Result<Response<CommonReply>, Status> {
 
-        debug!("Got PlayCard request: {:?}", request);
+        info!("Got PlayCard request: {:?}", request);
 
         let roomreq = &request.get_ref().roomreq.as_ref().ok_or(
             Status::new(
@@ -218,6 +230,7 @@ impl Heart7 for Heart7D {
             msg: "Ok".into(),
         };
 
+        info!("PlayCard response: {:?}", reply);
         Ok(Response::new(reply))
     }
 
@@ -226,7 +239,7 @@ impl Heart7 for Heart7D {
         request: Request<RoomReq>,
     ) -> Result<Response<CommonReply>, Status> {
 
-        debug!("Got ExitGame request: {:?}", request);
+        info!("Got ExitGame request: {:?}", request);
 
         let aroom = self.rm.get_room(&request.get_ref().roomid).await?;
         let mut room = aroom.write().await;
@@ -238,6 +251,7 @@ impl Heart7 for Heart7D {
             msg: "Ok".into(),
         };
 
+        info!("ExitGame response: {:?}", reply);
         Ok(Response::new(reply))
     }
 
@@ -246,7 +260,7 @@ impl Heart7 for Heart7D {
         request: Request<RoomReq>,
     ) -> Result<Response<CommonReply>, Status> {
 
-        debug!("Got ExitRoom request: {:?}", request);
+        info!("Got ExitRoom request: {:?}", request);
 
         let empty_room = {
             let aroom = self.rm.get_room(&request.get_ref().roomid).await?;
@@ -263,6 +277,7 @@ impl Heart7 for Heart7D {
             msg: "Ok".into(),
         };
 
+        info!("ExitRoom response: {:?}", reply);
         Ok(Response::new(reply))
     }
 }
