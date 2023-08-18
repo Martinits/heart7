@@ -13,23 +13,6 @@ pub struct Heart7D {
 
 #[tonic::async_trait]
 impl Heart7 for Heart7D {
-    async fn hello(
-        &self,
-        request: Request<HelloMsg>,
-    ) -> Result<Response<HelloMsg>, Status> {
-
-        info!("Got Hello request: {:?}", request);
-
-        if request.get_ref().msg == "Hello, server!" {
-            Ok(Response::new(HelloMsg{ msg: "Hello, client!".into() }))
-        } else {
-            Err(Status::new(
-                Code::InvalidArgument,
-                "Invalid hello message!"
-            ))
-        }
-    }
-
     async fn new_room(
         &self,
         request: Request<PlayerInfo>,
