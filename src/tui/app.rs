@@ -25,12 +25,21 @@ pub enum AppState {
     },
     GetRoom {
         client: Client,
+        input: Input,
+        msg: String,
+        button: u16,
     },
-    JoinRoom,
+    JoinRoom {
+        client: Client,
+        input: Input,
+        msg: String,
+        name: String,
+    },
     WaitPlayer,
     WaitReady,
     Gaming,
     GameResult,
+    // ExitMenu(Box<Self>),
 }
 
 impl Default for AppState {
@@ -45,7 +54,7 @@ impl Default for AppState {
 }
 
 fn server_addr_prompt() -> Input {
-    Input::new(format!(":{}", DEFAULT_PORT)).with_cursor(0)
+    Input::new(format!("127.0.0.1:{}", DEFAULT_PORT)).with_cursor(0)
 }
 
 pub enum Action {
@@ -59,6 +68,7 @@ pub enum Action {
     Refresh,
     Backspace,
     Delete,
+    Tab,
     ServerConnectResult(Result<Client, String>),
 }
 
@@ -116,6 +126,7 @@ impl<B: Backend> App<B> {
                             Action::Refresh => true,
                             Action::Backspace => self.handle_del(true),
                             Action::Delete => self.handle_del(false),
+                            Action::Tab => self.handle_tab(),
                             Action::ServerConnectResult(r)
                                 => self.handle_server_connect_result(r),
                         }
@@ -123,14 +134,6 @@ impl<B: Backend> App<B> {
                 }
             }
         }
-
-        // let request = tonic::Request::new(PlayerInfo {
-        //     name: "Martinits".into(),
-        // });
-        //
-        // let response = client.new_room(request).await?;
-        //
-        // println!("RESPONSE={:?}", response);
 
         // new room
         // join room -> stream
@@ -159,17 +162,50 @@ impl<B: Backend> App<B> {
 
     async fn handle_enter(&mut self) -> bool {
         match self.state {
-            AppState::GetServer{
-                ref mut input,
-                ref mut msg, ref mut connecting
+            AppState::GetServer {
+                ref mut input, ref mut msg, ref mut connecting
+            } if ! *connecting => {
+                // connect to server
+                Client::connect_spawn(input.value(), &self.tx);
+                *connecting = true;
+                *msg = format!("Try connecting to {} ......", input.value());
+                true
+            }
+            AppState::GetRoom {
+                ref input, ref mut msg, button, client: ref mut c
             } => {
-                if ! *connecting {
-                    // connect to server
-                    Client::connect_spawn(input.value(), &self.tx);
-                    *connecting = true;
-                    *msg = format!("Try connecting to {} ......", input.value());
-                    true
-                } else { false }
+                if button == 0{
+                    // new room
+                    info!("Player {} chooses to new room", input.value());
+                    match c.new_room(input.value().into()).await {
+                        Ok(roomid) => {
+                            info!("Get NewRoom result from server, enter JoinRoom state");
+                            self.state = AppState::JoinRoom {
+                                client: c.clone(),
+                                input: Input::new(roomid),
+                                msg: "Successfully created a room, ID is shown below.\n\
+                                        Please press ENTER to join room:".into(),
+                                name: input.value().into(),
+                            };
+                        },
+                        Err(s) => {
+                            *msg = format!("Making NewRoom request to server failed:\n\
+                                            {}\n\
+                                            Please retry:", s);
+                        }
+                    }
+                } else {
+                    //join room
+                    info!("Player {} chooses to join room, enter JoinRoom state", input.value());
+                    self.state = AppState::JoinRoom {
+                        name: input.value().into(),
+                        input: Input::default(),
+                        client: c.clone(),
+                        msg: "Join Room\n\
+                                Please enter room ID:".into(),
+                    }
+                }
+                true
             }
             _ => {
                 false
@@ -179,18 +215,21 @@ impl<B: Backend> App<B> {
 
     fn handle_type(&mut self, c: char) -> bool {
         match self.state {
-            AppState::GetServer {
-                ref mut input,
-                msg: _, connecting
-            } => {
-                if !connecting {
-                    input.handle_event(
-                        &CrosstermEvent::Key(
-                            KeyEvent::new(KeyCode::Char(c), KeyModifiers::NONE)
-                        )
-                    );
-                    true
-                } else { false }
+            AppState::GetServer {ref mut input, connecting, ..} if !connecting => {
+                input.handle_event(
+                    &CrosstermEvent::Key(
+                        KeyEvent::new(KeyCode::Char(c), KeyModifiers::NONE)
+                    )
+                );
+                true
+            }
+            AppState::GetRoom {ref mut input, ..} => {
+                input.handle_event(
+                    &CrosstermEvent::Key(
+                        KeyEvent::new(KeyCode::Char(c), KeyModifiers::NONE)
+                    )
+                );
+                true
             }
             _ => {
                 false
@@ -200,25 +239,35 @@ impl<B: Backend> App<B> {
 
     fn handle_lr_arrow(&mut self, is_left: bool) -> bool {
         match self.state {
-            AppState::GetServer {
-                ref mut input,
-                msg: _, connecting
-            } => {
-                if !connecting {
-                    input.handle_event(
-                        &CrosstermEvent::Key(
-                            KeyEvent::new(
-                                if is_left {
-                                    KeyCode::Left
-                                } else {
-                                    KeyCode::Right
-                                },
-                                KeyModifiers::NONE
-                            )
+            AppState::GetServer {ref mut input, connecting, ..} if !connecting => {
+                input.handle_event(
+                    &CrosstermEvent::Key(
+                        KeyEvent::new(
+                            if is_left {
+                                KeyCode::Left
+                            } else {
+                                KeyCode::Right
+                            },
+                            KeyModifiers::NONE
                         )
-                    );
-                    true
-                } else { false }
+                    )
+                );
+                true
+            }
+            AppState::GetRoom {ref mut input, ..} => {
+                input.handle_event(
+                    &CrosstermEvent::Key(
+                        KeyEvent::new(
+                            if is_left {
+                                KeyCode::Left
+                            } else {
+                                KeyCode::Right
+                            },
+                            KeyModifiers::NONE
+                        )
+                    )
+                );
+                true
             }
             _ => {
                 false
@@ -230,25 +279,12 @@ impl<B: Backend> App<B> {
         true
     }
 
-    fn handle_del(&mut self, is_back: bool) -> bool {
-        let keycode = if is_back {
-            KeyCode::Backspace
-        } else {
-            KeyCode::Delete
-        };
+    fn handle_tab(&mut self) -> bool {
         match self.state {
-            AppState::GetServer {
-                ref mut input,
-                msg: _, connecting
-            } => {
-                if !connecting {
-                    input.handle_event(
-                        &CrosstermEvent::Key(
-                            KeyEvent::new(keycode, KeyModifiers::NONE)
-                        )
-                    );
-                    true
-                } else { false }
+            AppState::GetRoom {ref mut button, ..} => {
+                *button += 1;
+                *button %= 2;
+                true
             }
             _ => {
                 false
@@ -256,21 +292,48 @@ impl<B: Backend> App<B> {
         }
     }
 
-    fn handle_server_connect_result(
-        &mut self,
-        r: Result<Client, String>
-    ) -> bool {
+    fn handle_del(&mut self, is_back: bool) -> bool {
+        let keycode = if is_back {
+            KeyCode::Backspace
+        } else {
+            KeyCode::Delete
+        };
         match self.state {
-            AppState::GetServer {
-                ref mut input,
-                ref mut msg, ref mut connecting
-            } => {
+            AppState::GetServer {ref mut input, connecting, ..} if !connecting => {
+                input.handle_event(
+                    &CrosstermEvent::Key(
+                        KeyEvent::new(keycode, KeyModifiers::NONE)
+                    )
+                );
+                true
+            }
+            AppState::GetRoom {ref mut input, ..} => {
+                input.handle_event(
+                    &CrosstermEvent::Key(
+                        KeyEvent::new(keycode, KeyModifiers::NONE)
+                    )
+                );
+                true
+            }
+            _ => {
+                false
+            }
+        }
+    }
+
+    fn handle_server_connect_result(&mut self, r: Result<Client, String>) -> bool {
+        match self.state {
+            AppState::GetServer {ref mut input, ref mut msg, ref mut connecting} => {
                 if *connecting {
                     match r {
                         Ok(c) => {
                             info!("Server {} Connected, enter GetRoom state", c.get_addr());
                             self.state = AppState::GetRoom {
                                 client: c,
+                                input: Input::default(),
+                                msg: "Game server connected.\n\
+                                        Please enter your nickname:".into(),
+                                button: 0,
                             };
                         },
                         Err(s) => {
@@ -282,7 +345,10 @@ impl<B: Backend> App<B> {
                         }
                     }
                     true
-                } else { false }
+                } else {
+                    warn!("AppState is not connecting, drop server connecting result!");
+                    false
+                }
             }
             _ => false
         }

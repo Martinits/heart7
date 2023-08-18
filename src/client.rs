@@ -3,7 +3,9 @@ use tonic::transport::Channel;
 use tokio::sync::mpsc;
 use tui::app::Action;
 use std::net::Ipv4Addr;
+use crate::tui::app::AppResult;
 
+#[derive(Clone)]
 pub struct Client {
     c: Heart7Client<Channel>,
     addr: String,
@@ -36,5 +38,13 @@ impl Client {
 
     pub fn get_addr(&self) -> String {
         self.addr.clone()
+    }
+
+    pub async fn new_room(&mut self, name: String) -> AppResult<String> {
+        let request = tonic::Request::new(PlayerInfo {
+            name
+        });
+
+        Ok(self.c.new_room(request).await?.into_inner().roomid)
     }
 }
