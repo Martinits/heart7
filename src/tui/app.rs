@@ -1,6 +1,6 @@
 use std::error::Error;
 use crate::{*, heart7_client::*};
-use crate::client::{Client, GameStream};
+use crate::client::rpc::{Client, GameStream};
 use super::ui;
 use tokio::sync::mpsc;
 use tokio_util::sync::CancellationToken;
