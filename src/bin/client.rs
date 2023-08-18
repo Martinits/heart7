@@ -19,7 +19,7 @@ async fn main() -> AppResult<()> {
         .appender(Appender::builder().build("logfile", Box::new(logfile)))
         .build(Root::builder()
                    .appender("logfile")
-                   .build(LevelFilter::Info))?;
+                   .build(LevelFilter::Debug))?;
     log4rs::init_config(config)?;
 
     info!("Heart7 Client Starts!");

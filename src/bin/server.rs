@@ -2,6 +2,9 @@ use tokio_stream::wrappers::WatchStream;
 use heart7::room::RoomManager;
 use heart7::{*, heart7_server::*};
 use std::error::Error;
+use log::LevelFilter;
+use log4rs::append::console::ConsoleAppender;
+use log4rs::config::{Appender, Config, Root};
 
 #[derive(Debug, Default)]
 pub struct Heart7D {
@@ -266,11 +269,18 @@ impl Heart7 for Heart7D {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    env_logger::init();
+    let logconsole = ConsoleAppender::builder().build();
+    let config = Config::builder()
+        .appender(Appender::builder().build("console", Box::new(logconsole)))
+        .build(Root::builder()
+                   .appender("console")
+                   .build(LevelFilter::Debug))?;
+    log4rs::init_config(config)?;
 
     let sock_addr = format!("0.0.0.0:{}", DEFAULT_PORT).parse()?;
     let server = Heart7D::default();
 
+    info!("Heart7 Server serving on {}..", sock_addr);
     Server::builder()
         .add_service(Heart7Server::new(server))
         .serve(sock_addr)
