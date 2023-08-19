@@ -50,7 +50,16 @@ impl Heart7 for Heart7D {
             )
         )?;
 
-        if 3 == room.add_player(&player)? {
+        if player.name.len() == 0 {
+            return Err(Status::new(
+                Code::InvalidArgument,
+                "Empty name!"
+            ))
+        }
+
+        room.add_player(&player)?;
+
+        {
             let ar = aroom.clone();
             tokio::spawn(async move {
                 let room = ar.read().await;
