@@ -28,6 +28,7 @@ pub enum AppState {
         input: Input,
         msg: String,
         button: u16,
+        is_input: bool,
     },
     JoinRoom {
         client: Client,
@@ -66,6 +67,8 @@ pub enum Action {
     Enter,
     LeftArrow,
     RightArrow,
+    UpArrow,
+    DownArrow,
     Esc,
     CtrlC,
     Type(char),
@@ -73,7 +76,6 @@ pub enum Action {
     Refresh,
     Backspace,
     Delete,
-    Tab,
     ServerConnectResult(Result<Client, String>),
 }
 
@@ -125,13 +127,14 @@ impl<B: Backend> App<B> {
                             Action::Enter => self.handle_enter().await,
                             Action::LeftArrow => self.handle_lr_arrow(true),
                             Action::RightArrow => self.handle_lr_arrow(false),
+                            Action::UpArrow => self.handle_ud_arrow(true),
+                            Action::DownArrow => self.handle_ud_arrow(false),
                             Action::Type(c) => self.handle_type(c),
                             Action::CtrlC => panic!("Got Ctrl-C!"),
                             Action::Resize(_, _) => true,
                             Action::Refresh => true,
                             Action::Backspace => self.handle_del(true),
                             Action::Delete => self.handle_del(false),
-                            Action::Tab => self.handle_tab(),
                             Action::ServerConnectResult(r)
                                 => self.handle_server_connect_result(r),
                         }
@@ -177,8 +180,8 @@ impl<B: Backend> App<B> {
                 true
             }
             AppState::GetRoom {
-                ref input, ref mut msg, button, client: ref mut c
-            } => {
+                ref input, ref mut msg, button, client: ref mut c, is_input
+            } if !is_input => {
                 if button == 0{
                     // new room
                     info!("Player {} chooses to new room", input.value());
@@ -251,8 +254,15 @@ impl<B: Backend> App<B> {
                 );
                 true
             }
-            AppState::GetRoom {ref mut input, ..}
-            | AppState::JoinRoom {ref mut input, ..} => {
+            AppState::GetRoom {ref mut input, is_input, ..} if is_input => {
+                input.handle_event(
+                    &CrosstermEvent::Key(
+                        KeyEvent::new(KeyCode::Char(c), KeyModifiers::NONE)
+                    )
+                );
+                true
+            }
+            AppState::JoinRoom {ref mut input, ..} => {
                 input.handle_event(
                     &CrosstermEvent::Key(
                         KeyEvent::new(KeyCode::Char(c), KeyModifiers::NONE)
@@ -279,8 +289,24 @@ impl<B: Backend> App<B> {
                 );
                 true
             }
-            AppState::GetRoom {ref mut input, ..}
-            | AppState::JoinRoom {ref mut input, ..} => {
+            AppState::GetRoom {ref mut input, is_input, ref mut button, ..} => {
+                if is_input {
+                    input.handle_event(
+                        &CrosstermEvent::Key(
+                            KeyEvent::new(
+                                if is_left {KeyCode::Left} else {KeyCode::Right},
+                                KeyModifiers::NONE
+                            )
+                        )
+                    );
+                } else {
+                    *button += 1;
+                    *button %= 2;
+                }
+                true
+
+            }
+            AppState::JoinRoom {ref mut input, ..} => {
                 input.handle_event(
                     &CrosstermEvent::Key(
                         KeyEvent::new(
@@ -297,21 +323,18 @@ impl<B: Backend> App<B> {
         }
     }
 
-    fn handle_esc(&self) -> bool {
-        true
-    }
-
-    fn handle_tab(&mut self) -> bool {
+    fn handle_ud_arrow(&mut self, _is_up: bool) -> bool {
         match self.state {
-            AppState::GetRoom {ref mut button, ..} => {
-                *button += 1;
-                *button %= 2;
+            AppState::GetRoom { ref mut is_input, ..} => {
+                *is_input = !*is_input;
                 true
             }
-            _ => {
-                false
-            }
+            _ => false
         }
+    }
+
+    fn handle_esc(&self) -> bool {
+        true
     }
 
     fn handle_del(&mut self, is_back: bool) -> bool {
@@ -327,8 +350,13 @@ impl<B: Backend> App<B> {
                 );
                 true
             }
-            AppState::GetRoom {ref mut input, ..}
-            | AppState::JoinRoom {ref mut input, ..}=> {
+            AppState::GetRoom {ref mut input, is_input, ..} if is_input => {
+                input.handle_event(
+                    &CrosstermEvent::Key(KeyEvent::new(keycode, KeyModifiers::NONE))
+                );
+                true
+            }
+            AppState::JoinRoom {ref mut input, ..}=> {
                 input.handle_event(
                     &CrosstermEvent::Key(KeyEvent::new(keycode, KeyModifiers::NONE))
                 );
@@ -353,6 +381,7 @@ impl<B: Backend> App<B> {
                                 msg: "Game server connected.\n\
                                         Please enter your nickname:".into(),
                                 button: 0,
+                                is_input: true,
                             };
                         },
                         Err(s) => {

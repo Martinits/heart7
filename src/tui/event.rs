@@ -136,14 +136,17 @@ impl EventHandler {
             KeyCode::Right => {
                 tx.send(Action::LeftArrow).await.expect("Send Action::RightArrow to app");
             }
+            KeyCode::Up => {
+                tx.send(Action::UpArrow).await.expect("Send Action::UpArrow to app");
+            }
+            KeyCode::Down => {
+                tx.send(Action::DownArrow).await.expect("Send Action::DownArrow to app");
+            }
             KeyCode::Backspace => {
                 tx.send(Action::Backspace).await.expect("Send Action::Backspace to app");
             }
             KeyCode::Delete => {
                 tx.send(Action::Delete).await.expect("Send Action::Delete to app");
-            }
-            KeyCode::Tab => {
-                tx.send(Action::Tab).await.expect("Send Action::Tab to app");
             }
             _ => {}
         }

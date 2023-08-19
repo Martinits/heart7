@@ -24,8 +24,8 @@ pub fn render<B: Backend>(frame: &mut Frame<B>, appstate: &AppState) {
     match appstate {
         AppState::GetServer {connecting, input, msg}
             => home_page(frame, input, msg, connecting),
-        AppState::GetRoom {input, msg, button, ..}
-            => ask_name(frame, input, msg, button),
+        AppState::GetRoom {input, msg, button, is_input, ..}
+            => ask_name(frame, input, msg, button, is_input),
         AppState::JoinRoom {input, msg, ..}
             => join_room(frame, input, msg),
         AppState::WaitPlayer {name, msg, ..}
@@ -199,7 +199,7 @@ fn home_page<B: Backend>(frame: &mut Frame<B>, input: &Input, msg: &String, conn
 }
 
 fn ask_name<B: Backend>(frame: &mut Frame<B>, input: &Input,
-                        msg: &String, button: &u16,
+                        msg: &String, button: &u16, is_input: &bool
 ) {
     let prompt = render_prompt(frame);
 
@@ -228,19 +228,27 @@ fn ask_name<B: Backend>(frame: &mut Frame<B>, input: &Input,
     let scroll = input.visual_scroll(input_width as usize);
     frame.render_widget(
         Paragraph::new(input.value())
-            .style(Style::default().fg(INPUT_BORDER))
+            .style(Style::default().fg(
+                if *is_input {
+                    INPUT_BORDER
+                } else {
+                    INPUT_BORDER_BLOCK
+                }
+            ))
             .scroll((0, scroll as u16))
             .block(Block::default().borders(Borders::ALL).title("Nickname")),
         input_rect,
     );
-    frame.set_cursor(
-        // Put cursor past the end of the input text
-        input_rect.x
-            + ((input.visual_cursor()).max(scroll) - scroll) as u16
-            + 1,
-        // Move one line down, from the border to the input line
-        input_rect.y + 1,
-    );
+    if *is_input {
+        frame.set_cursor(
+            // Put cursor past the end of the input text
+            input_rect.x
+                + ((input.visual_cursor()).max(scroll) - scroll) as u16
+                + 1,
+            // Move one line down, from the border to the input line
+            input_rect.y + 1,
+        );
+    }
 
     let button_line = rect_cut_center(chunks[2], -3, 100);
     let buttons = Layout::default()
@@ -256,8 +264,8 @@ fn ask_name<B: Backend>(frame: &mut Frame<B>, input: &Input,
             .as_ref(),
         )
         .split(button_line);
-    frame.render_widget(get_button("New Room", *button == 0), buttons[1]);
-    frame.render_widget(get_button("Join Room", *button == 1), buttons[3]);
+    frame.render_widget(get_button("New Room", !*is_input && *button == 0), buttons[1]);
+    frame.render_widget(get_button("Join Room", !*is_input && *button == 1), buttons[3]);
 }
 
 fn join_room<B: Backend>(frame: &mut Frame<B>, input: &Input, msg: &String) {
