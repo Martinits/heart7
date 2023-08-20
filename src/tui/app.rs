@@ -14,6 +14,8 @@ use crossterm::event::{
     KeyCode,
     KeyModifiers,
 };
+use crate::game::Card;
+use crate::client::desk::*;
 
 pub type AppResult<T> = Result<T, Box<dyn Error>>;
 
@@ -48,7 +50,20 @@ pub enum AppState {
         msg: String,
         roomid: String,
     },
-    Gaming,
+    Gaming {
+        client: Client,
+        players: Vec<(String, usize, u32)>, //(name, idx, hold)
+        next: usize,
+        choose: usize, // 0 for none
+        last: Option<Card>, // None for hold
+        cards: Vec<Card>,
+        holds: Vec<Card>,
+        has_last: bool,
+        desk: Desk,
+        roomid: String,
+        button: u32,
+        play_cnt: u32,
+    },
     GameResult,
     // ExitMenu(Box<Self>),
 }
@@ -81,6 +96,7 @@ pub enum Action {
     Refresh,
     Backspace,
     Delete,
+    Tab,
     ServerConnectResult(Result<Client, String>),
     StreamMsg(GameMsg),
 }
@@ -94,7 +110,7 @@ pub struct App<B: Backend> {
 }
 
 impl<B: Backend> App<B> {
-    pub fn new(
+    pub async fn new(
         tui: Tui<B>,
         cancel: &CancellationToken,
         tx: mpsc::Sender<Action>,
@@ -103,7 +119,29 @@ impl<B: Backend> App<B> {
         Self {
             tui,
             cancel: cancel.clone(),
-            state: Default::default(),
+            // state: Default::default(),
+            state: AppState::Gaming{
+                client: Client{
+                    c: heart7_client::Heart7Client::connect("http://127.0.0.1:20007").await.unwrap(),
+                    addr:"127.0.0.1:20007".into()
+                },
+                players: vec![
+                    ("1".into(), 0, 0),
+                    ("2".into(), 1, 0),
+                    ("3".into(), 2, 0),
+                    ("4".into(), 3, 0)
+                ],
+                next: 0,
+                choose: 0,
+                last: None,
+                cards: Vec::new(),
+                holds: Vec::new(),
+                has_last: false,
+                desk: Default::default(),
+                roomid: "jbhfvhsbdfvhbkdsfhbv".into(),
+                button: 0,
+                play_cnt: 0
+            },
             tx,
             rx,
         }
@@ -141,6 +179,7 @@ impl<B: Backend> App<B> {
                             Action::Refresh => true,
                             Action::Backspace => self.handle_del(true),
                             Action::Delete => self.handle_del(false),
+                            Action::Tab => self.handle_tab(),
                             Action::ServerConnectResult(r)
                                 => self.handle_server_connect_result(r),
                             Action::StreamMsg(msg)
@@ -151,17 +190,6 @@ impl<B: Backend> App<B> {
             }
         }
 
-        // new room
-        // join room -> stream
-        // room status -> draw first
-        // listen stream and draw: should not be able to read first initmsg
-        // get a roominfo: new player join in, if all 4 join in, display ready state
-        // get a whoready: someone get ready
-        // get a start: server start game, and client should rpc GameStatus to get cards
-        // continue listen stream
-        //
-        // handle when someone exits
-        //
         Ok(())
     }
 
@@ -279,6 +307,26 @@ impl<B: Backend> App<B> {
                 }
                 true
             }
+            AppState::Gaming {
+                client: ref mut c, ref players, choose, ref mut cards,
+                ref mut holds, ref roomid, ref button, ..
+            } if cards.len() != 0 => {
+                let play = match *button {
+                        0 => Play::Discard(cards[choose].clone().into()),
+                        _ => Play::Hold(cards[choose].clone().into())
+                };
+                match c.play_card(players[0].1 as u32, roomid.clone(), play).await {
+                    Ok(_) => {
+                        let c = cards.remove(choose);
+                        if *button == 1 {
+                            holds.push(c);
+                            holds.sort();
+                        }
+                    },
+                    Err(s) => panic!("Failed to play card to server: {}", s),
+                }
+                true
+            }
             _ => {
                 false
             }
@@ -358,6 +406,21 @@ impl<B: Backend> App<B> {
                 );
                 true
             }
+            AppState::Gaming {
+                ref mut choose, ref cards, ..
+            } if cards.len() != 0 => {
+                if is_left {
+                    if *choose > 1 {
+                        *choose -= 1;
+                    }
+                } else {
+                    *choose += 1;
+                    if *choose > cards.len() {
+                        *choose = cards.len();
+                    }
+                }
+                true
+            }
             _ => {
                 false
             }
@@ -409,6 +472,19 @@ impl<B: Backend> App<B> {
         }
     }
 
+    fn handle_tab(&mut self) -> bool {
+        match self.state {
+            AppState::GetRoom {ref mut button, ..}=> {
+                *button += 1;
+                *button %= 2;
+                true
+            }
+            _ => {
+                false
+            }
+        }
+    }
+
     fn handle_server_connect_result(&mut self, r: Result<Client, String>) -> bool {
         match self.state {
             AppState::GetServer {ref mut input, ref mut msg, ref mut connecting} => {
@@ -451,6 +527,14 @@ impl<B: Backend> App<B> {
         }
     }
 
+    fn someone_hold(players: &mut Vec<(String, usize, u32)>, pid: u32) {
+        if let Some(p) = players.iter_mut().find(|p| p.1 == pid as usize) {
+            p.2 += 1;
+        } else {
+            panic!("playerid in PlayInfo not exist!");
+        }
+    }
+
     async fn handle_stream_msg(&mut self, msg: GameMsg) -> bool {
         match self.state {
             AppState::WaitPlayer {ref mut client, ref mut players, ref roomid, ..} => {
@@ -472,7 +556,7 @@ impl<B: Backend> App<B> {
                 }
                 true
             }
-            AppState::WaitReady {ref mut players, ..} => {
+            AppState::WaitReady {ref mut client, ref mut players, ref roomid, ..} => {
                 match msg.msg {
                     Some(Msg::RoomInfo(ri)) => {
                         *players = rpc::room_info_to_players(&players[0].0, &ri);
@@ -481,9 +565,71 @@ impl<B: Backend> App<B> {
                         Self::someone_get_ready(players, who as usize);
                     }
                     Some(Msg::Start(next)) => {
+                        match client.game_status(players[0].1 as u32, roomid.clone()).await {
+                            Ok(gi) => {
+                                let mut cards: Vec<Card> = gi.cards.iter().map(
+                                    |c| Card::from_info(c)
+                                ).collect();
+                                cards.sort();
+
+                                self.state = AppState::Gaming{
+                                    client: client.clone(),
+                                    roomid: roomid.clone(),
+                                    players: players.iter().map(
+                                        |p| (p.0.clone(), p.1, 0)
+                                    ).collect(),
+                                    next: next as usize,
+                                    last: None,
+                                    cards,
+                                    holds: Vec::new(),
+                                    desk: Default::default(),
+                                    choose: 0,
+                                    button: 0,
+                                    has_last: false,
+                                    play_cnt: 0,
+                                }
+                            }
+                            Err(s) => panic!("Failed to get GameStatus on start: {}", s),
+                        }
                     }
                     None => panic!("Got empty GameMsg!"),
                     _ => panic!("Got GameMsg other than RoomInfo in state WaitPlayer!"),
+                }
+                true
+            }
+            AppState::Gaming {
+                ref mut players, ref mut next, ref mut last, ref mut has_last,
+                ref cards, ref mut desk, ref mut play_cnt, ..
+            } if cards.len() != 0 => {
+                match msg.msg {
+                    Some(Msg::Play(PlayInfo { player: pid, playone })) => {
+                        assert!(pid < 4);
+                        if playone == None {
+                            panic!("Empty PlayInfo in GameMsg Play!");
+                        } else if let Some(po) = playone {
+                            if po.play == None {
+                                panic!("Empty PlayOne in GameMsg Play!");
+                            } else if let Some(play) = po.play {
+                                *play_cnt += 1;
+                                match play {
+                                    Play::Discard(ci) => {
+                                        let c = Card::from_info(&ci);
+                                        *last = Some(c.clone());
+                                        desk.update(c.clone(), *play_cnt%4 == 1);
+                                    }
+                                    Play::Hold(ci) => {
+                                        assert!(ci.num == 0 && ci.suit == 0);
+                                        *last = None;
+                                        Self::someone_hold(players, pid);
+                                    }
+                                }
+                                *next += 1;
+                                *next %= 4;
+                                *has_last = true;
+                            }
+                        }
+                    }
+                    _ => panic!("Got GameMsg other than Msg::Play in state Gaming!"),
                 }
                 true
             }
@@ -491,3 +637,17 @@ impl<B: Backend> App<B> {
         }
     }
 }
+
+// client workflow
+// new room
+// join room -> stream
+// room status -> draw first
+// listen stream and draw
+// get a roominfo: new player join in, if all 4 join in, display ready state
+// get a whoready: someone get ready
+// get a start: server start game, and client should rpc GameStatus to get cards
+// continue listen stream
+//
+// handle when someone exits
+//
+// handle Esc of all states

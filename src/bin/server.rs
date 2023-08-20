@@ -205,7 +205,11 @@ impl Heart7 for Heart7D {
         } else {
             let ar = aroom.clone();
             let pid = roomreq.playerid;
-            let pone = playone.clone();
+            let mut pone = playone.clone();
+            if let Some(Play::Discard(ref mut ci)) = pone.play {
+                ci.num = 0;
+                ci.suit = 0;
+            }
             tokio::spawn(async move {
                 let room = ar.read().await;
                 let playinfo = PlayInfo{

@@ -10,6 +10,8 @@ use ratatui::{
     Frame
 };
 use tui_input::Input;
+use crate::game::Card;
+use crate::client::desk::*;
 
 pub fn render<B: Backend>(frame: &mut Frame<B>, appstate: &AppState) {
     // outer border
@@ -32,7 +34,11 @@ pub fn render<B: Backend>(frame: &mut Frame<B>, appstate: &AppState) {
             => wait_player(frame, players, msg, roomid),
         AppState::WaitReady {players, msg, roomid, ..}
             => wait_ready(frame, players, msg, roomid),
-        AppState::Gaming => {}
+        AppState::Gaming {
+            players, next, choose, last, cards, holds,
+            has_last, desk, roomid, button, ..
+        } => gaming(frame, players, *next, roomid, *choose, last.as_ref(), cards,
+                holds, *has_last, desk, roomid, *button),
         AppState::GameResult => {}
     }
 }
@@ -392,7 +398,22 @@ fn render_ready<B: Backend>(frame: &mut Frame<B>, a: Rect) {
     )
 }
 
-fn render_players<B: Backend>(frame: &mut Frame<B>, names: &Vec<String>, ready: Vec<bool>) {
+fn render_hold<B: Backend>(frame: &mut Frame<B>, a: Rect, num: u32) {
+    frame.render_widget(
+        Paragraph::new(format!("HOLD: {}", num))
+            .alignment(Alignment::Center)
+            .style(
+                Style::default()
+                    .fg(HOLD_NUM)
+                    .add_modifier(Modifier::BOLD)
+            ),
+        a
+    )
+}
+
+fn render_players<B: Backend>(frame: &mut Frame<B>, names: &Vec<String>,
+    ready: Vec<bool>, holds: Option<Vec<u32>>
+) {
     // myself
     let mut a = Layout::default()
         .direction(Direction::Vertical)
@@ -418,7 +439,17 @@ fn render_players<B: Backend>(frame: &mut Frame<B>, names: &Vec<String>, ready: 
     render_one_player(frame, names[0].clone(), a);
 
     // right one
-    let mut a = rect_cut_center(frame.size(), -11, 100);
+    let mut a = Layout::default()
+        .direction(Direction::Vertical)
+        .vertical_margin(1)
+        .constraints(
+            [
+                Constraint::Percentage(30),
+                Constraint::Length(11),
+                Constraint::Min(1)
+            ].as_ref()
+        )
+        .split(frame.size())[1];
     a = Layout::default()
         .direction(Direction::Horizontal)
         .horizontal_margin(1)
@@ -447,7 +478,7 @@ fn render_players<B: Backend>(frame: &mut Frame<B>, names: &Vec<String>, ready: 
         .horizontal_margin(1)
         .constraints(
             [
-                Constraint::Percentage(40),
+                Constraint::Percentage(30),
                 Constraint::Length(14),
                 Constraint::Min(1),
             ].as_ref()
@@ -456,7 +487,17 @@ fn render_players<B: Backend>(frame: &mut Frame<B>, names: &Vec<String>, ready: 
     render_one_player(frame, names[2].clone(), a);
 
     // left one
-    let mut a = rect_cut_center(frame.size(), -11, 100);
+    let mut a = Layout::default()
+        .direction(Direction::Vertical)
+        .vertical_margin(1)
+        .constraints(
+            [
+                Constraint::Percentage(30),
+                Constraint::Length(11),
+                Constraint::Min(1)
+            ].as_ref()
+        )
+        .split(frame.size())[1];
     a = Layout::default()
         .direction(Direction::Horizontal)
         .horizontal_margin(1)
@@ -510,7 +551,7 @@ fn render_players<B: Backend>(frame: &mut Frame<B>, names: &Vec<String>, ready: 
             .vertical_margin(1)
             .constraints(
                 [
-                    Constraint::Length(11),
+                    Constraint::Length(13),
                     Constraint::Min(1),
                 ].as_ref()
             )
@@ -520,7 +561,7 @@ fn render_players<B: Backend>(frame: &mut Frame<B>, names: &Vec<String>, ready: 
             .horizontal_margin(1)
             .constraints(
                 [
-                    Constraint::Percentage(50),
+                    Constraint::Percentage(40),
                     Constraint::Percentage(10),
                     Constraint::Min(1),
                 ].as_ref()
@@ -545,6 +586,84 @@ fn render_players<B: Backend>(frame: &mut Frame<B>, names: &Vec<String>, ready: 
             )
             .split(a)[1];
         render_ready(frame, a);
+    }
+
+    // hold num
+    if let Some(holds) = holds {
+        // right
+        let mut a = Layout::default()
+            .direction(Direction::Vertical)
+            .vertical_margin(1)
+            .constraints(
+                [
+                    Constraint::Percentage(30),
+                    Constraint::Length(13),
+                    Constraint::Length(3),
+                    Constraint::Min(1)
+                ].as_ref()
+            )
+            .split(frame.size())[2];
+        a = Layout::default()
+            .direction(Direction::Horizontal)
+            .horizontal_margin(1)
+            .constraints(
+                [
+                    Constraint::Min(1),
+                    Constraint::Length(16),
+                ].as_ref()
+            )
+            .split(a)[1];
+        render_hold(frame, a, holds[1]);
+
+        // top
+        let mut a = Layout::default()
+            .direction(Direction::Vertical)
+            .vertical_margin(1)
+            .constraints(
+                [
+                    Constraint::Length(13),
+                    Constraint::Min(1),
+                ].as_ref()
+            )
+            .split(frame.size())[0];
+        a = Layout::default()
+            .direction(Direction::Horizontal)
+            .horizontal_margin(1)
+            .constraints(
+                [
+                    Constraint::Percentage(40),
+                    Constraint::Percentage(10),
+                    Constraint::Min(1),
+                ].as_ref()
+            )
+            .split(a)[1];
+        a = rect_cut_center(a, -3, 100);
+        render_hold(frame, a, holds[2]);
+
+        // left
+        let mut a = Layout::default()
+            .direction(Direction::Vertical)
+            .vertical_margin(1)
+            .constraints(
+                [
+                    Constraint::Percentage(30),
+                    Constraint::Length(13),
+                    Constraint::Length(3),
+                    Constraint::Min(1)
+                ].as_ref()
+            )
+            .split(frame.size())[2];
+        a = Layout::default()
+            .direction(Direction::Horizontal)
+            .horizontal_margin(1)
+            .constraints(
+                [
+                    Constraint::Length(12),
+                    Constraint::Min(1),
+                ].as_ref()
+            )
+            .split(a)[0];
+        render_hold(frame, a, holds[3]);
     }
 }
 
@@ -579,7 +698,7 @@ fn wait_player<B: Backend>(
 {
     render_players(frame,
         players.iter().map(|p| p.0.clone()).collect::<Vec<String>>().as_ref(),
-        vec![false; 4]
+        vec![false; 4], None
     );
 
     render_center_msg(frame, msg.clone());
@@ -595,7 +714,7 @@ fn wait_ready<B: Backend>(
 {
     render_players(frame,
         players.iter().map(|p| p.0.clone()).collect::<Vec<String>>().as_ref(),
-        players.iter().map(|p| p.2).collect::<Vec<bool>>()
+        players.iter().map(|p| p.2).collect::<Vec<bool>>(), None
     );
 
     render_center_msg(frame, msg.clone());
@@ -605,4 +724,54 @@ fn wait_ready<B: Backend>(
     if !players[0].2 {
         render_ready_button(frame, true);
     }
+}
+
+fn render_desk<B: Backend>(frame: &mut Frame<B>, desk: &Desk) {
+
+}
+
+fn render_my_cards<B: Backend>(frame: &mut Frame<B>, cards: &Vec<Card>) {
+
+}
+
+fn render_next<B: Backend>(frame: &mut Frame<B>, next: usize) {
+
+}
+
+fn render_last<B: Backend>(frame: &mut Frame<B>, last: Option<&Card>) {
+
+}
+
+fn render_my_holds<B: Backend>(frame: &mut Frame<B>, holds: &Vec<Card>) {
+
+}
+
+fn render_game_button<B: Backend>(frame: &mut Frame<B>, button: u32) {
+
+}
+
+fn gaming<B: Backend>(
+    frame: &mut Frame<B>, players: &Vec<(String, usize, u32)>, next: usize, roomid: &String,
+    choose: usize, last: Option<&Card>, cards: &Vec<Card>, holds: &Vec<Card>,
+    has_last: bool, desk: &Desk, roomif: &String, button: u32
+) {
+    render_players(frame,
+        players.iter().map(|p| p.0.clone()).collect::<Vec<String>>().as_ref(),
+        vec![false; 4], Some(players.iter().map(|p| p.2).collect())
+    );
+
+    render_game_info(frame, roomid.clone());
+
+    render_desk(frame, desk);
+
+    render_my_cards(frame, cards);
+
+    render_next(frame, next);
+    if has_last {
+        render_last(frame, last);
+    }
+
+    render_my_holds(frame, holds);
+
+    render_game_button(frame, button);
 }

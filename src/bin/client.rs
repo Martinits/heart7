@@ -31,7 +31,7 @@ async fn main() -> AppResult<()> {
     let tui = Tui::new(terminal);
 
     let (tx, rx) = mpsc::channel(DEFAULT_CHANNEL_SIZE);
-    let mut app = App::new(tui, &cancel, tx.clone(), rx);
+    let mut app = App::new(tui, &cancel, tx.clone(), rx).await;
     app.init()?;
 
     let event = EventHandler::new();

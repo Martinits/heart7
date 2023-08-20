@@ -21,3 +21,5 @@ pub const NAME_DIM:              Color = Color::Rgb(0xE0, 0xD8, 0xB0);
 pub const NORMAL_DIM:            Color = Color::Rgb(0xB7, 0xCA, 0xDB);
 
 pub const READY:                 Color = Color::Rgb(0x95, 0xCD, 0x41);
+
+pub const HOLD_NUM:              Color = Color::Rgb(0xBB, 0x37, 0x1A);

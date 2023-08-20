@@ -8,7 +8,7 @@ pub struct Game {
     ready: bool,
 }
 
-#[derive(Debug, Default, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Default, Clone, PartialEq, Eq, Hash, Ord, PartialOrd)]
 pub struct Card {
     pub suit: CardSuit,
     pub num: u32,

@@ -9,8 +9,8 @@ use tokio_util::sync::CancellationToken;
 
 #[derive(Clone)]
 pub struct Client {
-    c: Heart7Client<Channel>,
-    addr: String,
+    pub c: Heart7Client<Channel>,
+    pub addr: String,
 }
 
 pub type GameStream = Streaming<GameMsg>;
@@ -103,6 +103,39 @@ impl Client {
         });
 
         Ok(self.c.game_ready(request).await?.into_inner())
+    }
+
+    pub async fn game_status(&mut self, pid: u32, roomid: String) -> AppResult<GameInfo> {
+        let request = Request::new(RoomReq{
+            playerid: pid,
+            roomid
+        });
+
+        Ok(self.c.game_status(request).await?.into_inner())
+    }
+
+    pub async fn play_card(&mut self, pid: u32, roomid: String, play: Play) -> AppResult<()> {
+        let roomreq = RoomReq{
+            playerid: pid,
+            roomid
+        };
+        let request = Request::new(PlayReq{
+            roomreq: Some(roomreq),
+            playone: Some(PlayOne{
+                play: Some(play)
+            })
+        });
+
+        let r = self.c.play_card(request).await?.into_inner();
+        if r.success {
+            assert!(r.msg == "Ok");
+            Ok(())
+        } else {
+            Err(Box::new(Status::new(
+                Code::Internal,
+                format!("Server response false when playing card, {}", r.msg)
+            )))
+        }
     }
 }
 
