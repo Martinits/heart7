@@ -66,6 +66,7 @@ impl Heart7 for Heart7D {
                 let msg = GameMsg {
                     msg: Some(Msg::RoomInfo(room.get_room_info().unwrap()))
                 };
+                info!("Sending GameMsg: {:?}", msg);
                 room.send_gamemsg(msg);
             });
         }
@@ -107,6 +108,7 @@ impl Heart7 for Heart7D {
                 let msg = GameMsg {
                     msg: Some(Msg::WhoReady(request.get_ref().playerid))
                 };
+                info!("Sending GameMsg: {:?}", msg);
                 room.send_gamemsg(msg);
             });
         }
@@ -197,6 +199,7 @@ impl Heart7 for Heart7D {
                 let msg = GameMsg {
                     msg: Some(Msg::Endgame(res)),
                 };
+                info!("Sending GameMsg: {:?}", msg);
                 room.send_gamemsg(msg);
             });
         } else {
@@ -212,6 +215,7 @@ impl Heart7 for Heart7D {
                 let msg = GameMsg {
                     msg: Some(Msg::Play(playinfo)),
                 };
+                info!("Sending GameMsg: {:?}", msg);
                 room.send_gamemsg(msg);
             });
         }
