@@ -122,11 +122,12 @@ message GameResult {
 
 message GameMsg {
         oneof msg {
-                RoomInfo room_info = 1;
-                uint32 who_ready = 2;
-                uint32 start = 3;
-                PlayInfo play = 4;
-                GameResult endgame = 5;
+                bool init_msg = 1;
+                RoomInfo room_info = 2;
+                uint32 who_ready = 3;
+                uint32 start = 4;
+                PlayInfo play = 5;
+                GameResult endgame = 6;
         }
 }
 

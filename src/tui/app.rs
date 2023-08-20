@@ -1,6 +1,6 @@
 use std::error::Error;
 use crate::{*, heart7_client::*};
-use crate::client::rpc::{Client, GameStream};
+use crate::client::rpc::{self, Client};
 use super::ui;
 use tokio::sync::mpsc;
 use tokio_util::sync::CancellationToken;
@@ -38,11 +38,16 @@ pub enum AppState {
     },
     WaitPlayer {
         client: Client,
-        name: String,
+        players: Vec<(String, usize, bool)>,
         msg: String,
-        stream: GameStream,
+        roomid: String,
     },
-    WaitReady,
+    WaitReady {
+        client: Client,
+        players: Vec<(String, usize, bool)>,
+        msg: String,
+        roomid: String,
+    },
     Gaming,
     GameResult,
     // ExitMenu(Box<Self>),
@@ -77,6 +82,7 @@ pub enum Action {
     Backspace,
     Delete,
     ServerConnectResult(Result<Client, String>),
+    StreamMsg(GameMsg),
 }
 
 pub struct App<B: Backend> {
@@ -137,6 +143,8 @@ impl<B: Backend> App<B> {
                             Action::Delete => self.handle_del(false),
                             Action::ServerConnectResult(r)
                                 => self.handle_server_connect_result(r),
+                            Action::StreamMsg(msg)
+                                => self.handle_stream_msg(msg).await,
                         }
                     }
                 }
@@ -222,12 +230,35 @@ impl<B: Backend> App<B> {
                 info!("Joining room {}", input.value());
                 match c.join_room(name.clone(), input.value().into()).await {
                     Ok(stream) => {
-                        info!("Join room {}, enter WaitPlayer state", input.value());
-                        self.state = AppState::WaitPlayer {
-                            name: input.value().into(),
-                            client: c.clone(),
-                            msg: "Waiting for other players......".into(),
-                            stream,
+                        // spawn stream listerning task
+                        info!("Spawning GameStream listener...");
+                        Client::spawn_stream_listener(stream, &self.cancel, &self.tx);
+                        info!("Querying RoomStatus...");
+                        match c.room_status(input.value().into()).await {
+                            Ok(rs) => match rs.state {
+                                Some(State::NotFull(_)) => {
+                                    info!("Join room {}, enter WaitPlayer state", input.value());
+                                    debug!("converting after join room");
+                                    self.state = AppState::WaitPlayer {
+                                        players: rpc::room_info_to_players(name, &rs),
+                                        client: c.clone(),
+                                        roomid: input.value().into(),
+                                        msg: "Waiting for other players to join room......".into(),
+                                    };
+                                }
+                                Some(State::WaitReady(_)) => {
+                                    info!("Join room {}, enter WaitReady state", input.value());
+                                    debug!("converting after join room to waitready");
+                                    self.state = AppState::WaitReady {
+                                        players: rpc::room_info_to_players(name, &rs),
+                                        client: c.clone(),
+                                        roomid: input.value().into(),
+                                        msg: "Please press ENTER to get ready!".into(),
+                                    }
+                                }
+                                _ => panic!("Unexpected RoomStatus after JoinRoom!"),
+                            }
+                            Err(s) => panic!("Failed to get RoomStatus after JoinRoom: {}", s),
                         }
                     }
                     Err(s) => {
@@ -235,6 +266,18 @@ impl<B: Backend> App<B> {
                                         {}\n\
                                         Please retry:", s);
                     }
+                }
+                true
+            }
+            AppState::WaitReady {
+                ref mut client, ref mut players, ref roomid, ref mut msg
+            } if !players[0].2 => {
+                match client.game_ready(players[0].1 as u32, roomid.clone()).await {
+                    Ok(_) => {
+                        players[0].2 = true;
+                        *msg = "Waiting for other players to get ready......".into();
+                    }
+                    Err(s) => panic!("Failed to GetReady: {}", s),
                 }
                 true
             }
@@ -397,6 +440,58 @@ impl<B: Backend> App<B> {
                     warn!("AppState is not connecting, drop server connecting result!");
                     false
                 }
+            }
+            _ => false
+        }
+    }
+
+    fn someone_get_ready(players: &mut Vec<(String, usize, bool)>, who: usize) {
+        if let Some(p) = players.iter_mut().find(|p| p.1 == who) {
+            p.2 = true;
+        } else {
+            panic!("Player ID {} doesn't exists!", who);
+        }
+    }
+
+    async fn handle_stream_msg(&mut self, msg: GameMsg) -> bool {
+        match self.state {
+            AppState::WaitPlayer {ref mut client, ref mut players, ref roomid, ..} => {
+                match msg.msg {
+                    Some(Msg::InitMsg(check)) => { assert!(check); }
+                    Some(Msg::RoomInfo(ri)) => {
+                        debug!("converting in waitplayer");
+                        *players = rpc::room_info_to_players(&players[0].0, &ri);
+                        if let Some(State::WaitReady(_)) =  ri.state {
+                            info!("Stream got RoomInfo: WaitReady, enter WaitReady state");
+                            self.state = AppState::WaitReady{
+                                client: client.clone(),
+                                players: players.clone(),
+                                msg: "Please press ENTER to get ready!".into(),
+                                roomid: roomid.clone(),
+                            }
+                        }
+                    }
+                    None => panic!("Got empty GameMsg!"),
+                    _ => panic!("Got GameMsg other than RoomInfo in state WaitPlayer!"),
+                }
+                true
+            }
+            AppState::WaitReady {ref mut players, ..} => {
+                match msg.msg {
+                    Some(Msg::InitMsg(check)) => { assert!(check); }
+                    Some(Msg::RoomInfo(ri)) => {
+                        debug!("converting in waitready");
+                        *players = rpc::room_info_to_players(&players[0].0, &ri);
+                    }
+                    Some(Msg::WhoReady(who)) => {
+                        Self::someone_get_ready(players, who as usize);
+                    }
+                    Some(Msg::Start(next)) => {
+                    }
+                    None => panic!("Got empty GameMsg!"),
+                    _ => panic!("Got GameMsg other than RoomInfo in state WaitPlayer!"),
+                }
+                true
             }
             _ => false
         }

@@ -5,6 +5,7 @@ use tui::app::Action;
 use std::net::Ipv4Addr;
 use crate::tui::app::AppResult;
 use tonic::codec::Streaming;
+use tokio_util::sync::CancellationToken;
 
 #[derive(Clone)]
 pub struct Client {
@@ -59,4 +60,68 @@ impl Client {
 
         Ok(self.c.join_room(request).await?.into_inner())
     }
+
+    pub fn spawn_stream_listener(
+        mut stream: GameStream,
+        cancel: &CancellationToken,
+        tx: &mpsc::Sender<Action>)
+    {
+        let txc = tx.clone();
+        let cancel = cancel.clone();
+        tokio::spawn(async move {
+            loop {
+                tokio::select!{
+                    _ = cancel.cancelled() => {
+                        break;
+                    }
+                    maybe_msg = stream.message() => {
+                        match maybe_msg {
+                            Err(s) => panic!("GameStream error: {}", s),
+                            Ok(None) => panic!("GameStream closed!"),
+                            Ok(Some(msg)) => txc.send(Action::StreamMsg(msg)).await
+                                .expect("Send Action::StreamMsg to app")
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    pub async fn room_status(&mut self, roomid: String) -> AppResult<RoomInfo> {
+        let request = Request::new(RoomReq{
+            playerid: 0,
+            roomid
+        });
+
+        Ok(self.c.room_status(request).await?.into_inner())
+    }
+
+    pub async fn game_ready(&mut self, pid: u32, roomid: String) -> AppResult<GameReadyReply> {
+        let request = Request::new(RoomReq{
+            playerid: pid,
+            roomid
+        });
+
+        Ok(self.c.game_ready(request).await?.into_inner())
+    }
+}
+
+// used for WaitPlayers and WaitReady state
+pub fn room_info_to_players(myname: &String, ri: &RoomInfo) -> Vec<(String, usize, bool)> {
+    let mut players = vec![("".into(), 0, false); 4];
+    for i in 0..ri.players.len() {
+        players[i].0 = ri.players[i].name.clone();
+        players[i].1 = i;
+    }
+    if let Some(State::WaitReady(ref rl)) = ri.state {
+        for i in &rl.l {
+            players[*i as usize].2 = true;
+        }
+    }
+    if let Some(idx) = ri.players.iter().position(|p| p.name == *myname) {
+        players.rotate_left(idx)
+    } else {
+        panic!("Cannot find myself in RoomInfo!");
+    }
+    players
 }

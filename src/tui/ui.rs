@@ -28,9 +28,10 @@ pub fn render<B: Backend>(frame: &mut Frame<B>, appstate: &AppState) {
             => ask_name(frame, input, msg, button, is_input),
         AppState::JoinRoom {input, msg, ..}
             => join_room(frame, input, msg),
-        AppState::WaitPlayer {name, msg, ..}
-            => wait_player(frame, name, msg),
-        AppState::WaitReady => {}
+        AppState::WaitPlayer {players, msg, roomid, ..}
+            => wait_player(frame, players, msg, roomid),
+        AppState::WaitReady {players, msg, roomid, ..}
+            => wait_ready(frame, players, msg, roomid),
         AppState::Gaming => {}
         AppState::GameResult => {}
     }
@@ -314,6 +315,173 @@ fn join_room<B: Backend>(frame: &mut Frame<B>, input: &Input, msg: &String) {
     frame.render_widget(get_button("Join Room!", true), button_rect);
 }
 
-fn wait_player<B: Backend>(frame: &mut Frame<B>, name: &String, msg: &String) {
-    
+fn render_game_info<B: Backend>(frame: &mut Frame<B>, roomid: String) {
+    frame.render_widget(
+        Paragraph::new(format!("ROOM-ID: {}", roomid))
+            .alignment(Alignment::Left)
+            .style(Style::default().fg(NORMAL_DIM).add_modifier(Modifier::DIM)),
+        Layout::default()
+            .margin(1)
+            .direction(Direction::Vertical)
+            .constraints(
+                [
+                    Constraint::Length(1),
+                    Constraint::Min(1),
+                ].as_ref()
+            )
+            .split(frame.size())[0]
+    )
+}
+
+fn render_one_player<B:Backend>(frame: &mut Frame<B>, name: String, a: Rect){
+    // card sign
+    let (width, height) = (a.width - 2, a.height - 2);
+    let blocks = [
+        Rect::new(a.x + 2, a.y,     width, height),
+        Rect::new(a.x + 1, a.y + 1, width, height),
+        Rect::new(a.x    , a.y + 2, width, height),
+    ];
+    for b in blocks.into_iter() {
+        frame.render_widget(Clear, b);
+        frame.render_widget(
+            Block::default()
+                .borders(Borders::ALL)
+                .border_type(BorderType::Rounded)
+                .style(Style::default().fg(CARD_SIGN)),
+            b
+        );
+    }
+
+    // name
+    let (name, lines) = if name.len() > 9 {
+        (format!("{}\n...", &name[0..10]), 2)
+    } else {
+        (name, 1)
+    };
+    frame.render_widget(
+        Paragraph::new(
+            Text::from(
+                if name == "" {
+                    Span::styled(
+                        "???",
+                        Style::default().bold().fg(NAME_DIM).add_modifier(Modifier::DIM)
+                    )
+                } else {
+                    Span::styled(
+                        name,
+                        Style::default().bold().fg(NAME)
+                    )
+                }
+            )
+        )
+        .alignment(Alignment::Center),
+        rect_cut_center(blocks[2].inner(&Margin{vertical: 1, horizontal: 1}), -lines, 100)
+    )
+}
+
+fn render_players<B: Backend>(frame: &mut Frame<B>, names: &Vec<String>, ready: Vec<bool>) {
+    // myself
+    let mut a = Layout::default()
+        .direction(Direction::Vertical)
+        .vertical_margin(1)
+        .constraints(
+            [
+                Constraint::Min(1),
+                Constraint::Length(11),
+            ].as_ref()
+        )
+        .split(frame.size())[1];
+    a = Layout::default()
+        .direction(Direction::Horizontal)
+        .horizontal_margin(1)
+        .constraints(
+            [
+                Constraint::Percentage(17),
+                Constraint::Length(14),
+                Constraint::Min(1),
+            ].as_ref()
+        )
+        .split(a)[1];
+    render_one_player(frame, names[0].clone(), a);
+
+    // right one
+    let mut a = rect_cut_center(frame.size(), -11, 100);
+    a = Layout::default()
+        .direction(Direction::Horizontal)
+        .horizontal_margin(1)
+        .constraints(
+            [
+                Constraint::Min(1),
+                Constraint::Length(14),
+            ].as_ref()
+        )
+        .split(a)[1];
+    render_one_player(frame, names[1].clone(), a);
+
+    // top one
+    let mut a = Layout::default()
+        .direction(Direction::Vertical)
+        .vertical_margin(1)
+        .constraints(
+            [
+                Constraint::Length(11),
+                Constraint::Min(1),
+            ].as_ref()
+        )
+        .split(frame.size())[0];
+    a = rect_cut_center(a, 100, -14);
+    render_one_player(frame, names[2].clone(), a);
+
+    // left one
+    let mut a = rect_cut_center(frame.size(), -11, 100);
+    a = Layout::default()
+        .direction(Direction::Horizontal)
+        .horizontal_margin(1)
+        .constraints(
+            [
+                Constraint::Length(14),
+                Constraint::Min(1),
+            ].as_ref()
+        )
+        .split(a)[0];
+    render_one_player(frame, names[3].clone(), a);
+
+    // ready
+}
+
+fn render_center_msg<B: Backend>(frame: &mut Frame<B>, msg: String) {
+    frame.render_widget(
+        Paragraph::new(msg)
+            .style(Style::default().fg(CENTER_MSG).add_modifier(Modifier::BOLD))
+            .alignment(Alignment::Center),
+        rect_cut_center(frame.size(), -1, 50)
+    )
+}
+
+fn wait_player<B: Backend>(
+    frame: &mut Frame<B>, players: &Vec<(String, usize, bool)>,
+    msg: &String, roomid: &String)
+{
+    render_players(frame,
+        players.iter().map(|p| p.0.clone()).collect::<Vec<String>>().as_ref(),
+        vec![false; 4]
+    );
+
+    render_center_msg(frame, msg.clone());
+
+    render_game_info(frame, roomid.clone());
+}
+
+fn wait_ready<B: Backend>(
+    frame: &mut Frame<B>, players: &Vec<(String, usize, bool)>,
+    msg: &String, roomid: &String)
+{
+    render_players(frame,
+        players.iter().map(|p| p.0.clone()).collect::<Vec<String>>().as_ref(),
+        players.iter().map(|p| p.2).collect::<Vec<bool>>()
+    );
+
+    render_center_msg(frame, msg.clone());
+
+    render_game_info(frame, roomid.clone());
 }

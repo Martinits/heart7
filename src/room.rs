@@ -69,7 +69,7 @@ impl RoomManager {
         }
 
         let initmsg = GameMsg {
-            msg: Some(Msg::RoomInfo(r.get_room_info()?))
+            msg: Some(Msg::InitMsg(true))
         };
 
         let (tx, rx) = watch::channel(Ok(initmsg));
@@ -229,9 +229,11 @@ impl Room {
 
         self.state = RoomState::Gaming;
 
-        self.send_gamemsg(GameMsg {
+        let msg = GameMsg {
             msg: Some(Msg::Start(self.next as u32))
-        });
+        };
+        info!("Sending GameMsg: {:?}", msg);
+        self.send_gamemsg(msg);
     }
 
     pub fn get_game_info(&self, pid: u32) -> RPCResult<GameInfo> {
