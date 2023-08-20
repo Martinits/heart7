@@ -15,6 +15,8 @@ pub type RPCResult<T> = Result<T, tonic::Status>;
 
 pub const DEFAULT_PORT: u16 = 20007;
 
+pub const DEFAULT_CHANNEL_SIZE: usize = 64;
+
 pub mod tui;
 
 pub mod client;

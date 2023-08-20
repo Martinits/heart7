@@ -30,13 +30,13 @@ async fn main() -> AppResult<()> {
     let terminal = Terminal::new(backend)?;
     let tui = Tui::new(terminal);
 
-    let (tx, rx) = mpsc::channel(tui::DEFAULT_CHANNEL_SIZE);
+    let (tx, rx) = mpsc::channel(DEFAULT_CHANNEL_SIZE);
     let mut app = App::new(tui, &cancel, tx.clone(), rx);
     app.init()?;
 
     let event = EventHandler::new();
     info!("Starting event handler...");
-    event.run(tui::DEFAULT_CHANNEL_SIZE, &cancel, tx)?;
+    event.run(DEFAULT_CHANNEL_SIZE, &cancel, tx)?;
 
     info!("Starting main task...");
     // main task: state manager + render task + rpc client

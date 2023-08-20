@@ -1,5 +1,5 @@
 use std::error::Error;
-use crate::{*, heart7_client::*};
+use crate::*;
 use crate::client::rpc::{self, Client};
 use super::ui;
 use tokio::sync::mpsc;
@@ -238,7 +238,6 @@ impl<B: Backend> App<B> {
                             Ok(rs) => match rs.state {
                                 Some(State::NotFull(_)) => {
                                     info!("Join room {}, enter WaitPlayer state", input.value());
-                                    debug!("converting after join room");
                                     self.state = AppState::WaitPlayer {
                                         players: rpc::room_info_to_players(name, &rs),
                                         client: c.clone(),
@@ -248,7 +247,6 @@ impl<B: Backend> App<B> {
                                 }
                                 Some(State::WaitReady(_)) => {
                                     info!("Join room {}, enter WaitReady state", input.value());
-                                    debug!("converting after join room to waitready");
                                     self.state = AppState::WaitReady {
                                         players: rpc::room_info_to_players(name, &rs),
                                         client: c.clone(),
@@ -457,9 +455,7 @@ impl<B: Backend> App<B> {
         match self.state {
             AppState::WaitPlayer {ref mut client, ref mut players, ref roomid, ..} => {
                 match msg.msg {
-                    Some(Msg::InitMsg(check)) => { assert!(check); }
                     Some(Msg::RoomInfo(ri)) => {
-                        debug!("converting in waitplayer");
                         *players = rpc::room_info_to_players(&players[0].0, &ri);
                         if let Some(State::WaitReady(_)) =  ri.state {
                             info!("Stream got RoomInfo: WaitReady, enter WaitReady state");
@@ -478,9 +474,7 @@ impl<B: Backend> App<B> {
             }
             AppState::WaitReady {ref mut players, ..} => {
                 match msg.msg {
-                    Some(Msg::InitMsg(check)) => { assert!(check); }
                     Some(Msg::RoomInfo(ri)) => {
-                        debug!("converting in waitready");
                         *players = rpc::room_info_to_players(&players[0].0, &ri);
                     }
                     Some(Msg::WhoReady(who)) => {

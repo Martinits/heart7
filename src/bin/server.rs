@@ -1,4 +1,4 @@
-use tokio_stream::wrappers::WatchStream;
+use tokio_stream::wrappers::ReceiverStream;
 use heart7::room::RoomManager;
 use heart7::{*, heart7_server::*};
 use std::error::Error;
@@ -31,7 +31,7 @@ impl Heart7 for Heart7D {
         Ok(Response::new(reply))
     }
 
-    type JoinRoomStream = WatchStream<Result<GameMsg, Status>>;
+    type JoinRoomStream = ReceiverStream<Result<GameMsg, Status>>;
 
     async fn join_room(
         &self,
@@ -57,7 +57,7 @@ impl Heart7 for Heart7D {
             ))
         }
 
-        room.add_player(&player)?;
+        let rx = room.add_player(&player)?;
 
         {
             let ar = aroom.clone();
@@ -67,12 +67,12 @@ impl Heart7 for Heart7D {
                     msg: Some(Msg::RoomInfo(room.get_room_info().unwrap()))
                 };
                 info!("Sending GameMsg: {:?}", msg);
-                room.send_gamemsg(msg);
+                room.send_gamemsg(msg).await;
             });
         }
 
-        info!("JoinRoom response: WatchStream");
-        Ok(Response::new(WatchStream::new(room.get_gamemsg_rx()?)))
+        info!("JoinRoom response: ReceiverStream");
+        Ok(Response::new(ReceiverStream::new(rx)))
     }
 
     async fn room_status(
@@ -109,7 +109,7 @@ impl Heart7 for Heart7D {
                     msg: Some(Msg::WhoReady(request.get_ref().playerid))
                 };
                 info!("Sending GameMsg: {:?}", msg);
-                room.send_gamemsg(msg);
+                room.send_gamemsg(msg).await;
             });
         }
 
@@ -117,7 +117,7 @@ impl Heart7 for Heart7D {
             let ar = aroom.clone();
             tokio::spawn(async move {
                 let mut room = ar.write().await;
-                room.start_game();
+                room.start_game().await;
             });
         }
 
@@ -127,22 +127,22 @@ impl Heart7 for Heart7D {
         Ok(Response::new(reply))
     }
 
-    type GameMessageStream = WatchStream<Result<GameMsg, Status>>;
-
-    async fn game_message(
-        &self,
-        request: Request<RoomReq>,
-    ) -> Result<Response<Self::GameMessageStream>, Status> {
-
-        info!("Got GameMessage request: {:?}", request);
-
-        let aroom = self.rm.get_room(&request.get_ref().roomid).await?;
-
-        let rx = aroom.read().await.get_gamemsg_rx()?;
-
-        info!("GameMessage response: WatchStream");
-        Ok(Response::new(WatchStream::new(rx)))
-    }
+    // type GameMessageStream = WatchStream<Result<GameMsg, Status>>;
+    //
+    // async fn game_message(
+    //     &self,
+    //     request: Request<RoomReq>,
+    // ) -> Result<Response<Self::GameMessageStream>, Status> {
+    //
+    //     info!("Got GameMessage request: {:?}", request);
+    //
+    //     let aroom = self.rm.get_room(&request.get_ref().roomid).await?;
+    //
+    //     let rx = aroom.read().await.get_gamemsg_rx()?;
+    //
+    //     info!("GameMessage response: WatchStream");
+    //     Ok(Response::new(WatchStream::new(rx)))
+    // }
 
     async fn game_status(
         &self,
@@ -200,7 +200,7 @@ impl Heart7 for Heart7D {
                     msg: Some(Msg::Endgame(res)),
                 };
                 info!("Sending GameMsg: {:?}", msg);
-                room.send_gamemsg(msg);
+                room.send_gamemsg(msg).await;
             });
         } else {
             let ar = aroom.clone();
@@ -216,7 +216,7 @@ impl Heart7 for Heart7D {
                     msg: Some(Msg::Play(playinfo)),
                 };
                 info!("Sending GameMsg: {:?}", msg);
-                room.send_gamemsg(msg);
+                room.send_gamemsg(msg).await;
             });
         }
 

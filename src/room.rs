@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use tokio::sync::RwLock;
 use std::sync::Arc;
-use tokio::sync::watch::{self, Sender, Receiver};
+use tokio::sync::mpsc::{self, Sender, Receiver};
 use crate::{*, game::*, desk::*};
 use rand::{thread_rng, seq::SliceRandom};
 
@@ -20,8 +20,6 @@ pub struct Room {
     state: RoomState,
     ready_cnt: u32,
     id: String,
-    gamemsg_tx: Option<MsgTX>,
-    gamemsg_rx: Option<MsgRX>,
     next: usize,
     desk: Desk,
     thisround: Vec<Card>,
@@ -36,10 +34,10 @@ enum RoomState {
     EndGame,
 }
 
-#[derive(Debug, Default, Clone)]
+#[derive(Debug)]
 struct Player {
     name: String,
-    // gamemsg_rx: Option<Receiver<Result<GameMsg, Status>>>,
+    gamemsg_tx: MsgTX,
     game: Game,
 }
 
@@ -47,12 +45,10 @@ impl RoomManager {
     pub async fn new_room(&self) -> RPCResult<ARoom> {
         let id = uuid::Uuid::new_v4().to_string();
 
-        let mut r = Room {
+        let r = Room {
             state: RoomState::NotFull,
             players: Vec::new(),
             id: id.clone(),
-            gamemsg_tx: None,
-            gamemsg_rx: None,
             ready_cnt: 0,
             next: 0,
             ..Default::default()
@@ -67,15 +63,6 @@ impl RoomManager {
                 format!("Room {} already exists!", id),
             ));
         }
-
-        let initmsg = GameMsg {
-            msg: Some(Msg::InitMsg(true))
-        };
-
-        let (tx, rx) = watch::channel(Ok(initmsg));
-
-        r.gamemsg_tx = Some(tx);
-        r.gamemsg_rx = Some(rx);
 
         let ar = Arc::new(RwLock::new(r));
         rooms.insert(id.clone(), ar.clone());
@@ -137,7 +124,7 @@ impl Room {
         })
     }
 
-    pub fn add_player(&mut self, p: &PlayerInfo) -> RPCResult<usize> {
+    pub fn add_player(&mut self, p: &PlayerInfo) -> RPCResult<super::room::MsgRX> {
         if self.state != RoomState::NotFull {
             return Err(Status::new(
                 Code::ResourceExhausted,
@@ -145,25 +132,26 @@ impl Room {
             ));
         }
 
+        let (tx, rx) = mpsc::channel(DEFAULT_CHANNEL_SIZE);
+
         self.players.push(Player {
             name: p.name.clone(),
             game: Default::default(),
+            gamemsg_tx: tx,
         });
 
         if self.players.len() == 4 {
             self.state = RoomState::WaitReady;
         }
 
-        Ok(self.players.len() - 1)
+        Ok(rx)
     }
 
-    pub fn send_gamemsg(&self, msg: GameMsg) {
-        if let Some(tx) = self.gamemsg_tx.as_ref() {
-            if let Err(e) = tx.send(Ok(msg)) {
+    pub async fn send_gamemsg(&self, msg: GameMsg) {
+        for p in self.players.iter() {
+            if let Err(e) = p.gamemsg_tx.send(Ok(msg.clone())).await {
                 error!("Cannot send gamemsg: {:?}", e);
             }
-        } else {
-            error!("No channel created for this room");
         }
     }
 
@@ -187,18 +175,18 @@ impl Room {
         }
     }
 
-    pub fn get_gamemsg_rx(&self) -> RPCResult<MsgRX> {
-        if let Some(ref rx) = self.gamemsg_rx {
-            Ok(rx.clone())
-        } else {
-            Err(Status::new(
-                Code::Internal,
-                "No channel created for this room"
-            ))
-        }
-    }
+    // pub fn get_gamemsg_rx(&self) -> RPCResult<MsgRX> {
+    //     if let Some(ref rx) = self.gamemsg_rx {
+    //         Ok(rx.clone())
+    //     } else {
+    //         Err(Status::new(
+    //             Code::Internal,
+    //             "No channel created for this room"
+    //         ))
+    //     }
+    // }
 
-    pub fn start_game(&mut self) {
+    pub async fn start_game(&mut self) {
         if self.state != RoomState::WaitReady {
             error!("Room {} is not full or game has begun!", &self.id);
         } else if self.ready_cnt != 4 {
@@ -233,7 +221,7 @@ impl Room {
             msg: Some(Msg::Start(self.next as u32))
         };
         info!("Sending GameMsg: {:?}", msg);
-        self.send_gamemsg(msg);
+        self.send_gamemsg(msg).await;
     }
 
     pub fn get_game_info(&self, pid: u32) -> RPCResult<GameInfo> {

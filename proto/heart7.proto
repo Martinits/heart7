@@ -7,7 +7,7 @@ service Heart7 {
         rpc JoinRoom (JoinRoomReq) returns (stream GameMsg);
         rpc RoomStatus (RoomReq) returns (RoomInfo);
         rpc GameReady (RoomReq) returns (GameReadyReply);
-        rpc GameMessage (RoomReq) returns (stream GameMsg);
+        // rpc GameMessage (RoomReq) returns (stream GameMsg);
         rpc GameStatus (RoomReq) returns (GameInfo);
         rpc PlayCard (PlayReq) returns (CommonReply);
         rpc ExitGame (RoomReq) returns (CommonReply);
@@ -122,7 +122,6 @@ message GameResult {
 
 message GameMsg {
         oneof msg {
-                bool init_msg = 1;
                 RoomInfo room_info = 2;
                 uint32 who_ready = 3;
                 uint32 start = 4;
