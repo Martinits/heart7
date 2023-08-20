@@ -134,14 +134,14 @@ fn get_button(cmd: &str, selected: bool) -> Paragraph {
                 .border_type(BorderType::Rounded)
         )
         .style(
-            Style::default()
-                .add_modifier(
-                    match selected {
-                        true => Modifier::BOLD,
-                        false => Modifier::DIM,
-                    }
-                )
-                .fg(BUTTON)
+            match selected {
+                true => Style::default()
+                    .add_modifier(Modifier::BOLD)
+                    .fg(BUTTON),
+                false => Style::default()
+                    .add_modifier(Modifier::DIM)
+                    .fg(BUTTON_DIM),
+            }
         )
 }
 
@@ -379,6 +379,19 @@ fn render_one_player<B:Backend>(frame: &mut Frame<B>, name: String, a: Rect){
     )
 }
 
+fn render_ready<B: Backend>(frame: &mut Frame<B>, a: Rect) {
+    frame.render_widget(
+        Paragraph::new("READY!")
+            .alignment(Alignment::Center)
+            .style(
+                Style::default()
+                    .fg(READY)
+                    .add_modifier(Modifier::BOLD)
+            ),
+        a
+    )
+}
+
 fn render_players<B: Backend>(frame: &mut Frame<B>, names: &Vec<String>, ready: Vec<bool>) {
     // myself
     let mut a = Layout::default()
@@ -429,7 +442,17 @@ fn render_players<B: Backend>(frame: &mut Frame<B>, names: &Vec<String>, ready: 
             ].as_ref()
         )
         .split(frame.size())[0];
-    a = rect_cut_center(a, 100, -14);
+    a = Layout::default()
+        .direction(Direction::Horizontal)
+        .horizontal_margin(1)
+        .constraints(
+            [
+                Constraint::Percentage(40),
+                Constraint::Length(14),
+                Constraint::Min(1),
+            ].as_ref()
+        )
+        .split(a)[1];
     render_one_player(frame, names[2].clone(), a);
 
     // left one
@@ -447,6 +470,82 @@ fn render_players<B: Backend>(frame: &mut Frame<B>, names: &Vec<String>, ready: 
     render_one_player(frame, names[3].clone(), a);
 
     // ready
+    // myself
+    if ready[0] {
+        let mut a = Layout::default()
+            .direction(Direction::Vertical)
+            .vertical_margin(1)
+            .constraints(
+                [
+                    Constraint::Min(1),
+                    Constraint::Length(11),
+                ].as_ref()
+            )
+            .split(frame.size())[1];
+        a = rect_cut_center(a, -3, 20);
+        render_ready(frame, a);
+    }
+
+    // right one
+    if ready[1] {
+        let mut a = rect_cut_center(frame.size(), -3, 100);
+        a = Layout::default()
+            .direction(Direction::Horizontal)
+            .horizontal_margin(1)
+            .constraints(
+                [
+                    Constraint::Min(1),
+                    Constraint::Percentage(10),
+                    Constraint::Length(20),
+                ].as_ref()
+            )
+            .split(a)[1];
+        render_ready(frame, a);
+    }
+
+    // top one
+    if ready[2] {
+        let mut a = Layout::default()
+            .direction(Direction::Vertical)
+            .vertical_margin(1)
+            .constraints(
+                [
+                    Constraint::Length(11),
+                    Constraint::Min(1),
+                ].as_ref()
+            )
+            .split(frame.size())[0];
+        a = Layout::default()
+            .direction(Direction::Horizontal)
+            .horizontal_margin(1)
+            .constraints(
+                [
+                    Constraint::Percentage(50),
+                    Constraint::Percentage(10),
+                    Constraint::Min(1),
+                ].as_ref()
+            )
+            .split(a)[1];
+        a = rect_cut_center(a, -3, 100);
+        render_ready(frame, a);
+    }
+
+    // left one
+    if ready[3] {
+        let mut a = rect_cut_center(frame.size(), -3, 100);
+        a = Layout::default()
+            .direction(Direction::Horizontal)
+            .horizontal_margin(1)
+            .constraints(
+                [
+                    Constraint::Length(20),
+                    Constraint::Percentage(10),
+                    Constraint::Min(1),
+                ].as_ref()
+            )
+            .split(a)[1];
+        render_ready(frame, a);
+    }
 }
 
 fn render_center_msg<B: Backend>(frame: &mut Frame<B>, msg: String) {
@@ -456,6 +555,22 @@ fn render_center_msg<B: Backend>(frame: &mut Frame<B>, msg: String) {
             .alignment(Alignment::Center),
         rect_cut_center(frame.size(), -1, 50)
     )
+}
+
+fn render_ready_button<B: Backend>(frame: &mut Frame<B>, active: bool) {
+    let mut button = Layout::default()
+        .direction(Direction::Vertical)
+        .vertical_margin(1)
+        .constraints(
+            [
+                Constraint::Min(1),
+                Constraint::Length(11),
+            ].as_ref()
+        )
+        .split(frame.size())[1];
+    button = rect_cut_center(button, -3, 20);
+
+    frame.render_widget(get_button("Get Ready!", active), button);
 }
 
 fn wait_player<B: Backend>(
@@ -470,6 +585,8 @@ fn wait_player<B: Backend>(
     render_center_msg(frame, msg.clone());
 
     render_game_info(frame, roomid.clone());
+
+    render_ready_button(frame, false);
 }
 
 fn wait_ready<B: Backend>(
@@ -484,4 +601,8 @@ fn wait_ready<B: Backend>(
     render_center_msg(frame, msg.clone());
 
     render_game_info(frame, roomid.clone());
+
+    if !players[0].2 {
+        render_ready_button(frame, true);
+    }
 }

@@ -7,7 +7,9 @@ pub const BORDER_NORMAL:         Color = Color::Rgb(0xA4, 0x7E, 0x3B);
 pub const TEXT_NORMAL:           Color = Color::Rgb(0xF4, 0x9D, 0x1A);
 pub const INPUT_BORDER:          Color = Color::Yellow;
 pub const INPUT_BORDER_BLOCK:    Color = Color::White;
+
 pub const BUTTON:                Color = Color::Rgb(0xE6, 0xB3, 0x25);
+pub const BUTTON_DIM:            Color = Color::Rgb(0xC8, 0xC2, 0xBC);
 
 pub const CENTER_MSG:            Color = Color::Rgb(0xFF, 0x5B, 0x00);
 
@@ -17,3 +19,5 @@ pub const NAME:                  Color = Color::Rgb(0xFA, 0xC2, 0x13);
 pub const NAME_DIM:              Color = Color::Rgb(0xE0, 0xD8, 0xB0);
 
 pub const NORMAL_DIM:            Color = Color::Rgb(0xB7, 0xCA, 0xDB);
+
+pub const READY:                 Color = Color::Rgb(0x95, 0xCD, 0x41);

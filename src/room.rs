@@ -193,7 +193,7 @@ impl Room {
             error!("Room {} not ready!", &self.id);
         }
  
-        let _ = self.players.iter_mut().map(
+        self.players.iter_mut().for_each(
             |p| p.game.new_game()
         );
 

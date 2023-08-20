@@ -89,7 +89,7 @@ impl Game {
             num: c%13 + 1,
         };
 
-        if self.cards.insert(card) {
+        if !self.cards.insert(card) {
             error!("Cannot add card")
         }
     }
