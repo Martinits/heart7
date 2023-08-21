@@ -1,5 +1,6 @@
 use crate::game::Card;
 use crate::*;
+use std::collections::HashSet;
 
 #[derive(Debug, Default)]
 pub struct Desk {
@@ -46,5 +47,49 @@ impl Desk {
                 each.truncate(1);
             }
         }
+    }
+
+    fn is_empty(&self) -> bool {
+        self.spade.0.len() == 0
+        && self.spade.1.len() == 0
+        && self.heart.0.len() == 0
+        && self.heart.1.len() == 0
+        && self.club.0.len() == 0
+        && self.club.1.len() == 0
+        && self.diamond.0.len() == 0
+        && self.diamond.1.len() == 0
+    }
+
+    pub fn get_play_hint(&self, cards: &Vec<Card>) -> Vec<bool> {
+        let mut possible = HashSet::new();
+        if self.is_empty() {
+            possible.insert(Card { suit: CardSuit::Heart, num: 7 });
+        } else {
+            for (small, big, cs) in [
+                (&self.spade.0,   &self.spade.1,   CardSuit::Spade),
+                (&self.heart.0,   &self.heart.1,   CardSuit::Heart),
+                (&self.club.0,    &self.club.1,    CardSuit::Club),
+                (&self.diamond.0, &self.diamond.1, CardSuit::Diamond),
+            ] {
+                if small.len() == 0 && big.len() == 0 {
+                    possible.insert(Card { suit: cs, num: 7 });
+                } else {
+                    if big.len() == 0 {
+                        possible.insert(Card { suit: cs, num: 8 });
+                    } else if big[0].0.num != 13 {
+                        possible.insert(Card { suit: cs, num: big[0].0.num+1 });
+                    }
+                    if small[0].0.num != 1 {
+                        possible.insert(Card { suit: cs, num: small[0].0.num-1 });
+                    }
+                }
+            }
+        }
+
+        let mut hint = Vec::new();
+        cards.iter().for_each( |c| {
+            hint.push(possible.get(c).is_some());
+        });
+        hint
     }
 }

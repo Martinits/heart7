@@ -762,13 +762,17 @@ fn get_card_text(card: &Card) -> (String, String) {
 
 fn render_card<B: Backend>(
     frame: &mut Frame<B>, card: &Card, a: Rect, ca: CardAppearance,
-    highlight: Option<Color>
+    dim: bool, highlight: Option<Color>
 ) {
-    let block_style = if let Some(c) = highlight {
+    let mut block_style = if let Some(c) = highlight {
         Style::default().fg(c).add_modifier(Modifier::BOLD)
     } else {
         Style::default().fg(CARD_BORDER)
     };
+
+    if dim {
+        block_style = block_style.add_modifier(Modifier::DIM);
+    }
 
     let card_suit_style = match card.suit {
         CardSuit::Spade => Style::default().fg(SPADE),
@@ -842,35 +846,35 @@ fn render_chain<B: Backend>(frame: &mut Frame<B>, cs: CardSuit,
     if chain_small.len() == 0 && chain_big.len() == 0 {
         //empty chain
         let a = rect_cut_center(a, -8, 100);
-        render_card(frame, &Card{suit: cs, num: 1}, a, CardAppearance::Empty, None);
+        render_card(frame, &Card{suit: cs, num: 1}, a, CardAppearance::Empty, false, None);
     } else if chain_big.len() == 0 && chain_small.len() == 1 && chain_small[0].0.num == 7 {
         // only a seven
         let a = rect_cut_center(a, -8, 100);
-        render_card(frame, &chain_small[0].0, a, CardAppearance::All,
+        render_card(frame, &chain_small[0].0, a, CardAppearance::All, false,
             if chain_small[0].1 { Some(CARD_HIGHLIGHT) } else { None }
         );
     } else if chain_big.len() == 0 {
         // only small card(s)
         // render 7
         let mut a = rect_cut_center(a, -8, 100);
-        render_card(frame, &Card{suit: cs, num: 7}, a.clone(), CardAppearance::Horizontal, None);
+        render_card(frame, &Card{suit: cs, num: 7}, a.clone(), CardAppearance::Horizontal, false, None);
         // render smaller
         a.y += 2;
         for _ in 0..(7 - chain_small.iter().last().unwrap().0.num - 1) {
-            render_card(frame, &NULL_CARD, a.clone(), CardAppearance::Horizontal, None);
+            render_card(frame, &NULL_CARD, a.clone(), CardAppearance::Horizontal, false, None);
             a.y += 1;
         }
         let mut csmall = chain_small.clone();
         csmall.reverse();
         for i in 0..csmall.len() - 1 {
             assert!(csmall[i].1);
-            render_card(frame, &csmall[i].0, a, CardAppearance::Horizontal,
+            render_card(frame, &csmall[i].0, a, CardAppearance::Horizontal, false,
                 if csmall[i].1 { Some(CARD_HIGHLIGHT) } else { None }
             );
             a.y += 2;
         }
         // last one
-        render_card(frame, &chain_small[0].0, a, CardAppearance::All,
+        render_card(frame, &chain_small[0].0, a, CardAppearance::All, false,
             if chain_small[0].1 { Some(CARD_HIGHLIGHT) } else { None }
         );
     } else {
@@ -887,19 +891,19 @@ fn render_chain<B: Backend>(frame: &mut Frame<B>, cs: CardSuit,
         //render from top
         //big highlighted
         for (ec, hi) in chain_big.iter() {
-            render_card(frame, ec, a.clone(), CardAppearance::Horizontal,
+            render_card(frame, ec, a.clone(), CardAppearance::Horizontal, false,
                 if *hi { Some(CARD_HIGHLIGHT) } else { None }
             );
             a.y += 2;
         }
         //big folded
         for _ in 0..(big_last_num - 7 - 1) {
-            render_card(frame, &NULL_CARD, a.clone(), CardAppearance::Horizontal, None);
+            render_card(frame, &NULL_CARD, a.clone(), CardAppearance::Horizontal, false, None);
             a.y += 1;
         }
         //small folded
         for _ in 0..(7 - chain_small.iter().last().unwrap().0.num) {
-            render_card(frame, &NULL_CARD, a.clone(), CardAppearance::Horizontal, None);
+            render_card(frame, &NULL_CARD, a.clone(), CardAppearance::Horizontal, false, None);
             a.y += 1;
         }
         //small highlighted
@@ -907,13 +911,13 @@ fn render_chain<B: Backend>(frame: &mut Frame<B>, cs: CardSuit,
         csmall.reverse();
         for i in 0..csmall.len() - 1 {
             assert!(csmall[i].1);
-            render_card(frame, &csmall[i].0, a, CardAppearance::Horizontal,
+            render_card(frame, &csmall[i].0, a, CardAppearance::Horizontal, false,
                 if csmall[i].1 { Some(CARD_HIGHLIGHT) } else { None }
             );
             a.y += 2;
         }
         // last one
-        render_card(frame, &chain_small[0].0, a, CardAppearance::All,
+        render_card(frame, &chain_small[0].0, a, CardAppearance::All, false,
             if chain_small[0].1 { Some(CARD_HIGHLIGHT) } else { None }
         );
     }
@@ -943,7 +947,9 @@ fn render_desk<B: Backend>(frame: &mut Frame<B>, desk: &Desk) {
     render_chain(frame, CardSuit::Diamond, desk.diamond.0.as_ref(), desk.diamond.1.as_ref(), rects[7]);
 }
 
-fn render_my_cards<B: Backend>(frame: &mut Frame<B>, cards: &Vec<Card>, choose: usize) {
+fn render_my_cards<B: Backend>(frame: &mut Frame<B>, cards: &Vec<Card>,
+    choose: usize, hints: Vec<bool>
+) {
     let mut a = Layout::default()
         .direction(Direction::Vertical)
         .vertical_margin(1)
@@ -969,11 +975,10 @@ fn render_my_cards<B: Backend>(frame: &mut Frame<B>, cards: &Vec<Card>, choose: 
         )
         .split(a)[3];
     a = rect_cut_center(a, 100, -(cards.len() as i16 *3));
+    a.y += 1;
     a.width = 11;
     a.height = 8;
 
-    let mut cards = cards.clone();
-    cards.sort();
     for (i, c) in cards.iter().enumerate() {
         if i+1 == choose {
             a.y -= 1;
@@ -984,6 +989,7 @@ fn render_my_cards<B: Backend>(frame: &mut Frame<B>, cards: &Vec<Card>, choose: 
             } else {
                 CardAppearance::Vertical
             },
+            !hints[i],
             Some(MYCARD_BORDER)
         );
         if i+1 == choose {
@@ -1023,7 +1029,9 @@ fn gaming<B: Backend>(
 
     render_desk(frame, desk);
 
-    render_my_cards(frame, cards, choose);
+    let hints = desk.get_play_hint(cards);
+    debug!("{:?}", hints);
+    render_my_cards(frame, cards, choose, hints);
 
     render_next(frame, next);
     if has_last {
