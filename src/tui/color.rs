@@ -23,3 +23,11 @@ pub const NORMAL_DIM:            Color = Color::Rgb(0xB7, 0xCA, 0xDB);
 pub const READY:                 Color = Color::Rgb(0x95, 0xCD, 0x41);
 
 pub const HOLD_NUM:              Color = Color::Rgb(0xBB, 0x37, 0x1A);
+
+pub const CARD_BORDER:           Color = Color::Rgb(0xAA, 0xAA, 0xAA);
+pub const CARD_HIGHLIGHT:        Color = Color::Rgb(0xFF, 0xC2, 0x6F);
+
+pub const SPADE:                 Color = Color::Rgb(0x60, 0x6C, 0x5D);
+pub const HEART:                 Color = Color::Rgb(0xFA, 0x1E, 0x0E);
+pub const CLUB:                  Color = Color::Rgb(0x99, 0x99, 0x99);
+pub const DIAMOND:               Color = Color::Rgb(0xFF, 0x7B, 0x54);

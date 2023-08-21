@@ -726,8 +726,218 @@ fn wait_ready<B: Backend>(
     }
 }
 
-fn render_desk<B: Backend>(frame: &mut Frame<B>, desk: &Desk) {
+enum CardAppearance {
+    All,
+    Vertical,
+    Horizontal,
+    Empty,
+}
 
+fn get_card_text(card: &Card) -> (String, String) {
+    (
+        match card.suit {
+            CardSuit::Spade => "󰣑", //󱢲
+            CardSuit::Heart => "󰣐", //󱢠
+            CardSuit::Club => "󰣎", //󱢟
+            CardSuit::Diamond => "󰣏", //󱀝
+        }.into(),
+        match card.num {
+            1 => "󰫮".into(),
+            2 => "󰬻".into(),
+            3 => "󰬼".into(),
+            4 => "󰬽".into(),
+            5 => "󰬾".into(),
+            6 => "󰬿".into(),
+            7 => "󰭀".into(),
+            8 => "󰭁".into(),
+            9 => "󰭂".into(),
+            10 => "󰿩".into(),
+            11 => "󰫷".into(),
+            12 => "󰫾".into(),
+            13 => "󰫸".into(),
+            _ => panic!("Invalid card num!")
+        }
+    )
+}
+
+fn render_card<B: Backend>(
+    frame: &mut Frame<B>, card: &Card, a: Rect, ca: CardAppearance,
+    highlight: Option<Color>
+) {
+    let block_style = if let Some(c) = highlight {
+        Style::default().fg(c).add_modifier(Modifier::BOLD)
+    } else {
+        Style::default().fg(CARD_BORDER)
+    };
+
+    let card_suit_style = match card.suit {
+        CardSuit::Spade => Style::default().fg(SPADE),
+        CardSuit::Heart => Style::default().fg(HEART),
+        CardSuit::Club => Style::default().fg(CLUB),
+        CardSuit::Diamond => Style::default().fg(DIAMOND),
+    };
+
+    let (text_suit, text_num) = get_card_text(card);
+    let text = match ca {
+        CardAppearance::All => {
+            Text::from(
+                [
+                    Line::styled(text_num.clone(), card_suit_style),
+                    Line::styled(text_suit.clone(), card_suit_style).alignment(Alignment::Center),
+                    Line::styled("", card_suit_style),
+                    Line::styled("", card_suit_style),
+                    Line::styled(text_suit.clone(), card_suit_style).alignment(Alignment::Center),
+                ].to_vec()
+            )
+        }
+        CardAppearance::Vertical => {
+            Text::from(
+                [
+                    Line::styled(text_num.clone(), card_suit_style),
+                    Line::styled(text_suit.clone(), card_suit_style),
+                ].to_vec()
+            )
+        }
+        CardAppearance::Horizontal => {
+            Text::from(
+                Line::styled(format!("{} {}", text_num.clone(), text_suit.clone()), card_suit_style),
+            )
+        }
+        CardAppearance::Empty => {
+            Text::from(
+                [
+                    Line::styled("", card_suit_style),
+                    Line::styled(text_suit.clone(), card_suit_style).alignment(Alignment::Center),
+                    Line::styled("", card_suit_style),
+                    Line::styled("", card_suit_style),
+                    Line::styled(text_suit.clone(), card_suit_style).alignment(Alignment::Center),
+                ].to_vec()
+            )
+        }
+    };
+
+    // clear first
+    frame.render_widget(Clear, a);
+
+    frame.render_widget(
+        Paragraph::new(text)
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .border_type(BorderType::Rounded)
+                    .style(block_style)
+            ),
+        a
+    )
+}
+
+const NULL_CARD: Card = Card { suit: CardSuit::Spade, num: 1};
+
+fn render_chain<B: Backend>(frame: &mut Frame<B>, cs: CardSuit,
+    chain_small: &Vec<(Card, bool)>, chain_big: &Vec<(Card, bool)>, a: Rect
+) {
+    if chain_small.len() == 0 && chain_big.len() == 0 {
+        //empty chain
+        let a = rect_cut_center(a, -8, 100);
+        render_card(frame, &Card{suit: cs, num: 1}, a, CardAppearance::Empty, None);
+    } else if chain_big.len() == 0 && chain_small.len() == 1 && chain_small[0].0.num == 7 {
+        // only a seven
+        let a = rect_cut_center(a, -8, 100);
+        render_card(frame, &chain_small[0].0, a, CardAppearance::All,
+            if chain_small[0].1 { Some(CARD_HIGHLIGHT) } else { None }
+        );
+    } else if chain_big.len() == 0 {
+        // only small card(s)
+        // render 7
+        let mut a = rect_cut_center(a, -8, 100);
+        render_card(frame, &Card{suit: cs, num: 7}, a.clone(), CardAppearance::Horizontal, None);
+        // render smaller
+        a.y += 2;
+        for _ in 0..(7 - chain_small.iter().last().unwrap().0.num - 1) {
+            render_card(frame, &NULL_CARD, a.clone(), CardAppearance::Horizontal, None);
+            a.y += 1;
+        }
+        let mut csmall = chain_small.clone();
+        csmall.reverse();
+        for i in 0..csmall.len() - 1 {
+            assert!(csmall[i].1);
+            render_card(frame, &csmall[i].0, a, CardAppearance::Horizontal,
+                if csmall[i].1 { Some(CARD_HIGHLIGHT) } else { None }
+            );
+            a.y += 2;
+        }
+        // last one
+        render_card(frame, &chain_small[0].0, a, CardAppearance::All,
+            if chain_small[0].1 { Some(CARD_HIGHLIGHT) } else { None }
+        );
+    } else {
+        // both small and big
+        // calculate center 7 position
+        let mut a = rect_cut_center(a, -8, 100);
+        if chain_small[0].0.num + chain_big[0].0.num > 14 {
+            a.y += 2;
+        }
+        // calculate top card position
+        let big_last_num = chain_big.iter().last().unwrap().0.num;
+        let big_length = chain_big.len() as u32 *2 + big_last_num - 7 - 1;
+        a.y -= big_length as u16;
+        //render from top
+        //big highlighted
+        for (ec, hi) in chain_big.iter() {
+            render_card(frame, ec, a.clone(), CardAppearance::Horizontal,
+                if *hi { Some(CARD_HIGHLIGHT) } else { None }
+            );
+            a.y += 2;
+        }
+        //big folded
+        for _ in 0..(big_last_num - 7 - 1) {
+            render_card(frame, &NULL_CARD, a.clone(), CardAppearance::Horizontal, None);
+            a.y += 1;
+        }
+        //small folded
+        for _ in 0..(7 - chain_small.iter().last().unwrap().0.num) {
+            render_card(frame, &NULL_CARD, a.clone(), CardAppearance::Horizontal, None);
+            a.y += 1;
+        }
+        //small highlighted
+        let mut csmall = chain_small.clone();
+        csmall.reverse();
+        for i in 0..csmall.len() - 1 {
+            assert!(csmall[i].1);
+            render_card(frame, &csmall[i].0, a, CardAppearance::Horizontal,
+                if csmall[i].1 { Some(CARD_HIGHLIGHT) } else { None }
+            );
+            a.y += 2;
+        }
+        // last one
+        render_card(frame, &chain_small[0].0, a, CardAppearance::All,
+            if chain_small[0].1 { Some(CARD_HIGHLIGHT) } else { None }
+        );
+    }
+}
+
+fn render_desk<B: Backend>(frame: &mut Frame<B>, desk: &Desk) {
+    let desk_rect = rect_cut_center(frame.size(), -24, -70);
+    let rects = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints(
+            [
+                Constraint::Length(3),
+                Constraint::Length(11),
+                Constraint::Length(7),
+                Constraint::Length(11),
+                Constraint::Length(7),
+                Constraint::Length(11),
+                Constraint::Length(7),
+                Constraint::Length(11),
+                Constraint::Length(3),
+            ].as_ref()
+        ).split(desk_rect);
+
+    render_chain(frame, CardSuit::Spade,   desk.spade.0.as_ref(), desk.spade.1.as_ref(), rects[1]);
+    render_chain(frame, CardSuit::Heart,   desk.heart.0.as_ref(), desk.heart.1.as_ref(), rects[3]);
+    render_chain(frame, CardSuit::Club,    desk.club.0.as_ref(), desk.club.1.as_ref(), rects[5]);
+    render_chain(frame, CardSuit::Diamond, desk.diamond.0.as_ref(), desk.diamond.1.as_ref(), rects[7]);
 }
 
 fn render_my_cards<B: Backend>(frame: &mut Frame<B>, cards: &Vec<Card>) {

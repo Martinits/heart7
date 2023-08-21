@@ -137,7 +137,17 @@ impl<B: Backend> App<B> {
                 cards: Vec::new(),
                 holds: Vec::new(),
                 has_last: false,
-                desk: Default::default(),
+                desk: Desk {
+                    diamond: (vec![
+                        (Card{suit:CardSuit::Diamond, num: 3}, true),
+                        (Card{suit:CardSuit::Diamond, num: 4}, true),
+                    ],
+                    vec![
+                        (Card{suit:CardSuit::Diamond, num: 13}, false),
+                        (Card{suit:CardSuit::Diamond, num: 12}, false),
+                    ]),
+                    ..Default::default()
+                },
                 roomid: "jbhfvhsbdfvhbkdsfhbv".into(),
                 button: 0,
                 play_cnt: 0
