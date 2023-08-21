@@ -26,6 +26,7 @@ pub const HOLD_NUM:              Color = Color::Rgb(0xBB, 0x37, 0x1A);
 
 pub const CARD_BORDER:           Color = Color::Rgb(0xAA, 0xAA, 0xAA);
 pub const CARD_HIGHLIGHT:        Color = Color::Rgb(0xFF, 0xC2, 0x6F);
+pub const MYCARD_BORDER:         Color = Color::Rgb(0xD5, 0xD3, 0xB3);
 
 pub const SPADE:                 Color = Color::Rgb(0x60, 0x6C, 0x5D);
 pub const HEART:                 Color = Color::Rgb(0xFA, 0x1E, 0x0E);

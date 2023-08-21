@@ -134,7 +134,19 @@ impl<B: Backend> App<B> {
                 next: 0,
                 choose: 0,
                 last: None,
-                cards: Vec::new(),
+                cards: vec![
+                    Card { suit: CardSuit::Spade, num: 3},
+                    Card { suit: CardSuit::Diamond, num: 11},
+                    Card { suit: CardSuit::Club, num: 13},
+                    Card { suit: CardSuit::Spade, num: 4},
+                    Card { suit: CardSuit::Heart, num: 1},
+                    Card { suit: CardSuit::Diamond, num: 12},
+                    Card { suit: CardSuit::Heart, num: 7},
+                    Card { suit: CardSuit::Spade, num: 6},
+                    Card { suit: CardSuit::Club, num: 2},
+                    Card { suit: CardSuit::Club, num: 8},
+                    Card { suit: CardSuit::Club, num: 10},
+                ],
                 holds: Vec::new(),
                 has_last: false,
                 desk: Desk {
@@ -144,7 +156,6 @@ impl<B: Backend> App<B> {
                     ],
                     vec![
                         (Card{suit:CardSuit::Diamond, num: 13}, false),
-                        (Card{suit:CardSuit::Diamond, num: 12}, false),
                     ]),
                     ..Default::default()
                 },

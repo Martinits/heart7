@@ -783,7 +783,10 @@ fn render_card<B: Backend>(
             Text::from(
                 [
                     Line::styled(text_num.clone(), card_suit_style),
-                    Line::styled(text_suit.clone(), card_suit_style).alignment(Alignment::Center),
+                    Line::styled(
+                        format!("{}   {}", text_suit.clone(), text_suit.clone()),
+                        card_suit_style
+                    ),
                     Line::styled("", card_suit_style),
                     Line::styled("", card_suit_style),
                     Line::styled(text_suit.clone(), card_suit_style).alignment(Alignment::Center),
@@ -940,8 +943,54 @@ fn render_desk<B: Backend>(frame: &mut Frame<B>, desk: &Desk) {
     render_chain(frame, CardSuit::Diamond, desk.diamond.0.as_ref(), desk.diamond.1.as_ref(), rects[7]);
 }
 
-fn render_my_cards<B: Backend>(frame: &mut Frame<B>, cards: &Vec<Card>) {
+fn render_my_cards<B: Backend>(frame: &mut Frame<B>, cards: &Vec<Card>, choose: usize) {
+    let mut a = Layout::default()
+        .direction(Direction::Vertical)
+        .vertical_margin(1)
+        .constraints(
+            [
+                Constraint::Min(1),
+                Constraint::Length(9),
+                Constraint::Length(1),
+            ].as_ref()
+        )
+        .split(frame.size())[1];
+    a = Layout::default()
+        .direction(Direction::Horizontal)
+        .horizontal_margin(1)
+        .constraints(
+            [
+                Constraint::Percentage(17),
+                Constraint::Length(14),
+                Constraint::Percentage(10),
+                Constraint::Length(39),
+                Constraint::Min(1),
+            ].as_ref()
+        )
+        .split(a)[3];
+    a = rect_cut_center(a, 100, -(cards.len() as i16 *3));
+    a.width = 11;
+    a.height = 8;
 
+    let mut cards = cards.clone();
+    cards.sort();
+    for (i, c) in cards.iter().enumerate() {
+        if i+1 == choose {
+            a.y -= 1;
+        }
+        render_card(frame, c, a.clone(),
+            if i == cards.len()- 1 {
+                CardAppearance::All
+            } else {
+                CardAppearance::Vertical
+            },
+            Some(MYCARD_BORDER)
+        );
+        if i+1 == choose {
+            a.y += 1;
+        }
+        a.x += 3;
+    }
 }
 
 fn render_next<B: Backend>(frame: &mut Frame<B>, next: usize) {
@@ -974,7 +1023,7 @@ fn gaming<B: Backend>(
 
     render_desk(frame, desk);
 
-    render_my_cards(frame, cards);
+    render_my_cards(frame, cards, choose);
 
     render_next(frame, next);
     if has_last {
