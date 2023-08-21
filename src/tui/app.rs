@@ -318,16 +318,17 @@ impl<B: Backend> App<B> {
                 true
             }
             AppState::Gaming {
-                client: ref mut c, ref players, choose, ref mut cards,
+                client: ref mut c, ref players, ref mut choose, ref mut cards,
                 ref mut holds, ref roomid, ref button, ..
             } if cards.len() != 0 => {
                 let play = match *button {
-                        0 => Play::Discard(cards[choose].clone().into()),
-                        _ => Play::Hold(cards[choose].clone().into())
+                        0 => Play::Discard(cards[*choose].clone().into()),
+                        _ => Play::Hold(cards[*choose].clone().into())
                 };
                 match c.play_card(players[0].1 as u32, roomid.clone(), play).await {
                     Ok(_) => {
-                        let c = cards.remove(choose);
+                        let c = cards.remove(*choose);
+                        *choose = 0;
                         if *button == 1 {
                             holds.push(c);
                             holds.sort();
@@ -621,11 +622,14 @@ impl<B: Backend> App<B> {
                                 panic!("Empty PlayOne in GameMsg Play!");
                             } else if let Some(play) = po.play {
                                 *play_cnt += 1;
+                                if *play_cnt%4 == 1 {
+                                    desk.new_round();
+                                }
                                 match play {
                                     Play::Discard(ci) => {
                                         let c = Card::from_info(&ci);
                                         *last = Some(c.clone());
-                                        desk.update(c.clone(), *play_cnt%4 == 1);
+                                        desk.add(c.clone());
                                     }
                                     Play::Hold(ci) => {
                                         assert!(ci.num == 0 && ci.suit == 0);
