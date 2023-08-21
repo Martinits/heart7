@@ -113,20 +113,24 @@ impl Desk {
         }
     }
 
-    pub fn is_valid_discard(&self, c: &Card) -> bool {
-        if let Some(_) = self.discard_candidates().iter().find(|&cc| cc == c) {
+    pub fn is_valid_discard(&self, c: &Card, is_first: bool) -> bool {
+        if let Some(_) = self.discard_candidates(is_first).iter().find(|&cc| cc == c) {
             true
         } else {
             false
         }
     }
 
-    pub fn discard_candidates(&self) -> HashSet<Card> {
+    pub fn discard_candidates(&self, is_first: bool) -> HashSet<Card> {
         let mut ret = HashSet::new();
-        get_candidates_for_one_suit!(ret, self.spade,   CardSuit::Spade);
-        get_candidates_for_one_suit!(ret, self.heart,   CardSuit::Heart);
-        get_candidates_for_one_suit!(ret, self.club,    CardSuit::Club);
-        get_candidates_for_one_suit!(ret, self.diamond, CardSuit::Diamond);
+        if is_first {
+            ret.insert(Card{ suit: CardSuit::Heart, num: 7});
+        } else {
+            get_candidates_for_one_suit!(ret, self.spade,   CardSuit::Spade);
+            get_candidates_for_one_suit!(ret, self.heart,   CardSuit::Heart);
+            get_candidates_for_one_suit!(ret, self.club,    CardSuit::Club);
+            get_candidates_for_one_suit!(ret, self.diamond, CardSuit::Diamond);
+        }
         ret
     }
 }

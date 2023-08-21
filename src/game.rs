@@ -135,12 +135,12 @@ impl Game {
         }
     }
 
-    pub fn is_valid_play(&self, desk: &Desk, play: &Play) -> RPCResult<()>{
+    pub fn is_valid_play(&self, desk: &Desk, play: &Play, is_first: bool) -> RPCResult<()>{
         match play {
             Play::Discard(ci) => {
                 let c = Card::from_info(ci);
                 if self.has_card(&c) {
-                    if desk.is_valid_discard(&c) {
+                    if desk.is_valid_discard(&c, is_first) {
                         Ok(())
                     } else {
                         Err(Status::new(
@@ -158,7 +158,7 @@ impl Game {
             Play::Hold(ci) => {
                 let c = Card::from_info(ci);
                 if self.has_card(&c) {
-                    let desk_cand = desk.discard_candidates();
+                    let desk_cand = desk.discard_candidates(is_first);
                     if desk_cand.intersection(&self.cards).any(|_| true) {
                         Err(Status::new(
                             Code::PermissionDenied,

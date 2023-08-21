@@ -271,7 +271,7 @@ impl Room {
             )
         )?;
 
-        p.game.is_valid_play(&self.desk, play)?;
+        p.game.is_valid_play(&self.desk, play, self.play_cnt == 0)?;
 
         p.game.play_card(play)?;
 
