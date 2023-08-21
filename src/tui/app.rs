@@ -63,6 +63,7 @@ pub enum AppState {
         roomid: String,
         button: u32,
         play_cnt: u32,
+        msg: Option<String>,
     },
     GameResult,
     // ExitMenu(Box<Self>),
@@ -118,65 +119,65 @@ impl<B: Backend> App<B> {
         Self {
             tui,
             cancel: cancel.clone(),
-            // state: Default::default(),
-            state: AppState::Gaming{
-                client: Client{
-                    c: heart7_client::Heart7Client::connect("http://127.0.0.1:20007").await.unwrap(),
-                    addr:"127.0.0.1:20007".into()
-                },
-                players: vec![
-                    ("first".into(), 0, 0),
-                    ("second".into(), 1, 0),
-                    ("third".into(), 2, 0),
-                    ("fourth".into(), 3, 0)
-                ],
-                next: 3,
-                choose: 0,
-                last: Some(Card{suit:CardSuit::Spade, num: 13}),
-                cards: vec![
-                    Card { suit: CardSuit::Spade, num: 3},
-                    Card { suit: CardSuit::Diamond, num: 11},
-                    Card { suit: CardSuit::Club, num: 13},
-                    Card { suit: CardSuit::Spade, num: 4},
-                    Card { suit: CardSuit::Heart, num: 1},
-                    Card { suit: CardSuit::Diamond, num: 12},
-                    Card { suit: CardSuit::Heart, num: 7},
-                    Card { suit: CardSuit::Spade, num: 6},
-                    Card { suit: CardSuit::Club, num: 2},
-                    Card { suit: CardSuit::Heart, num: 8},
-                    Card { suit: CardSuit::Spade, num: 10},
-                    Card { suit: CardSuit::Diamond, num: 3},
-                    Card { suit: CardSuit::Club, num: 1},
-                ],
-                holds: vec![
-                    Card { suit: CardSuit::Spade, num: 4},
-                    Card { suit: CardSuit::Heart, num: 1},
-                    Card { suit: CardSuit::Diamond, num: 12},
-                    Card { suit: CardSuit::Heart, num: 7},
-                    Card { suit: CardSuit::Spade, num: 6},
-                    Card { suit: CardSuit::Club, num: 2},
-                    Card { suit: CardSuit::Heart, num: 8},
-                    Card { suit: CardSuit::Spade, num: 10},
-                    Card { suit: CardSuit::Diamond, num: 3},
-                    Card { suit: CardSuit::Club, num: 1},
-                ],
-                has_last: true,
-                desk: Desk {
-                    diamond: (vec![
-                        (Card{suit:CardSuit::Diamond, num: 1}, true),
-                        (Card{suit:CardSuit::Diamond, num: 2}, true),
-                        (Card{suit:CardSuit::Diamond, num: 3}, true),
-                        (Card{suit:CardSuit::Diamond, num: 4}, true),
-                    ],
-                    vec![
-                        (Card{suit:CardSuit::Diamond, num: 13}, false),
-                    ]),
-                    ..Default::default()
-                },
-                roomid: "jbhfvhsbdfvhbkdsfhbv".into(),
-                button: 0,
-                play_cnt: 0
-            },
+            state: Default::default(),
+            // state: AppState::Gaming{
+            //     client: Client{
+            //         c: heart7_client::Heart7Client::connect("http://127.0.0.1:20007").await.unwrap(),
+            //         addr:"127.0.0.1:20007".into()
+            //     },
+            //     players: vec![
+            //         ("first".into(), 0, 0),
+            //         ("second".into(), 1, 0),
+            //         ("third".into(), 2, 0),
+            //         ("fourth".into(), 3, 0)
+            //     ],
+            //     next: 3,
+            //     choose: 0,
+            //     last: Some(Card{suit:CardSuit::Spade, num: 13}),
+            //     cards: vec![
+            //         Card { suit: CardSuit::Spade, num: 3},
+            //         Card { suit: CardSuit::Diamond, num: 11},
+            //         Card { suit: CardSuit::Club, num: 13},
+            //         Card { suit: CardSuit::Spade, num: 4},
+            //         Card { suit: CardSuit::Heart, num: 1},
+            //         Card { suit: CardSuit::Diamond, num: 12},
+            //         Card { suit: CardSuit::Heart, num: 7},
+            //         Card { suit: CardSuit::Spade, num: 6},
+            //         Card { suit: CardSuit::Club, num: 2},
+            //         Card { suit: CardSuit::Heart, num: 8},
+            //         Card { suit: CardSuit::Spade, num: 10},
+            //         Card { suit: CardSuit::Diamond, num: 3},
+            //         Card { suit: CardSuit::Club, num: 1},
+            //     ],
+            //     holds: vec![
+            //         Card { suit: CardSuit::Spade, num: 4},
+            //         Card { suit: CardSuit::Heart, num: 1},
+            //         Card { suit: CardSuit::Diamond, num: 12},
+            //         Card { suit: CardSuit::Heart, num: 7},
+            //         Card { suit: CardSuit::Spade, num: 6},
+            //         Card { suit: CardSuit::Club, num: 2},
+            //         Card { suit: CardSuit::Heart, num: 8},
+            //         Card { suit: CardSuit::Spade, num: 10},
+            //         Card { suit: CardSuit::Diamond, num: 3},
+            //         Card { suit: CardSuit::Club, num: 1},
+            //     ],
+            //     has_last: true,
+            //     desk: Desk {
+            //         diamond: (vec![
+            //             (Card{suit:CardSuit::Diamond, num: 1}, true),
+            //             (Card{suit:CardSuit::Diamond, num: 2}, true),
+            //             (Card{suit:CardSuit::Diamond, num: 3}, true),
+            //             (Card{suit:CardSuit::Diamond, num: 4}, true),
+            //         ],
+            //         vec![
+            //             (Card{suit:CardSuit::Diamond, num: 13}, false),
+            //         ]),
+            //         ..Default::default()
+            //     },
+            //     roomid: "jbhfvhsbdfvhbkdsfhbv".into(),
+            //     button: 0,
+            //     play_cnt: 0
+            // },
             tx,
             rx,
         }
@@ -343,7 +344,7 @@ impl<B: Backend> App<B> {
             }
             AppState::Gaming {
                 client: ref mut c, ref players, ref mut choose, ref mut cards,
-                ref mut holds, ref roomid, ref button, ref next, ..
+                ref mut holds, ref roomid, ref button, ref next, ref mut msg, ..
             } if cards.len() != 0 && *choose != 0 && *next == 0 => {
                 let play = match *button {
                         0 => Play::Discard(cards[*choose-1].clone().into()),
@@ -353,12 +354,23 @@ impl<B: Backend> App<B> {
                     Ok(_) => {
                         let c = cards.remove(*choose-1);
                         *choose = 0;
+                        *msg = None;
                         if *button == 1 {
                             holds.push(c);
                             holds.sort();
                         }
                     },
-                    Err(s) => panic!("Failed to play card to server: {}", s),
+                    Err(s) => {
+                        if let Ok(status) = s.downcast::<Status>() {
+                            if status.code() == Code::PermissionDenied {
+                                *msg = Some(status.message().into());
+                            } else {
+                                panic!("Failed to play card to server");
+                            }
+                        } else {
+                            panic!("Failed to play card to server");
+                        }
+                    }
                 }
                 true
             }
@@ -557,6 +569,7 @@ impl<B: Backend> App<B> {
     }
 
     async fn handle_stream_msg(&mut self, msg: GameMsg) -> bool {
+        debug!("Got GameMsg: {:?}", msg);
         match self.state {
             AppState::WaitPlayer {ref mut client, ref mut players, ref roomid, ..} => {
                 match msg.msg {
@@ -609,6 +622,7 @@ impl<B: Backend> App<B> {
                                     button: 0,
                                     has_last: false,
                                     play_cnt: 0,
+                                    msg: None,
                                 }
                             }
                             Err(s) => panic!("Failed to get GameStatus on start: {}", s),
@@ -621,8 +635,8 @@ impl<B: Backend> App<B> {
             }
             AppState::Gaming {
                 ref mut players, ref mut next, ref mut last, ref mut has_last,
-                ref cards, ref mut desk, ref mut play_cnt, ..
-            } if cards.len() != 0 => {
+                ref mut desk, ref mut play_cnt, ..
+            } => {
                 match msg.msg {
                     Some(Msg::Play(PlayInfo { player: pid, playone })) => {
                         assert!(pid < 4);
@@ -655,6 +669,9 @@ impl<B: Backend> App<B> {
                             }
                         }
                     }
+                    Some(Msg::Endgame(gs)) => {
+
+                    }
                     _ => panic!("Got GameMsg other than Msg::Play in state Gaming!"),
                 }
                 true
@@ -679,6 +696,9 @@ impl<B: Backend> App<B> {
 // handle Esc of all states
 //
 // TODO:
+// give msg if no card to discard
+// green highlight self discard card
 // handle when someone exits
 // handle Esc of all states
 // handle resize
+// custom room name

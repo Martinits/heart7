@@ -3,6 +3,7 @@ use tui::app::{App, AppResult};
 use tui::event::EventHandler;
 use tui::tui::Tui;
 use std::io;
+use std::env;
 use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
 use tokio_util::sync::CancellationToken;
@@ -13,8 +14,12 @@ use log4rs::config::{Appender, Config, Root};
 
 #[tokio::main]
 async fn main() -> AppResult<()> {
+    let logfile = match env::var("LOGFILE") {
+        Ok(f) => f,
+        Err(_) => "heart7.log".into()
+    };
 
-    let logfile = FileAppender::builder().build("heart7.log")?;
+    let logfile = FileAppender::builder().build(logfile)?;
     let config = Config::builder()
         .appender(Appender::builder().build("logfile", Box::new(logfile)))
         .build(Root::builder()

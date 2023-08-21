@@ -203,11 +203,11 @@ impl Room {
 
         self.play_cnt = 0;
 
-        let mut cards: Vec<u32> = (0..51).collect();
+        let mut cards: Vec<u32> = (0..=51).collect();
         cards.shuffle(&mut thread_rng());
 
-        for pi in 0..3 {
-            for c in &cards[pi*13 .. (pi+1)*13-1] {
+        for pi in 0..=3 {
+            for c in &cards[pi*13 .. (pi+1)*13] {
                 self.players[pi].game.add_card(c);
                 if *c == 19 {
                     self.next = pi;

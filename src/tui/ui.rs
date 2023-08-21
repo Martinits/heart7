@@ -36,9 +36,9 @@ pub fn render<B: Backend>(frame: &mut Frame<B>, appstate: &AppState) {
             => wait_ready(frame, players, msg, roomid),
         AppState::Gaming {
             players, next, choose, last, cards, holds,
-            has_last, desk, roomid, button, play_cnt, ..
+            has_last, desk, roomid, button, play_cnt, msg, ..
         } => gaming(frame, players, *next, roomid, *choose, last.as_ref(), cards,
-                holds, *has_last, desk, *button, *play_cnt),
+                holds, *has_last, desk, *button, *play_cnt, msg.as_ref()),
         AppState::GameResult => {}
     }
 }
@@ -936,6 +936,7 @@ fn render_chain<B: Backend>(frame: &mut Frame<B>, cs: CardSuit,
 }
 
 fn render_desk<B: Backend>(frame: &mut Frame<B>, desk: &Desk) {
+    // debug!("rendering Desk: {:?}", desk);
     let desk_rect = rect_cut_center(frame.size(), -24, -70);
     let rects = Layout::default()
         .direction(Direction::Horizontal)
@@ -1002,7 +1003,7 @@ fn render_my_cards<B: Backend>(frame: &mut Frame<B>, cards: &Vec<Card>,
                 CardAppearance::Vertical
             },
             !hints[i],
-            Some(MYCARD_BORDER)
+            if hints[i] { Some(MYCARD_BORDER) } else { Some(MYCARD_BORDER_DIM) }
         );
         if i+1 == choose {
             a.y += 1;
@@ -1353,10 +1354,45 @@ fn render_game_button<B: Backend>(frame: &mut Frame<B>, button: u32) {
     frame.render_widget(get_button("Hold", button == 1), buttons[2]);
 }
 
+fn render_msg<B: Backend>(frame: &mut Frame<B>, msg: String) {
+    let mut a = Layout::default()
+        .direction(Direction::Vertical)
+        .vertical_margin(1)
+        .constraints(
+            [
+                Constraint::Min(1),
+                Constraint::Length(1),
+                Constraint::Length(9),
+                Constraint::Length(1),
+            ].as_ref()
+        )
+        .split(frame.size())[1];
+    a = Layout::default()
+        .direction(Direction::Horizontal)
+        .horizontal_margin(1)
+        .constraints(
+            [
+                Constraint::Percentage(20),
+                Constraint::Length(14),
+                Constraint::Percentage(5),
+                Constraint::Length(47),
+                Constraint::Min(1),
+            ].as_ref()
+        )
+        .split(a)[3];
+
+    frame.render_widget(
+        Paragraph::new(msg)
+            .alignment(Alignment::Center)
+            .style(Style::default().fg(GAME_MSG).add_modifier(Modifier::BOLD)),
+        a
+    );
+}
+
 fn gaming<B: Backend>(
     frame: &mut Frame<B>, players: &Vec<(String, usize, u32)>, next: usize, roomid: &String,
     choose: usize, last: Option<&Card>, cards: &Vec<Card>, holds: &Vec<Card>,
-    has_last: bool, desk: &Desk, button: u32, play_cnt: u32
+    has_last: bool, desk: &Desk, button: u32, play_cnt: u32, msg: Option<&String>
 ) {
     render_players(frame,
         players.iter().map(|p| p.0.clone()).collect::<Vec<String>>().as_ref(),
@@ -1370,6 +1406,10 @@ fn gaming<B: Backend>(
     let hints = desk.get_play_hint(cards);
     render_my_cards(frame, cards, choose, hints);
 
+    if let Some(m) = msg {
+        render_msg(frame, m.clone());
+    }
+
     if play_cnt < 54 {
         render_next(frame, next);
     }
@@ -1381,7 +1421,7 @@ fn gaming<B: Backend>(
     render_my_holds(frame, holds);
 
     render_game_button(frame,
-        if next == players[0].1 {
+        if next == 0 {
             button
         } else {
             10 // anything not 0 or 1
