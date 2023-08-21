@@ -430,7 +430,7 @@ fn render_players<B: Backend>(frame: &mut Frame<B>, names: &Vec<String>,
         .horizontal_margin(1)
         .constraints(
             [
-                Constraint::Percentage(17),
+                Constraint::Percentage(20),
                 Constraint::Length(14),
                 Constraint::Min(1),
             ].as_ref()
@@ -966,15 +966,15 @@ fn render_my_cards<B: Backend>(frame: &mut Frame<B>, cards: &Vec<Card>,
         .horizontal_margin(1)
         .constraints(
             [
-                Constraint::Percentage(17),
+                Constraint::Percentage(20),
                 Constraint::Length(14),
-                Constraint::Percentage(10),
-                Constraint::Length(39),
+                Constraint::Percentage(5),
+                Constraint::Length(47),
                 Constraint::Min(1),
             ].as_ref()
         )
         .split(a)[3];
-    a = rect_cut_center(a, 100, -(cards.len() as i16 *3));
+    a = rect_cut_center(a, 100, -(cards.len() as i16 *3 + 8));
     a.y += 1;
     a.width = 11;
     a.height = 8;
@@ -1008,7 +1008,84 @@ fn render_last<B: Backend>(frame: &mut Frame<B>, last: Option<&Card>) {
 }
 
 fn render_my_holds<B: Backend>(frame: &mut Frame<B>, holds: &Vec<Card>) {
+    let mut a = Layout::default()
+        .direction(Direction::Vertical)
+        .vertical_margin(1)
+        .constraints(
+            [
+                Constraint::Percentage(30),
+                Constraint::Length(13),
+                Constraint::Length(3),
+                Constraint::Min(1),
+                Constraint::Length(13),
+            ].as_ref()
+        )
+        .split(frame.size())[4];
+    a = Layout::default()
+        .direction(Direction::Horizontal)
+        .horizontal_margin(1)
+        .constraints(
+            [
+                Constraint::Min(1),
+                Constraint::Length(45),
+            ].as_ref()
+        )
+        .split(a)[1];
 
+    let mut hold_points = 0;
+    holds.iter().for_each(|c| hold_points += c.num);
+    frame.render_widget(
+        Paragraph::new(format!("HOLD: {}      POINTS: {}", holds.len(), hold_points))
+            .alignment(Alignment::Center)
+            .block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .border_type(BorderType::Rounded)
+            )
+            .style(Style::default().fg(HOLD_BORDER)),
+        a
+    );
+
+    // cards
+    a = Layout::default()
+        .direction(Direction::Vertical)
+        .margin(1)
+        .constraints(
+            [
+                Constraint::Length(1),
+                Constraint::Length(1),
+                Constraint::Length(8),
+                Constraint::Length(1),
+            ].as_ref()
+        )
+        .split(a)[2];
+
+    let mut needed_width = holds.len() as u16 *3 + 8;
+    let mut might_overflow = false;
+    if needed_width > a.width {
+        might_overflow = true;
+        needed_width -= 8;
+    }
+    a = rect_cut_center(a, 100, -(needed_width as i16));
+    a.width = 11;
+    a.height = 8;
+
+    for (i, c) in holds.iter().enumerate() {
+        if might_overflow {
+            a.width = 4;
+        }
+        render_card(frame, c, a.clone(),
+            if !might_overflow && i == holds.len() - 1 {
+                CardAppearance::All
+            } else {
+                CardAppearance::Vertical
+            },
+            false,
+            Some(MYCARD_BORDER)
+        );
+        a.x += 3;
+        a.width = 8;
+    }
 }
 
 fn render_game_button<B: Backend>(frame: &mut Frame<B>, button: u32) {
@@ -1030,7 +1107,6 @@ fn gaming<B: Backend>(
     render_desk(frame, desk);
 
     let hints = desk.get_play_hint(cards);
-    debug!("{:?}", hints);
     render_my_cards(frame, cards, choose, hints);
 
     render_next(frame, next);

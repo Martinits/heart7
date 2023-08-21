@@ -32,3 +32,5 @@ pub const SPADE:                 Color = Color::Rgb(0x60, 0x6C, 0x5D);
 pub const HEART:                 Color = Color::Rgb(0xFA, 0x1E, 0x0E);
 pub const CLUB:                  Color = Color::Rgb(0x99, 0x99, 0x99);
 pub const DIAMOND:               Color = Color::Rgb(0xFF, 0x7B, 0x54);
+
+pub const HOLD_BORDER:           Color = Color::Rgb(0xFF, 0x77, 0x77);
