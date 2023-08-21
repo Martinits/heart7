@@ -34,3 +34,5 @@ pub const CLUB:                  Color = Color::Rgb(0x99, 0x99, 0x99);
 pub const DIAMOND:               Color = Color::Rgb(0xFF, 0x7B, 0x54);
 
 pub const HOLD_BORDER:           Color = Color::Rgb(0xFF, 0x77, 0x77);
+
+pub const NEXT_TURN:             Color = Color::Rgb(0xFF, 0x67, 0x01);

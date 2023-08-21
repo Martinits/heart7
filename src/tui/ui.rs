@@ -36,9 +36,9 @@ pub fn render<B: Backend>(frame: &mut Frame<B>, appstate: &AppState) {
             => wait_ready(frame, players, msg, roomid),
         AppState::Gaming {
             players, next, choose, last, cards, holds,
-            has_last, desk, roomid, button, ..
+            has_last, desk, roomid, button, play_cnt, ..
         } => gaming(frame, players, *next, roomid, *choose, last.as_ref(), cards,
-                holds, *has_last, desk, *button),
+                holds, *has_last, desk, *button, *play_cnt),
         AppState::GameResult => {}
     }
 }
@@ -731,6 +731,7 @@ enum CardAppearance {
     Vertical,
     Horizontal,
     Empty,
+    Hold,
 }
 
 fn get_card_text(card: &Card) -> (String, String) {
@@ -818,6 +819,17 @@ fn render_card<B: Backend>(
                     Line::styled("", card_suit_style),
                     Line::styled("", card_suit_style),
                     Line::styled(text_suit.clone(), card_suit_style).alignment(Alignment::Center),
+                ].to_vec()
+            )
+        }
+        CardAppearance::Hold => {
+            Text::from(
+                [
+                    Line::styled("", card_suit_style),
+                    Line::styled("HOLD!", card_suit_style).alignment(Alignment::Center),
+                    Line::styled("", card_suit_style),
+                    Line::styled("", card_suit_style),
+                    Line::styled("HOLD!", card_suit_style).alignment(Alignment::Center),
                 ].to_vec()
             )
         }
@@ -1000,11 +1012,226 @@ fn render_my_cards<B: Backend>(frame: &mut Frame<B>, cards: &Vec<Card>,
 }
 
 fn render_next<B: Backend>(frame: &mut Frame<B>, next: usize) {
+    let a = match next {
+        // myself
+        0 => {
+            let a = Layout::default()
+                .direction(Direction::Vertical)
+                .vertical_margin(1)
+                .constraints(
+                    [
+                        Constraint::Min(1),
+                        Constraint::Length(1),
+                        Constraint::Length(2),
+                        Constraint::Length(7),
+                        Constraint::Length(2),
+                    ].as_ref()
+                )
+                .split(frame.size())[1];
+            Layout::default()
+                .direction(Direction::Horizontal)
+                .horizontal_margin(1)
+                .constraints(
+                    [
+                        Constraint::Percentage(5),
+                        Constraint::Percentage(10),
+                        Constraint::Min(1),
+                    ].as_ref()
+                )
+                .split(a)[1]
+        }
+        // right
+        1 => {
+            let mut a = Layout::default()
+                .direction(Direction::Vertical)
+                .vertical_margin(1)
+                .constraints(
+                    [
+                        Constraint::Percentage(30),
+                        Constraint::Length(11),
+                        Constraint::Min(1)
+                    ].as_ref()
+                )
+                .split(frame.size())[1];
+            a = rect_cut_center(a, -1, 100);
+            Layout::default()
+                .direction(Direction::Horizontal)
+                .horizontal_margin(1)
+                .constraints(
+                    [
+                        Constraint::Min(1),
+                        Constraint::Length(12),
+                        Constraint::Percentage(5),
+                        Constraint::Length(14),
+                    ].as_ref()
+                )
+                .split(a)[1]
+                }
+        // top
+        2 => {
+            let mut a = Layout::default()
+                .direction(Direction::Vertical)
+                .vertical_margin(1)
+                .constraints(
+                    [
+                        Constraint::Length(11),
+                        Constraint::Min(1),
+                    ].as_ref()
+                )
+                .split(frame.size())[0];
+            a = rect_cut_center(a, -1, 100);
+            Layout::default()
+                .direction(Direction::Horizontal)
+                .horizontal_margin(1)
+                .constraints(
+                    [
+                        Constraint::Percentage(40),
+                        Constraint::Percentage(10),
+                        Constraint::Percentage(3),
+                        Constraint::Length(12),
+                        Constraint::Min(1),
+                    ].as_ref()
+                )
+                .split(a)[3]
+        }
+        // left
+        3 => {
+            let mut a = Layout::default()
+                .direction(Direction::Vertical)
+                .vertical_margin(1)
+                .constraints(
+                    [
+                        Constraint::Percentage(30),
+                        Constraint::Length(11),
+                        Constraint::Min(1)
+                    ].as_ref()
+                )
+                .split(frame.size())[1];
+            a = rect_cut_center(a, -1, 100);
+            Layout::default()
+                .direction(Direction::Horizontal)
+                .horizontal_margin(1)
+                .constraints(
+                    [
+                        Constraint::Length(14),
+                        Constraint::Percentage(5),
+                        Constraint::Length(12),
+                        Constraint::Min(1),
+                    ].as_ref()
+                )
+                .split(a)[2]
+        }
+        _ => panic!("next is not in 0..=3 !"),
+    };
 
+    frame.render_widget(
+        Paragraph::new(
+            if next == 0 {
+                "Your Turn!"
+            } else {
+                "Waiting..."
+            }
+        ).alignment(Alignment::Center)
+        .style(Style::default().fg(NEXT_TURN).add_modifier(Modifier::BOLD)),
+        a
+    );
 }
 
-fn render_last<B: Backend>(frame: &mut Frame<B>, last: Option<&Card>) {
+fn render_last<B: Backend>(frame: &mut Frame<B>, last: Option<&Card>, who: usize) {
+    let a = match who {
+        // myself
+        0 => {return}
+        // right
+        1 => {
+            let mut a = Layout::default()
+                .direction(Direction::Vertical)
+                .vertical_margin(1)
+                .constraints(
+                    [
+                        Constraint::Percentage(30),
+                        Constraint::Length(11),
+                        Constraint::Min(1)
+                    ].as_ref()
+                )
+                .split(frame.size())[1];
+            a = rect_cut_center(a, -8, 100);
+            Layout::default()
+                .direction(Direction::Horizontal)
+                .horizontal_margin(1)
+                .constraints(
+                    [
+                        Constraint::Min(1),
+                        Constraint::Length(11),
+                        Constraint::Percentage(5),
+                        Constraint::Length(14),
+                    ].as_ref()
+                )
+                .split(a)[1]
+                }
+        // top
+        2 => {
+            let mut a = Layout::default()
+                .direction(Direction::Vertical)
+                .vertical_margin(1)
+                .constraints(
+                    [
+                        Constraint::Length(11),
+                        Constraint::Min(1),
+                    ].as_ref()
+                )
+                .split(frame.size())[0];
+            a = rect_cut_center(a, -8, 100);
+            Layout::default()
+                .direction(Direction::Horizontal)
+                .horizontal_margin(1)
+                .constraints(
+                    [
+                        Constraint::Percentage(40),
+                        Constraint::Percentage(10),
+                        Constraint::Percentage(3),
+                        Constraint::Length(11),
+                        Constraint::Min(1),
+                    ].as_ref()
+                )
+                .split(a)[3]
+        }
+        // left
+        3 => {
+            let mut a = Layout::default()
+                .direction(Direction::Vertical)
+                .vertical_margin(1)
+                .constraints(
+                    [
+                        Constraint::Percentage(30),
+                        Constraint::Length(11),
+                        Constraint::Min(1)
+                    ].as_ref()
+                )
+                .split(frame.size())[1];
+            a = rect_cut_center(a, -8, 100);
+            Layout::default()
+                .direction(Direction::Horizontal)
+                .horizontal_margin(1)
+                .constraints(
+                    [
+                        Constraint::Length(14),
+                        Constraint::Percentage(5),
+                        Constraint::Length(11),
+                        Constraint::Min(1),
+                    ].as_ref()
+                )
+                .split(a)[2]
+        }
+        _ => panic!("next is not in 0..=3 !"),
+    };
 
+    if let Some(c) = last {
+        // discard
+        render_card(frame, c, a, CardAppearance::All, false, Some(NEXT_TURN));
+    } else {
+        // hold
+        render_card(frame, &NULL_CARD, a, CardAppearance::Hold, false, Some(NEXT_TURN));
+    }
 }
 
 fn render_my_holds<B: Backend>(frame: &mut Frame<B>, holds: &Vec<Card>) {
@@ -1129,7 +1356,7 @@ fn render_game_button<B: Backend>(frame: &mut Frame<B>, button: u32) {
 fn gaming<B: Backend>(
     frame: &mut Frame<B>, players: &Vec<(String, usize, u32)>, next: usize, roomid: &String,
     choose: usize, last: Option<&Card>, cards: &Vec<Card>, holds: &Vec<Card>,
-    has_last: bool, desk: &Desk, button: u32
+    has_last: bool, desk: &Desk, button: u32, play_cnt: u32
 ) {
     render_players(frame,
         players.iter().map(|p| p.0.clone()).collect::<Vec<String>>().as_ref(),
@@ -1143,12 +1370,21 @@ fn gaming<B: Backend>(
     let hints = desk.get_play_hint(cards);
     render_my_cards(frame, cards, choose, hints);
 
-    render_next(frame, next);
+    if play_cnt < 54 {
+        render_next(frame, next);
+    }
+
     if has_last {
-        render_last(frame, last);
+        render_last(frame, last, (next+3)%4);
     }
 
     render_my_holds(frame, holds);
 
-    render_game_button(frame, button);
+    render_game_button(frame,
+        if next == players[0].1 {
+            button
+        } else {
+            10 // anything not 0 or 1
+        }
+    );
 }

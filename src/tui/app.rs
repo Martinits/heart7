@@ -125,14 +125,14 @@ impl<B: Backend> App<B> {
                     addr:"127.0.0.1:20007".into()
                 },
                 players: vec![
-                    ("1".into(), 0, 0),
-                    ("2".into(), 1, 0),
-                    ("3".into(), 2, 0),
-                    ("4".into(), 3, 0)
+                    ("first".into(), 0, 0),
+                    ("second".into(), 1, 0),
+                    ("third".into(), 2, 0),
+                    ("fourth".into(), 3, 0)
                 ],
-                next: 0,
+                next: 3,
                 choose: 0,
-                last: None,
+                last: Some(Card{suit:CardSuit::Spade, num: 13}),
                 cards: vec![
                     Card { suit: CardSuit::Spade, num: 3},
                     Card { suit: CardSuit::Diamond, num: 11},
@@ -160,7 +160,7 @@ impl<B: Backend> App<B> {
                     Card { suit: CardSuit::Diamond, num: 3},
                     Card { suit: CardSuit::Club, num: 1},
                 ],
-                has_last: false,
+                has_last: true,
                 desk: Desk {
                     diamond: (vec![
                         (Card{suit:CardSuit::Diamond, num: 1}, true),
@@ -343,8 +343,8 @@ impl<B: Backend> App<B> {
             }
             AppState::Gaming {
                 client: ref mut c, ref players, ref mut choose, ref mut cards,
-                ref mut holds, ref roomid, ref button, ..
-            } if cards.len() != 0 && *choose != 0 => {
+                ref mut holds, ref roomid, ref button, ref next, ..
+            } if cards.len() != 0 && *choose != 0 && *next == 0 => {
                 let play = match *button {
                         0 => Play::Discard(cards[*choose-1].clone().into()),
                         _ => Play::Hold(cards[*choose-1].clone().into())
@@ -468,7 +468,9 @@ impl<B: Backend> App<B> {
                 *is_input = !*is_input;
                 true
             }
-            AppState::Gaming {ref mut button, ..}=> {
+            AppState::Gaming {
+                ref mut button, ref next, ..
+            } if *next == 0 => {
                 *button += 1;
                 *button %= 2;
                 true
@@ -554,14 +556,6 @@ impl<B: Backend> App<B> {
         }
     }
 
-    fn someone_hold(players: &mut Vec<(String, usize, u32)>, pid: u32) {
-        if let Some(p) = players.iter_mut().find(|p| p.1 == pid as usize) {
-            p.2 += 1;
-        } else {
-            panic!("playerid in PlayInfo not exist!");
-        }
-    }
-
     async fn handle_stream_msg(&mut self, msg: GameMsg) -> bool {
         match self.state {
             AppState::WaitPlayer {ref mut client, ref mut players, ref roomid, ..} => {
@@ -605,7 +599,8 @@ impl<B: Backend> App<B> {
                                     players: players.iter().map(
                                         |p| (p.0.clone(), p.1, 0)
                                     ).collect(),
-                                    next: next as usize,
+                                    next: players.iter().position(|p| p.1 == next as usize)
+                                            .unwrap() as usize,
                                     last: None,
                                     cards,
                                     holds: Vec::new(),
@@ -631,6 +626,7 @@ impl<B: Backend> App<B> {
                 match msg.msg {
                     Some(Msg::Play(PlayInfo { player: pid, playone })) => {
                         assert!(pid < 4);
+                        assert!(players[*next].1 == pid as usize);
                         if playone == None {
                             panic!("Empty PlayInfo in GameMsg Play!");
                         } else if let Some(po) = playone {
@@ -650,7 +646,7 @@ impl<B: Backend> App<B> {
                                     Play::Hold(ci) => {
                                         assert!(ci.num == 0 && ci.suit == 0);
                                         *last = None;
-                                        Self::someone_hold(players, pid);
+                                        players[*next].2 += 1;
                                     }
                                 }
                                 *next += 1;
@@ -681,3 +677,8 @@ impl<B: Backend> App<B> {
 // handle when someone exits
 //
 // handle Esc of all states
+//
+// TODO:
+// handle when someone exits
+// handle Esc of all states
+// handle resize
