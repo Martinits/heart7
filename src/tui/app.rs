@@ -96,7 +96,6 @@ pub enum Action {
     Refresh,
     Backspace,
     Delete,
-    Tab,
     ServerConnectResult(Result<Client, String>),
     StreamMsg(GameMsg),
 }
@@ -150,8 +149,6 @@ impl<B: Backend> App<B> {
                     Card { suit: CardSuit::Club, num: 1},
                 ],
                 holds: vec![
-                    Card { suit: CardSuit::Diamond, num: 11},
-                    Card { suit: CardSuit::Club, num: 13},
                     Card { suit: CardSuit::Spade, num: 4},
                     Card { suit: CardSuit::Heart, num: 1},
                     Card { suit: CardSuit::Diamond, num: 12},
@@ -217,7 +214,6 @@ impl<B: Backend> App<B> {
                             Action::Refresh => true,
                             Action::Backspace => self.handle_del(true),
                             Action::Delete => self.handle_del(false),
-                            Action::Tab => self.handle_tab(),
                             Action::ServerConnectResult(r)
                                 => self.handle_server_connect_result(r),
                             Action::StreamMsg(msg)
@@ -348,14 +344,14 @@ impl<B: Backend> App<B> {
             AppState::Gaming {
                 client: ref mut c, ref players, ref mut choose, ref mut cards,
                 ref mut holds, ref roomid, ref button, ..
-            } if cards.len() != 0 => {
+            } if cards.len() != 0 && *choose != 0 => {
                 let play = match *button {
-                        0 => Play::Discard(cards[*choose].clone().into()),
-                        _ => Play::Hold(cards[*choose].clone().into())
+                        0 => Play::Discard(cards[*choose-1].clone().into()),
+                        _ => Play::Hold(cards[*choose-1].clone().into())
                 };
                 match c.play_card(players[0].1 as u32, roomid.clone(), play).await {
                     Ok(_) => {
-                        let c = cards.remove(*choose);
+                        let c = cards.remove(*choose-1);
                         *choose = 0;
                         if *button == 1 {
                             holds.push(c);
@@ -472,6 +468,11 @@ impl<B: Backend> App<B> {
                 *is_input = !*is_input;
                 true
             }
+            AppState::Gaming {ref mut button, ..}=> {
+                *button += 1;
+                *button %= 2;
+                true
+            }
             _ => false
         }
     }
@@ -503,19 +504,6 @@ impl<B: Backend> App<B> {
                 input.handle_event(
                     &CrosstermEvent::Key(KeyEvent::new(keycode, KeyModifiers::NONE))
                 );
-                true
-            }
-            _ => {
-                false
-            }
-        }
-    }
-
-    fn handle_tab(&mut self) -> bool {
-        match self.state {
-            AppState::GetRoom {ref mut button, ..}=> {
-                *button += 1;
-                *button %= 2;
                 true
             }
             _ => {

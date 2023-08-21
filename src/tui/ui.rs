@@ -38,7 +38,7 @@ pub fn render<B: Backend>(frame: &mut Frame<B>, appstate: &AppState) {
             players, next, choose, last, cards, holds,
             has_last, desk, roomid, button, ..
         } => gaming(frame, players, *next, roomid, *choose, last.as_ref(), cards,
-                holds, *has_last, desk, roomid, *button),
+                holds, *has_last, desk, *button),
         AppState::GameResult => {}
     }
 }
@@ -398,7 +398,7 @@ fn render_ready<B: Backend>(frame: &mut Frame<B>, a: Rect) {
     )
 }
 
-fn render_hold<B: Backend>(frame: &mut Frame<B>, a: Rect, num: u32) {
+fn render_hold_num<B: Backend>(frame: &mut Frame<B>, a: Rect, num: u32) {
     frame.render_widget(
         Paragraph::new(format!("HOLD: {}", num))
             .alignment(Alignment::Center)
@@ -613,7 +613,7 @@ fn render_players<B: Backend>(frame: &mut Frame<B>, names: &Vec<String>,
                 ].as_ref()
             )
             .split(a)[1];
-        render_hold(frame, a, holds[1]);
+        render_hold_num(frame, a, holds[1]);
 
         // top
         let mut a = Layout::default()
@@ -638,7 +638,7 @@ fn render_players<B: Backend>(frame: &mut Frame<B>, names: &Vec<String>,
             )
             .split(a)[1];
         a = rect_cut_center(a, -3, 100);
-        render_hold(frame, a, holds[2]);
+        render_hold_num(frame, a, holds[2]);
 
         // left
         let mut a = Layout::default()
@@ -663,7 +663,7 @@ fn render_players<B: Backend>(frame: &mut Frame<B>, names: &Vec<String>,
                 ].as_ref()
             )
             .split(a)[0];
-        render_hold(frame, a, holds[3]);
+        render_hold_num(frame, a, holds[3]);
     }
 }
 
@@ -1084,18 +1084,52 @@ fn render_my_holds<B: Backend>(frame: &mut Frame<B>, holds: &Vec<Card>) {
             Some(MYCARD_BORDER)
         );
         a.x += 3;
-        a.width = 8;
+        a.width = 11;
     }
 }
 
 fn render_game_button<B: Backend>(frame: &mut Frame<B>, button: u32) {
+    let mut a = Layout::default()
+        .direction(Direction::Vertical)
+        .vertical_margin(1)
+        .constraints(
+            [
+                Constraint::Min(1),
+                Constraint::Length(7),
+                Constraint::Length(2),
+            ].as_ref()
+        )
+        .split(frame.size())[1];
+    a = Layout::default()
+        .direction(Direction::Horizontal)
+        .horizontal_margin(1)
+        .constraints(
+            [
+                Constraint::Percentage(5),
+                Constraint::Percentage(10),
+                Constraint::Min(1),
+            ].as_ref()
+        )
+        .split(a)[1];
+    let buttons = Layout::default()
+        .direction(Direction::Vertical)
+        .constraints(
+            [
+                Constraint::Length(3),
+                Constraint::Length(1),
+                Constraint::Length(3),
+            ].as_ref()
+        )
+        .split(a);
 
+    frame.render_widget(get_button("Play", button == 0), buttons[0]);
+    frame.render_widget(get_button("Hold", button == 1), buttons[2]);
 }
 
 fn gaming<B: Backend>(
     frame: &mut Frame<B>, players: &Vec<(String, usize, u32)>, next: usize, roomid: &String,
     choose: usize, last: Option<&Card>, cards: &Vec<Card>, holds: &Vec<Card>,
-    has_last: bool, desk: &Desk, roomif: &String, button: u32
+    has_last: bool, desk: &Desk, button: u32
 ) {
     render_players(frame,
         players.iter().map(|p| p.0.clone()).collect::<Vec<String>>().as_ref(),
