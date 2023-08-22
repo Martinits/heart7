@@ -145,7 +145,7 @@ impl Game {
                     } else {
                         Err(Status::new(
                             Code::PermissionDenied,
-                            "You can't discard this card!"
+                            "You can't play this card!"
                         ))
                     }
                 } else {
@@ -162,7 +162,7 @@ impl Game {
                     if desk_cand.intersection(&self.cards).any(|_| true) {
                         Err(Status::new(
                             Code::PermissionDenied,
-                            "You can't hold, since you have cards to discard!"
+                            "You can't hold, since you have cards to play!"
                         ))
                     } else {
                         Ok(())

@@ -189,6 +189,19 @@ impl<B: Backend> App<B> {
     }
 
     pub async fn run(&mut self) -> AppResult<()> {
+        // client workflow
+        // new room
+        // join room -> stream
+        // room status -> draw first
+        // listen stream and draw
+        // get a roominfo: new player join in, if all 4 join in, display ready state
+        // get a whoready: someone get ready
+        // get a start: server start game, and client should rpc GameStatus to get cards
+        // continue listen stream
+        // rpc ExitGame after user confirm the gameresult
+        // return to WaitReady
+        // handle when someone exits
+        // handle Esc of all states
 
         let mut draw_or_not = true;
         loop {
@@ -681,20 +694,6 @@ impl<B: Backend> App<B> {
     }
 }
 
-// client workflow
-// new room
-// join room -> stream
-// room status -> draw first
-// listen stream and draw
-// get a roominfo: new player join in, if all 4 join in, display ready state
-// get a whoready: someone get ready
-// get a start: server start game, and client should rpc GameStatus to get cards
-// continue listen stream
-//
-// handle when someone exits
-//
-// handle Esc of all states
-//
 // TODO:
 // give msg if no card to discard
 // green highlight self discard card
