@@ -105,7 +105,7 @@ fn render_chain<B: Backend>(frame: &mut Frame<B>, cs: CardSuit,
 
 pub fn render_desk<B: Backend>(frame: &mut Frame<B>, desk: &Desk) {
     // debug!("rendering Desk: {:?}", desk);
-    let desk_rect = rect_cut_center(frame.size(), -24, -70);
+    let desk_rect = rect_cut_center(frame.size(), -24, -69);
     let rects = Layout::default()
         .direction(Direction::Horizontal)
         .constraints(

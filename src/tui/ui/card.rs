@@ -18,6 +18,7 @@ pub enum CardAppearance {
     Horizontal,
     Empty,
     Hold,
+    Half,
 }
 
 pub fn get_card_text(card: &Card) -> (String, String) {
@@ -52,7 +53,7 @@ pub fn render_card<B: Backend>(
     dim: bool, highlight: Option<Color>
 ) {
     let mut block_style = if let Some(c) = highlight {
-        Style::default().fg(c).add_modifier(Modifier::BOLD)
+        Style::default().fg(c)
     } else {
         Style::default().fg(CARD_BORDER)
     };
@@ -116,6 +117,17 @@ pub fn render_card<B: Backend>(
                     Line::styled("", card_suit_style),
                     Line::styled("", card_suit_style),
                     Line::styled("HOLD!", card_suit_style).alignment(Alignment::Center),
+                ].to_vec()
+            )
+        }
+        CardAppearance::Half => {
+            Text::from(
+                [
+                    Line::styled(text_num.clone(), card_suit_style),
+                    Line::styled(
+                        format!("{}   {}", text_suit.clone(), text_suit.clone()),
+                        card_suit_style
+                    ),
                 ].to_vec()
             )
         }

@@ -37,18 +37,21 @@ pub enum AppState {
         input: Input,
         msg: String,
         name: String,
+        stream_listener_cancel: CancellationToken,
     },
     WaitPlayer {
         client: Client,
         players: Vec<(String, usize, bool)>,
         msg: String,
         roomid: String,
+        stream_listener_cancel: CancellationToken,
     },
     WaitReady {
         client: Client,
         players: Vec<(String, usize, bool)>,
         msg: String,
         roomid: String,
+        stream_listener_cancel: CancellationToken,
     },
     Gaming {
         client: Client,
@@ -64,8 +67,15 @@ pub enum AppState {
         button: u32,
         play_cnt: u32,
         msg: Option<String>,
+        stream_listener_cancel: CancellationToken,
     },
-    GameResult,
+    GameResult {
+        ds: Vec<Vec<(Card, usize)>>,
+        client: Client,
+        players: Vec<(String, usize, Vec<Card>)>,
+        roomid: String,
+        stream_listener_cancel: CancellationToken,
+    },
     // ExitMenu(Box<Self>),
 }
 
@@ -178,6 +188,136 @@ impl<B: Backend> App<B> {
             //     button: 0,
             //     play_cnt: 0,
             //     msg: None,
+            //     stream_listener_cancel: CancellationToken::new(),
+            // },
+            // state: AppState::GameResult{
+            //     stream_listener_cancel: CancellationToken::new(),
+            //     ds: vec![
+            //         vec![
+            //             (Card{suit: CardSuit::Spade, num: 1}, 3),
+            //             (Card{suit: CardSuit::Spade, num: 2}, 0),
+            //             (Card{suit: CardSuit::Spade, num: 3}, 1),
+            //             (Card{suit: CardSuit::Spade, num: 4}, 1),
+            //             (Card{suit: CardSuit::Spade, num: 5}, 2),
+            //             (Card{suit: CardSuit::Spade, num: 6}, 3),
+            //             (Card{suit: CardSuit::Spade, num: 7}, 0),
+            //             (Card{suit: CardSuit::Spade, num: 8}, 0),
+            //             (Card{suit: CardSuit::Spade, num: 9}, 1),
+            //             (Card{suit: CardSuit::Spade, num: 10}, 2),
+            //             (Card{suit: CardSuit::Spade, num: 11}, 3),
+            //             (Card{suit: CardSuit::Spade, num: 12}, 0),
+            //             (Card{suit: CardSuit::Spade, num: 13}, 1),
+            //         ],
+            //         vec![
+            //             (Card{suit: CardSuit::Heart, num: 1}, 2),
+            //             (Card{suit: CardSuit::Heart, num: 2}, 3),
+            //             (Card{suit: CardSuit::Heart, num: 3}, 0),
+            //             (Card{suit: CardSuit::Heart, num: 4}, 0),
+            //             (Card{suit: CardSuit::Heart, num: 5}, 1),
+            //             (Card{suit: CardSuit::Heart, num: 6}, 3),
+            //             (Card{suit: CardSuit::Heart, num: 7}, 0),
+            //             (Card{suit: CardSuit::Heart, num: 8}, 2),
+            //             (Card{suit: CardSuit::Heart, num: 9}, 3),
+            //             (Card{suit: CardSuit::Heart, num: 10}, 1),
+            //             (Card{suit: CardSuit::Heart, num: 11}, 0),
+            //             (Card{suit: CardSuit::Heart, num: 12}, 2),
+            //             (Card{suit: CardSuit::Heart, num: 13}, 1),
+            //         ],
+            //         vec![
+            //             (Card{suit: CardSuit::Club, num: 3}, 0),
+            //             (Card{suit: CardSuit::Club, num: 4}, 2),
+            //             (Card{suit: CardSuit::Club, num: 5}, 0),
+            //             (Card{suit: CardSuit::Club, num: 6}, 2),
+            //             (Card{suit: CardSuit::Club, num: 7}, 1),
+            //             (Card{suit: CardSuit::Club, num: 8}, 2),
+            //             (Card{suit: CardSuit::Club, num: 9}, 1),
+            //             (Card{suit: CardSuit::Club, num: 10}, 3),
+            //             (Card{suit: CardSuit::Club, num: 11}, 3),
+            //             (Card{suit: CardSuit::Club, num: 12}, 0),
+            //         ],
+            //         vec![
+            //             (Card{suit: CardSuit::Diamond, num: 1}, 2),
+            //             (Card{suit: CardSuit::Diamond, num: 2}, 1),
+            //             (Card{suit: CardSuit::Diamond, num: 3}, 0),
+            //             (Card{suit: CardSuit::Diamond, num: 4}, 1),
+            //             (Card{suit: CardSuit::Diamond, num: 5}, 1),
+            //             (Card{suit: CardSuit::Diamond, num: 6}, 3),
+            //             (Card{suit: CardSuit::Diamond, num: 7}, 1),
+            //             (Card{suit: CardSuit::Diamond, num: 8}, 0),
+            //             (Card{suit: CardSuit::Diamond, num: 9}, 0),
+            //             (Card{suit: CardSuit::Diamond, num: 10}, 2),
+            //             (Card{suit: CardSuit::Diamond, num: 11}, 2),
+            //             (Card{suit: CardSuit::Diamond, num: 12}, 1),
+            //             (Card{suit: CardSuit::Diamond, num: 13}, 0),
+            //         ],
+            //     ],
+            //     client: Client{
+            //         c: heart7_client::Heart7Client::connect("http://127.0.0.1:20007").await.unwrap(),
+            //         addr:"127.0.0.1:20007".into()
+            //     },
+            //     roomid: "jbhfvhsbdfvhbkdsfhbv".into(),
+            //     players: vec![
+            //         ("first".into(), 0, vec![
+            //             Card { suit: CardSuit::Spade, num: 4},
+            //             Card { suit: CardSuit::Heart, num: 1},
+            //             Card { suit: CardSuit::Diamond, num: 12},
+            //             Card { suit: CardSuit::Heart, num: 7},
+            //             Card { suit: CardSuit::Spade, num: 6},
+            //             Card { suit: CardSuit::Club, num: 2},
+            //             Card { suit: CardSuit::Heart, num: 8},
+            //             Card { suit: CardSuit::Spade, num: 10},
+            //             Card { suit: CardSuit::Diamond, num: 3},
+            //             Card { suit: CardSuit::Club, num: 1},
+            //             Card { suit: CardSuit::Heart, num: 8},
+            //             Card { suit: CardSuit::Club, num: 9},
+            //             Card { suit: CardSuit::Diamond, num: 3},
+            //         ]),
+            //         ("second".into(), 1, vec![
+            //             Card { suit: CardSuit::Spade, num: 4},
+            //             Card { suit: CardSuit::Heart, num: 1},
+            //             Card { suit: CardSuit::Diamond, num: 12},
+            //             Card { suit: CardSuit::Heart, num: 7},
+            //             Card { suit: CardSuit::Spade, num: 6},
+            //             Card { suit: CardSuit::Club, num: 2},
+            //             Card { suit: CardSuit::Heart, num: 8},
+            //             Card { suit: CardSuit::Spade, num: 10},
+            //             Card { suit: CardSuit::Diamond, num: 3},
+            //             Card { suit: CardSuit::Club, num: 1},
+            //             Card { suit: CardSuit::Heart, num: 8},
+            //             Card { suit: CardSuit::Club, num: 9},
+            //             Card { suit: CardSuit::Diamond, num: 3},
+            //         ]),
+            //         ("third".into(), 2, vec![
+            //             Card { suit: CardSuit::Spade, num: 4},
+            //             Card { suit: CardSuit::Heart, num: 1},
+            //             Card { suit: CardSuit::Diamond, num: 12},
+            //             Card { suit: CardSuit::Heart, num: 7},
+            //             Card { suit: CardSuit::Spade, num: 6},
+            //             Card { suit: CardSuit::Club, num: 2},
+            //             Card { suit: CardSuit::Heart, num: 8},
+            //             Card { suit: CardSuit::Spade, num: 10},
+            //             Card { suit: CardSuit::Diamond, num: 3},
+            //             Card { suit: CardSuit::Club, num: 1},
+            //             Card { suit: CardSuit::Heart, num: 8},
+            //             Card { suit: CardSuit::Club, num: 9},
+            //             Card { suit: CardSuit::Diamond, num: 3},
+            //         ]),
+            //         ("fourth".into(), 3, vec![
+            //             Card { suit: CardSuit::Spade, num: 4},
+            //             Card { suit: CardSuit::Heart, num: 1},
+            //             Card { suit: CardSuit::Diamond, num: 12},
+            //             Card { suit: CardSuit::Heart, num: 7},
+            //             Card { suit: CardSuit::Spade, num: 6},
+            //             Card { suit: CardSuit::Club, num: 2},
+            //             Card { suit: CardSuit::Heart, num: 8},
+            //             Card { suit: CardSuit::Spade, num: 10},
+            //             Card { suit: CardSuit::Diamond, num: 3},
+            //             Card { suit: CardSuit::Club, num: 1},
+            //             Card { suit: CardSuit::Heart, num: 8},
+            //             Card { suit: CardSuit::Club, num: 9},
+            //             Card { suit: CardSuit::Diamond, num: 3},
+            //         ])
+            //     ]
             // },
             tx,
             rx,
@@ -280,6 +420,7 @@ impl<B: Backend> App<B> {
                                         Successfully created a room, ID is shown below.\n\
                                         Please press ENTER to join room:", input.value()),
                                 name: input.value().into(),
+                                stream_listener_cancel: CancellationToken::new(),
                             };
                         },
                         Err(s) => {
@@ -297,19 +438,21 @@ impl<B: Backend> App<B> {
                         client: c.clone(),
                         msg: format!("Hello, {}!\n\
                                 Please enter room ID:", input.value()),
+                        stream_listener_cancel: CancellationToken::new(),
                     }
                 }
                 true
             }
             AppState::JoinRoom {
-                ref input, ref mut msg, client: ref mut c, ref name
+                ref input, ref mut msg, client: ref mut c, ref name,
+                stream_listener_cancel: ref cancel
             } => {
                 info!("Joining room {}", input.value());
                 match c.join_room(name.clone(), input.value().into()).await {
                     Ok(stream) => {
                         // spawn stream listerning task
                         info!("Spawning GameStream listener...");
-                        Client::spawn_stream_listener(stream, &self.cancel, &self.tx);
+                        Client::spawn_stream_listener(stream, cancel, &self.tx);
                         info!("Querying RoomStatus...");
                         match c.room_status(input.value().into()).await {
                             Ok(rs) => match rs.state {
@@ -320,6 +463,7 @@ impl<B: Backend> App<B> {
                                         client: c.clone(),
                                         roomid: input.value().into(),
                                         msg: "Waiting for other players to join room......".into(),
+                                        stream_listener_cancel: cancel.clone(),
                                     };
                                 }
                                 Some(State::WaitReady(_)) => {
@@ -329,6 +473,7 @@ impl<B: Backend> App<B> {
                                         client: c.clone(),
                                         roomid: input.value().into(),
                                         msg: "Please press ENTER to get ready!".into(),
+                                        stream_listener_cancel: cancel.clone(),
                                     }
                                 }
                                 _ => panic!("Unexpected RoomStatus after JoinRoom!"),
@@ -345,7 +490,7 @@ impl<B: Backend> App<B> {
                 true
             }
             AppState::WaitReady {
-                ref mut client, ref mut players, ref roomid, ref mut msg
+                ref mut client, ref mut players, ref roomid, ref mut msg, ..
             } if !players[0].2 => {
                 match client.game_ready(players[0].1 as u32, roomid.clone()).await {
                     Ok(_) => {
@@ -386,6 +531,21 @@ impl<B: Backend> App<B> {
                         }
                     }
                 }
+                true
+            }
+            AppState::GameResult {
+                ref client, ref players, ref roomid, stream_listener_cancel: ref cancel, ..
+            } => {
+                info!("Confirmed GameResult, enter WaitReady state");
+                self.state = AppState::WaitReady {
+                    players: players.iter().map(
+                        |p| (p.0.clone(), p.1, false)
+                    ).collect(),
+                    client: client.clone(),
+                    roomid: roomid.clone(),
+                    msg: "Please press ENTER to get ready!".into(),
+                    stream_listener_cancel: cancel.clone(),
+                };
                 true
             }
             _ => {
@@ -585,7 +745,9 @@ impl<B: Backend> App<B> {
     async fn handle_stream_msg(&mut self, msg: GameMsg) -> bool {
         debug!("Got GameMsg: {:?}", msg);
         match self.state {
-            AppState::WaitPlayer {ref mut client, ref mut players, ref roomid, ..} => {
+            AppState::WaitPlayer {
+                ref mut client, ref mut players, ref roomid, ref stream_listener_cancel, ..
+            } => {
                 match msg.msg {
                     Some(Msg::RoomInfo(ri)) => {
                         *players = rpc::room_info_to_players(&players[0].0, &ri);
@@ -596,6 +758,7 @@ impl<B: Backend> App<B> {
                                 players: players.clone(),
                                 msg: "Please press ENTER to get ready!".into(),
                                 roomid: roomid.clone(),
+                                stream_listener_cancel: stream_listener_cancel.clone(),
                             }
                         }
                     }
@@ -604,7 +767,9 @@ impl<B: Backend> App<B> {
                 }
                 true
             }
-            AppState::WaitReady {ref mut client, ref mut players, ref roomid, ..} => {
+            AppState::WaitReady {
+                ref mut client, ref mut players, ref roomid, ref stream_listener_cancel, ..
+            } => {
                 match msg.msg {
                     Some(Msg::RoomInfo(ri)) => {
                         *players = rpc::room_info_to_players(&players[0].0, &ri);
@@ -637,6 +802,7 @@ impl<B: Backend> App<B> {
                                     has_last: false,
                                     play_cnt: 0,
                                     msg: None,
+                                    stream_listener_cancel: stream_listener_cancel.clone(),
                                 }
                             }
                             Err(s) => panic!("Failed to get GameStatus on start: {}", s),
@@ -649,7 +815,8 @@ impl<B: Backend> App<B> {
             }
             AppState::Gaming {
                 ref mut players, ref mut next, ref mut last, ref mut has_last,
-                ref mut desk, ref mut play_cnt, ..
+                ref mut desk, ref mut play_cnt, ref client, ref roomid, ref holds,
+                stream_listener_cancel: ref cancel, ..
             } => {
                 match msg.msg {
                     Some(Msg::Play(PlayInfo { player: pid, playone })) => {
@@ -683,7 +850,20 @@ impl<B: Backend> App<B> {
                             }
                         }
                     }
-                    Some(Msg::Endgame(gs)) => {
+                    Some(Msg::Endgame(GameResult { desk, hold })) => {
+                        if let Some(ds) = desk {
+                            // actually it should be sorted
+                            // holds.sort();
+                            self.state = AppState::GameResult{
+                                ds: Self::parse_desk_result(&ds, players),
+                                players: Self::parse_hold_result(&hold, players, holds),
+                                client: client.clone(),
+                                roomid: roomid.clone(),
+                                stream_listener_cancel: cancel.clone(),
+                            };
+                        } else {
+                            panic!("Empty DeskResult in GameResult from server!");
+                        }
 
                     }
                     _ => panic!("Got GameMsg other than Msg::Play in state Gaming!"),
@@ -693,12 +873,47 @@ impl<B: Backend> App<B> {
             _ => false
         }
     }
+
+    fn parse_hold_result(
+        hs: &Vec<HoldList>, players: &Vec<(String, usize, u32)>, holds: &Vec<Card>
+    ) -> Vec<(String, usize, Vec<Card>)> {
+        let mut ret = vec![("".into(), 0, Vec::new()); 4];
+        for (i, (name, idx, h)) in players.iter().enumerate() {
+            ret[i].0 = name.clone();
+            ret[i].1 = *idx;
+            // check hold num
+            assert!(*h as usize == hs[*idx].holds.len());
+            ret[i].2 = hs[*idx].holds.iter().map(|c| Card::from_info(c)).collect();
+            ret[i].2.sort();
+        }
+        // check my holds
+        assert!(holds.len() == ret[0].2.len());
+        assert!(ret[0].2.iter().zip(holds).any(|(a, b)| *a != *b));
+        ret
+    }
+
+    fn parse_desk_result(ds: &DeskResult, players: &Vec<(String, usize, u32)>)
+        -> Vec<Vec<(Card, usize)>> {
+
+        let mut ret = Vec::new();
+        for each in [&ds.spade, &ds.heart, &ds.club, &ds.diamond] {
+            let mut chain: Vec<(Card, usize)> = each.iter().map(
+                |cs| {
+                    (Card::from_info(cs.card.as_ref().unwrap()),
+                     players.iter().position(|p| p.1 == cs.whose as usize).unwrap())
+                }
+            ).collect();
+            chain.sort_by(|a, b| b.cmp(a));
+            ret.push(chain);
+        }
+        ret
+    }
 }
 
 // TODO:
 // give msg if no card to discard !
-// green highlight self discard card !
+// cancel stream listener when exit room
 // handle when someone exits
 // handle Esc of all states
-// handle resize
+// handle resize min:162*49
 // custom room name

@@ -40,3 +40,12 @@ pub const HOLD_BORDER:           Color = Color::Rgb(0xFF, 0x77, 0x77);
 pub const NEXT_TURN:             Color = Color::Rgb(0xFF, 0x67, 0x01);
 
 pub const GAME_MSG:              Color = Color::Rgb(0xF9, 0x07, 0x16);
+
+pub const DESK_RESULT_0:         Color = Color::Rgb(0x95, 0xCD, 0x41);
+pub const DESK_RESULT_1:         Color = Color::Rgb(0xF9, 0x07, 0x16);
+pub const DESK_RESULT_2:         Color = Color::Rgb(0xFF, 0xCE, 0x45);
+pub const DESK_RESULT_3:         Color = Color::Rgb(0x35, 0xD0, 0xBA);
+
+pub const RESULT_MSG_WIN:        Color = Color::Rgb(0x00, 0xDF, 0xA2);
+pub const RESULT_MSG_LOSE:       Color = Color::Rgb(0x00, 0xDF, 0xA2);
+pub const RESULT_MSG_GREY:       Color = Color::Rgb(0xC1, 0xC1, 0xC1);

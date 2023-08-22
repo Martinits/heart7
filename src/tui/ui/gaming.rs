@@ -290,7 +290,7 @@ fn render_last<B: Backend>(frame: &mut Frame<B>, last: Option<&Card>, who: usize
     }
 }
 
-fn render_my_holds<B: Backend>(frame: &mut Frame<B>, holds: &Vec<Card>) {
+pub fn render_my_holds<B: Backend>(frame: &mut Frame<B>, holds: &Vec<Card>) {
     let mut a = Layout::default()
         .direction(Direction::Vertical)
         .vertical_margin(1)

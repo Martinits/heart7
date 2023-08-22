@@ -46,7 +46,7 @@ pub fn render_players<B: Backend>(frame: &mut Frame<B>, names: &Vec<String>,
             ].as_ref()
         )
         .split(a)[1];
-    render_one_player(frame, names[0].clone(), a);
+    render_one_player(frame, names[0].clone(), a, None);
 
     // right one
     let mut a = Layout::default()
@@ -70,7 +70,7 @@ pub fn render_players<B: Backend>(frame: &mut Frame<B>, names: &Vec<String>,
             ].as_ref()
         )
         .split(a)[1];
-    render_one_player(frame, names[1].clone(), a);
+    render_one_player(frame, names[1].clone(), a, None);
 
     // top one
     let mut a = Layout::default()
@@ -94,7 +94,7 @@ pub fn render_players<B: Backend>(frame: &mut Frame<B>, names: &Vec<String>,
             ].as_ref()
         )
         .split(a)[1];
-    render_one_player(frame, names[2].clone(), a);
+    render_one_player(frame, names[2].clone(), a, None);
 
     // left one
     let mut a = Layout::default()
@@ -118,7 +118,7 @@ pub fn render_players<B: Backend>(frame: &mut Frame<B>, names: &Vec<String>,
             ].as_ref()
         )
         .split(a)[0];
-    render_one_player(frame, names[3].clone(), a);
+    render_one_player(frame, names[3].clone(), a, None);
 
     // ready
     // myself
@@ -277,7 +277,9 @@ pub fn render_players<B: Backend>(frame: &mut Frame<B>, names: &Vec<String>,
     }
 }
 
-fn render_one_player<B:Backend>(frame: &mut Frame<B>, name: String, a: Rect){
+pub fn render_one_player<B:Backend>(
+    frame: &mut Frame<B>, name: String, a: Rect, border_color: Option<Color>
+) {
     // card sign
     let (width, height) = (a.width - 2, a.height - 2);
     let blocks = [
@@ -291,17 +293,17 @@ fn render_one_player<B:Backend>(frame: &mut Frame<B>, name: String, a: Rect){
             Block::default()
                 .borders(Borders::ALL)
                 .border_type(BorderType::Rounded)
-                .style(Style::default().fg(CARD_SIGN)),
+                .style(Style::default().fg(
+                    if let Some(c) = border_color {
+                        c
+                    } else {
+                        CARD_SIGN
+                })),
             b
         );
     }
 
     // name
-    let (name, lines) = if name.len() > 9 {
-        (format!("{}\n...", &name[0..10]), 2)
-    } else {
-        (name, 1)
-    };
     frame.render_widget(
         Paragraph::new(
             Text::from(
@@ -319,7 +321,7 @@ fn render_one_player<B:Backend>(frame: &mut Frame<B>, name: String, a: Rect){
             )
         )
         .alignment(Alignment::Center),
-        rect_cut_center(blocks[2].inner(&Margin{vertical: 1, horizontal: 1}), -lines, 100)
+        rect_cut_center(blocks[2].inner(&Margin{vertical: 1, horizontal: 1}), -1, 100)
     )
 }
 
