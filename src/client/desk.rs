@@ -5,16 +5,16 @@ use std::collections::HashSet;
 #[derive(Debug, Default)]
 pub struct Desk {
     // (cards<=7, cards>7), index == 0: min or max cardnum
-    // bool means whether it is in this round
-    pub spade:   (Vec<(Card, bool)>, Vec<(Card, bool)>),
-    pub heart:   (Vec<(Card, bool)>, Vec<(Card, bool)>),
-    pub club:    (Vec<(Card, bool)>, Vec<(Card, bool)>),
-    pub diamond: (Vec<(Card, bool)>, Vec<(Card, bool)>),
+    // u32: 1: this round, 2: this round by myself
+    pub spade:   (Vec<(Card, u32)>, Vec<(Card, u32)>),
+    pub heart:   (Vec<(Card, u32)>, Vec<(Card, u32)>),
+    pub club:    (Vec<(Card, u32)>, Vec<(Card, u32)>),
+    pub diamond: (Vec<(Card, u32)>, Vec<(Card, u32)>),
 }
 
 impl Desk {
-    pub fn add(&mut self, c: Card) {
-        let target: &mut Vec<(Card, bool)> = match (c.suit, c.num <= 7) {
+    pub fn add(&mut self, c: Card, is_myself: bool) {
+        let target: &mut Vec<(Card, u32)> = match (c.suit, c.num <= 7) {
             (CardSuit::Spade,   true) => self.spade.0.as_mut(),
             (CardSuit::Spade,   false) => self.spade.1.as_mut(),
             (CardSuit::Heart,   true) => self.heart.0.as_mut(),
@@ -27,11 +27,11 @@ impl Desk {
 
         assert!(target.len() == 0 || (target[0].0.num.abs_diff(7) < c.num.abs_diff(7)));
 
-        if target.len() > 0 && !target[0].1 {
+        if target.len() > 0 && target[0].1 == 0 {
             assert!(target.len() == 1);
-            target[0] = (c, true);
+            target[0] = (c, if is_myself { 2 } else { 1 } );
         } else {
-            target.insert(0, (c, true));
+            target.insert(0, (c, if is_myself { 2 } else { 1 } ));
         }
     }
 
@@ -43,7 +43,7 @@ impl Desk {
             &mut self.diamond.0, &mut self.diamond.1,
         ] {
             if each.len() > 0 {
-                each.iter_mut().for_each( |(_, r)| *r = false );
+                each.iter_mut().for_each( |(_, r)| *r = 0 );
                 each.truncate(1);
             }
         }

@@ -3,15 +3,25 @@ use crate::*;
 use ratatui::{
     backend::Backend,
     layout::*,
-    Frame
+    Frame,
+    style::Color,
 };
 use crate::game::Card;
 use crate::client::desk::*;
 use super::common::*;
 use super::card::*;
 
+fn get_card_highlight(sign: u32) -> Option<Color> {
+    match sign {
+        0 => None,
+        1 => Some(CARD_HIGHLIGHT),
+        2 => Some(CARD_HIGHLIGHT_MY),
+        _ => panic!("Invalid sign!"),
+    }
+}
+
 fn render_chain<B: Backend>(frame: &mut Frame<B>, cs: CardSuit,
-    chain_small: &Vec<(Card, bool)>, chain_big: &Vec<(Card, bool)>, a: Rect
+    chain_small: &Vec<(Card, u32)>, chain_big: &Vec<(Card, u32)>, a: Rect
 ) {
     if chain_small.len() == 0 && chain_big.len() == 0 {
         //empty chain
@@ -21,7 +31,7 @@ fn render_chain<B: Backend>(frame: &mut Frame<B>, cs: CardSuit,
         // only a seven
         let a = rect_cut_center(a, -8, 100);
         render_card(frame, &chain_small[0].0, a, CardAppearance::All, false,
-            if chain_small[0].1 { Some(CARD_HIGHLIGHT) } else { None }
+            get_card_highlight(chain_small[0].1)
         );
     } else if chain_big.len() == 0 {
         // only small card(s)
@@ -37,15 +47,15 @@ fn render_chain<B: Backend>(frame: &mut Frame<B>, cs: CardSuit,
         let mut csmall = chain_small.clone();
         csmall.reverse();
         for i in 0..csmall.len() - 1 {
-            assert!(csmall[i].1);
+            assert!(csmall[i].1 != 0);
             render_card(frame, &csmall[i].0, a, CardAppearance::Horizontal, false,
-                if csmall[i].1 { Some(CARD_HIGHLIGHT) } else { None }
+                get_card_highlight(csmall[i].1)
             );
             a.y += 2;
         }
         // last one
         render_card(frame, &chain_small[0].0, a, CardAppearance::All, false,
-            if chain_small[0].1 { Some(CARD_HIGHLIGHT) } else { None }
+            get_card_highlight(chain_small[0].1)
         );
     } else {
         // both small and big
@@ -62,7 +72,7 @@ fn render_chain<B: Backend>(frame: &mut Frame<B>, cs: CardSuit,
         //big highlighted
         for (ec, hi) in chain_big.iter() {
             render_card(frame, ec, a.clone(), CardAppearance::Horizontal, false,
-                if *hi { Some(CARD_HIGHLIGHT) } else { None }
+                get_card_highlight(*hi)
             );
             a.y += 2;
         }
@@ -80,15 +90,15 @@ fn render_chain<B: Backend>(frame: &mut Frame<B>, cs: CardSuit,
         let mut csmall = chain_small.clone();
         csmall.reverse();
         for i in 0..csmall.len() - 1 {
-            assert!(csmall[i].1);
+            assert!(csmall[i].1 != 0);
             render_card(frame, &csmall[i].0, a, CardAppearance::Horizontal, false,
-                if csmall[i].1 { Some(CARD_HIGHLIGHT) } else { None }
+                get_card_highlight(csmall[i].1)
             );
             a.y += 2;
         }
         // last one
         render_card(frame, &chain_small[0].0, a, CardAppearance::All, false,
-            if chain_small[0].1 { Some(CARD_HIGHLIGHT) } else { None }
+            get_card_highlight(chain_small[0].1)
         );
     }
 }

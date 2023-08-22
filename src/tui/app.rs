@@ -164,19 +164,20 @@ impl<B: Backend> App<B> {
             //     has_last: true,
             //     desk: Desk {
             //         diamond: (vec![
-            //             (Card{suit:CardSuit::Diamond, num: 1}, true),
-            //             (Card{suit:CardSuit::Diamond, num: 2}, true),
-            //             (Card{suit:CardSuit::Diamond, num: 3}, true),
-            //             (Card{suit:CardSuit::Diamond, num: 4}, true),
+            //             (Card{suit:CardSuit::Diamond, num: 1}, 1),
+            //             (Card{suit:CardSuit::Diamond, num: 2}, 2),
+            //             (Card{suit:CardSuit::Diamond, num: 3}, 1),
+            //             (Card{suit:CardSuit::Diamond, num: 4}, 1),
             //         ],
             //         vec![
-            //             (Card{suit:CardSuit::Diamond, num: 13}, false),
+            //             (Card{suit:CardSuit::Diamond, num: 13}, 0),
             //         ]),
             //         ..Default::default()
             //     },
             //     roomid: "jbhfvhsbdfvhbkdsfhbv".into(),
             //     button: 0,
-            //     play_cnt: 0
+            //     play_cnt: 0,
+            //     msg: None,
             // },
             tx,
             rx,
@@ -668,7 +669,7 @@ impl<B: Backend> App<B> {
                                     Play::Discard(ci) => {
                                         let c = Card::from_info(&ci);
                                         *last = Some(c.clone());
-                                        desk.add(c.clone());
+                                        desk.add(c.clone(), *next == 0);
                                     }
                                     Play::Hold(ci) => {
                                         assert!(ci.num == 0 && ci.suit == 0);
@@ -695,8 +696,8 @@ impl<B: Backend> App<B> {
 }
 
 // TODO:
-// give msg if no card to discard
-// green highlight self discard card
+// give msg if no card to discard !
+// green highlight self discard card !
 // handle when someone exits
 // handle Esc of all states
 // handle resize
