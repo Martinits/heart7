@@ -40,7 +40,7 @@ pub fn render_players<B: Backend>(frame: &mut Frame<B>, names: &Vec<String>,
         .horizontal_margin(1)
         .constraints(
             [
-                Constraint::Percentage(20),
+                Constraint::Percentage(10),
                 Constraint::Length(14),
                 Constraint::Min(1),
             ].as_ref()

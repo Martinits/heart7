@@ -76,7 +76,7 @@ fn render_next<B: Backend>(frame: &mut Frame<B>, next: usize) {
                     [
                         Constraint::Min(1),
                         Constraint::Length(1),
-                        Constraint::Length(2),
+                        Constraint::Length(1),
                         Constraint::Length(7),
                         Constraint::Length(2),
                     ].as_ref()
@@ -87,12 +87,14 @@ fn render_next<B: Backend>(frame: &mut Frame<B>, next: usize) {
                 .horizontal_margin(1)
                 .constraints(
                     [
-                        Constraint::Percentage(5),
                         Constraint::Percentage(10),
+                        Constraint::Length(14),
+                        Constraint::Percentage(3),
+                        Constraint::Percentage(9),
                         Constraint::Min(1),
                     ].as_ref()
                 )
-                .split(a)[1]
+                .split(a)[3]
         }
         // right
         1 => {
@@ -386,12 +388,14 @@ fn render_game_button<B: Backend>(frame: &mut Frame<B>, button: u32) {
         .horizontal_margin(1)
         .constraints(
             [
-                Constraint::Percentage(5),
                 Constraint::Percentage(10),
+                Constraint::Length(14),
+                Constraint::Percentage(3),
+                Constraint::Percentage(9),
                 Constraint::Min(1),
             ].as_ref()
         )
-        .split(a)[1];
+        .split(a)[3];
     let buttons = Layout::default()
         .direction(Direction::Vertical)
         .constraints(
