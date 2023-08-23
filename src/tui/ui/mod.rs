@@ -9,6 +9,7 @@ pub mod wait;
 pub mod players;
 pub mod game_result;
 pub mod resize;
+pub mod exit_menu;
 
 pub use home_page::*;
 pub use ask_name::*;
@@ -21,6 +22,7 @@ pub use wait::*;
 pub use players::*;
 pub use game_result::*;
 pub use resize::*;
+pub use exit_menu::*;
 
 use super::app::AppState;
 use super::color::*;
@@ -31,7 +33,7 @@ use ratatui::{
     Frame
 };
 
-pub fn render<B: Backend>(frame: &mut Frame<B>, appstate: &AppState) {
+pub fn render<B: Backend>(frame: &mut Frame<B>, appstate: &AppState, exit: (bool, u32)) {
     // outer border
     frame.render_widget(
         Block::default()
@@ -41,24 +43,33 @@ pub fn render<B: Backend>(frame: &mut Frame<B>, appstate: &AppState) {
         frame.size(),
     );
 
-    match appstate {
-        AppState::GetServer {connecting, input, msg}
-            => home_page(frame, input, msg, connecting),
-        AppState::GetRoom {input, msg, button, is_input, ..}
-            => ask_name(frame, input, msg, button, is_input),
-        AppState::JoinRoom {input, msg, ..}
-            => join_room(frame, input, msg),
-        AppState::WaitPlayer {players, msg, roomid, ..}
-            => wait_player(frame, players, msg, roomid),
-        AppState::WaitReady {players, msg, roomid, ..}
-            => wait_ready(frame, players, msg, roomid),
-        AppState::Gaming {
-            players, next, choose, last, cards, holds,
-            has_last, desk, roomid, button, play_cnt, msg, ..
-        } => gaming(frame, players, *next, roomid, *choose, last.as_ref(), cards,
-                holds, *has_last, desk, *button, *play_cnt, msg.as_ref()),
-        AppState::GameResult {ds, players, roomid, ..}
-            => game_result(frame, ds, players, roomid),
+    if exit.0 {
+        let button_num = match appstate {
+            AppState::GetServer {..} | AppState::GetRoom {..} | AppState::JoinRoom {..} => 2,
+            AppState::WaitPlayer {..} | AppState::WaitReady {..} => 3,
+            AppState::Gaming {..} | AppState::GameResult {..} => 4,
+        };
+        render_exit_menu(frame, button_num, exit.1);
+    } else {
+        match appstate {
+            AppState::GetServer {connecting, input, msg}
+                => home_page(frame, input, msg, connecting),
+            AppState::GetRoom {input, msg, button, is_input, ..}
+                => ask_name(frame, input, msg, button, is_input),
+            AppState::JoinRoom {input, msg, ..}
+                => join_room(frame, input, msg),
+            AppState::WaitPlayer {players, msg, roomid, ..}
+                => wait_player(frame, players, msg, roomid),
+            AppState::WaitReady {players, msg, roomid, ..}
+                => wait_ready(frame, players, msg, roomid),
+            AppState::Gaming {
+                players, next, choose, last, cards, holds,
+                has_last, desk, roomid, button, play_cnt, msg, ..
+            } => gaming(frame, players, *next, roomid, *choose, last.as_ref(), cards,
+                    holds, *has_last, desk, *button, *play_cnt, msg.as_ref()),
+            AppState::GameResult {ds, players, roomid, ..}
+                => game_result(frame, ds, players, roomid),
+        }
     }
 }
 

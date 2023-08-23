@@ -77,7 +77,7 @@ impl Client {
                     maybe_msg = stream.message() => {
                         match maybe_msg {
                             Err(s) => panic!("GameStream error: {}", s),
-                            Ok(None) => panic!("GameStream closed!"),
+                            Ok(None) => info!("GameStream closed!"),
                             Ok(Some(msg)) => txc.send(Action::StreamMsg(msg)).await
                                 .expect("Send Action::StreamMsg to app")
                         }
@@ -134,6 +134,42 @@ impl Client {
             Err(Box::new(Status::new(
                 Code::Internal,
                 format!("Server response false when playing card, {}", r.msg)
+            )))
+        }
+    }
+
+    pub async fn exit_game(&mut self, pid: u32, roomid: String) -> AppResult<()> {
+        let request = Request::new(RoomReq{
+            playerid: pid,
+            roomid
+        });
+
+        let r = self.c.exit_game(request).await?.into_inner();
+        if r.success {
+            assert!(r.msg == "Ok");
+            Ok(())
+        } else {
+            Err(Box::new(Status::new(
+                Code::Internal,
+                format!("Server response false when exit game, {}", r.msg)
+            )))
+        }
+    }
+
+    pub async fn exit_room(&mut self, pid: u32, roomid: String) -> AppResult<()> {
+        let request = Request::new(RoomReq{
+            playerid: pid,
+            roomid
+        });
+
+        let r = self.c.exit_room(request).await?.into_inner();
+        if r.success {
+            assert!(r.msg == "Ok");
+            Ok(())
+        } else {
+            Err(Box::new(Status::new(
+                Code::Internal,
+                format!("Server response false when exit room, {}", r.msg)
             )))
         }
     }

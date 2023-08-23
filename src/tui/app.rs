@@ -77,7 +77,6 @@ pub enum AppState {
         roomid: String,
         stream_listener_cancel: CancellationToken,
     },
-    // ExitMenu(Box<Self>),
 }
 
 impl Default for AppState {
@@ -120,6 +119,7 @@ pub struct App<B: Backend> {
     rx: mpsc::Receiver<Action>,
     block_event: bool,
     sz: (u16, u16),
+    exitmenu: (bool, u32),
 }
 
 impl<B: Backend> App<B> {
@@ -133,6 +133,7 @@ impl<B: Backend> App<B> {
         Self {
             tui,
             block_event: false,
+            exitmenu: (false, 0),
             sz: (sz.width, sz.height),
             cancel: cancel.clone(),
             state: Default::default(),
@@ -362,37 +363,64 @@ impl<B: Backend> App<B> {
                 action = self.rx.recv() => {
                     draw_or_not = match action {
                         None => panic!("Channel to app closed!"),
-                        Some(a) => match a {
-                            Action::Esc if !self.block_event
-                                => self.handle_esc(),
-                            Action::Enter if !self.block_event
-                                => self.handle_enter().await,
-                            Action::LeftArrow if !self.block_event
-                                => self.handle_lr_arrow(true),
-                            Action::RightArrow if !self.block_event
-                                => self.handle_lr_arrow(false),
-                            Action::UpArrow if !self.block_event
-                                => self.handle_ud_arrow(true),
-                            Action::DownArrow if !self.block_event
-                                => self.handle_ud_arrow(false),
-                            Action::Type(c) if !self.block_event
-                                => self.handle_type(c),
-                            Action::CtrlC
-                                => panic!("Got Ctrl-C!"),
-                            Action::Resize(x, y) => {
-                                self.sz = (x, y);
-                                true
-                            },
-                            Action::Refresh => true,
-                            Action::Backspace if !self.block_event
-                                => self.handle_del(true),
-                            Action::Delete if !self.block_event
-                                => self.handle_del(false),
-                            Action::ServerConnectResult(r)
-                                => self.handle_server_connect_result(r),
-                            Action::StreamMsg(msg)
-                                => self.handle_stream_msg(msg).await,
-                            _ => false,
+                        Some(a) => {
+                            if self.exitmenu.0 {
+                                match a {
+                                    Action::Esc if !self.block_event
+                                        => self.handle_esc(),
+                                    Action::Enter if !self.block_event
+                                        => self.handle_exitmenu_event(0).await,
+                                    Action::UpArrow if !self.block_event
+                                        => self.handle_exitmenu_event(1).await,
+                                    Action::DownArrow if !self.block_event
+                                        => self.handle_exitmenu_event(2).await,
+                                    Action::CtrlC
+                                        => panic!("Got Ctrl-C!"),
+                                    Action::Resize(x, y) => {
+                                        self.sz = (x, y);
+                                        true
+                                    },
+                                    Action::Refresh => true,
+                                    Action::ServerConnectResult(r)
+                                        => self.handle_server_connect_result(r),
+                                    Action::StreamMsg(msg)
+                                        => self.handle_stream_msg(msg).await,
+                                    _ => false,
+                                }
+                            } else {
+                                match a {
+                                    Action::Esc if !self.block_event
+                                        => self.handle_esc(),
+                                    Action::Enter if !self.block_event
+                                        => self.handle_enter().await,
+                                    Action::LeftArrow if !self.block_event
+                                        => self.handle_lr_arrow(true),
+                                    Action::RightArrow if !self.block_event
+                                        => self.handle_lr_arrow(false),
+                                    Action::UpArrow if !self.block_event
+                                        => self.handle_ud_arrow(true),
+                                    Action::DownArrow if !self.block_event
+                                        => self.handle_ud_arrow(false),
+                                    Action::Type(c) if !self.block_event
+                                        => self.handle_type(c),
+                                    Action::CtrlC
+                                        => panic!("Got Ctrl-C!"),
+                                    Action::Resize(x, y) => {
+                                        self.sz = (x, y);
+                                        true
+                                    },
+                                    Action::Refresh => true,
+                                    Action::Backspace if !self.block_event
+                                        => self.handle_del(true),
+                                    Action::Delete if !self.block_event
+                                        => self.handle_del(false),
+                                    Action::ServerConnectResult(r)
+                                        => self.handle_server_connect_result(r),
+                                    Action::StreamMsg(msg)
+                                        => self.handle_stream_msg(msg).await,
+                                    _ => false,
+                                }
+                            }
                         }
                     }
                 }
@@ -408,7 +436,7 @@ impl<B: Backend> App<B> {
             self.tui.draw(|frame| ui::resize(frame, self.sz))?;
         } else {
             self.block_event = false;
-            self.tui.draw(|frame| ui::render(frame, &self.state))?;
+            self.tui.draw(|frame| ui::render(frame, &self.state, self.exitmenu))?;
         }
         Ok(())
     }
@@ -448,6 +476,7 @@ impl<B: Backend> App<B> {
                                 name: input.value().into(),
                                 stream_listener_cancel: CancellationToken::new(),
                             };
+                            self.exitmenu.1 = 0;
                         },
                         Err(s) => {
                             *msg = format!("Making NewRoom request to server failed:\n\
@@ -465,7 +494,8 @@ impl<B: Backend> App<B> {
                         msg: format!("Hello, {}!\n\
                                 Please enter room ID:", input.value()),
                         stream_listener_cancel: CancellationToken::new(),
-                    }
+                    };
+                    self.exitmenu.1 = 0;
                 }
                 true
             }
@@ -491,6 +521,7 @@ impl<B: Backend> App<B> {
                                         msg: "Waiting for other players to join room......".into(),
                                         stream_listener_cancel: cancel.clone(),
                                     };
+                                    self.exitmenu.1 = 0;
                                 }
                                 Some(State::WaitReady(_)) => {
                                     info!("Join room {}, enter WaitReady state", input.value());
@@ -500,7 +531,8 @@ impl<B: Backend> App<B> {
                                         roomid: input.value().into(),
                                         msg: "Please press ENTER to get ready!".into(),
                                         stream_listener_cancel: cancel.clone(),
-                                    }
+                                    };
+                                    self.exitmenu.1 = 0;
                                 }
                                 _ => panic!("Unexpected RoomStatus after JoinRoom!"),
                             }
@@ -572,6 +604,7 @@ impl<B: Backend> App<B> {
                     msg: "Please press ENTER to get ready!".into(),
                     stream_listener_cancel: cancel.clone(),
                 };
+                self.exitmenu.1 = 0;
                 true
             }
             _ => {
@@ -691,7 +724,8 @@ impl<B: Backend> App<B> {
         }
     }
 
-    fn handle_esc(&self) -> bool {
+    fn handle_esc(&mut self) -> bool {
+        self.exitmenu.0 = !self.exitmenu.0;
         true
     }
 
@@ -741,6 +775,7 @@ impl<B: Backend> App<B> {
                                 button: 0,
                                 is_input: true,
                             };
+                            self.exitmenu.1 = 0;
                         },
                         Err(s) => {
                             *input = server_addr_prompt();
@@ -785,7 +820,8 @@ impl<B: Backend> App<B> {
                                 msg: "Please press ENTER to get ready!".into(),
                                 roomid: roomid.clone(),
                                 stream_listener_cancel: stream_listener_cancel.clone(),
-                            }
+                            };
+                            self.exitmenu.1 = 0;
                         }
                     }
                     None => panic!("Got empty GameMsg!"),
@@ -829,7 +865,8 @@ impl<B: Backend> App<B> {
                                     play_cnt: 0,
                                     msg: None,
                                     stream_listener_cancel: stream_listener_cancel.clone(),
-                                }
+                                };
+                                self.exitmenu.1 = 0;
                             }
                             Err(s) => panic!("Failed to get GameStatus on start: {}", s),
                         }
@@ -887,6 +924,7 @@ impl<B: Backend> App<B> {
                                 roomid: roomid.clone(),
                                 stream_listener_cancel: cancel.clone(),
                             };
+                            self.exitmenu.1 = 0;
                         } else {
                             panic!("Empty DeskResult in GameResult from server!");
                         }
@@ -934,12 +972,163 @@ impl<B: Backend> App<B> {
         }
         ret
     }
+
+    async fn handle_exitmenu_event(&mut self, action: u32) -> bool {
+        let button_num = match self.state {
+            AppState::GetServer {..} | AppState::GetRoom {..} | AppState::JoinRoom {..} => 2,
+            AppState::WaitPlayer {..} | AppState::WaitReady {..} => 3,
+            AppState::Gaming {..} | AppState::GameResult {..} => 4,
+        };
+        match action {
+            0 => {
+                match self.state {
+                    AppState::GetServer {..} | AppState::GetRoom {..} => {
+                        match self.exitmenu.1 {
+                            0 => {},
+                            1 => self.cancel.cancel(),
+                            _ => panic!("Invalid button num!"),
+                        }
+                    }
+                    AppState::JoinRoom { stream_listener_cancel: ref cancel, ..} => {
+                        // whether or not the stream listener is spawned, we just cancel
+                        cancel.cancel();
+                        match self.exitmenu.1 {
+                            0 => {},
+                            1 => self.cancel.cancel(),
+                            _ => panic!("Invalid button num!"),
+                        }
+                    }
+                    AppState::WaitPlayer {
+                        client: ref mut c, stream_listener_cancel: ref cancel,
+                        ref players, ref roomid, ..
+                    } | AppState::WaitReady {
+                        client: ref mut c, stream_listener_cancel: ref cancel,
+                        ref players, ref roomid, ..
+                    } => {
+                        match self.exitmenu.1 {
+                            0 => {}
+                            1 => {
+                                let _ = c.exit_room(players[0].1 as u32, roomid.clone()).await;
+                                cancel.cancel();
+                                self.state = AppState::GetRoom {
+                                    client: c.clone(),
+                                    input: Input::new(players[0].0.clone()),
+                                    msg: "Exited room successfully.\n\
+                                            Please enter your nickname:".into(),
+                                    button: 0,
+                                    is_input: true,
+                                };
+                                self.exitmenu.1 = 0;
+                            },
+                            2 => {
+                                let _ = c.exit_room(players[0].1 as u32, roomid.clone()).await;
+                                cancel.cancel();
+                                self.cancel.cancel();
+                            },
+                            _ => panic!("Invalid button num!"),
+                        }
+                    }
+                    AppState::Gaming {
+                        client: ref mut c, stream_listener_cancel: ref cancel,
+                        ref players, ref roomid, ..
+                    } => {
+                        match self.exitmenu.1 {
+                            0 => {}
+                            1 => {
+                                c.exit_game(players[0].1 as u32, roomid.clone()).await.unwrap();
+                                self.state = AppState::WaitReady {
+                                    client: c.clone(),
+                                    players: players.iter().map(
+                                        |p| (p.0.clone(), p.1, false)
+                                    ).collect(),
+                                    roomid: roomid.clone(),
+                                    stream_listener_cancel: cancel.clone(),
+                                    msg: "Please press ENTER to get ready!".into(),
+                                };
+                                self.exitmenu.1 = 0;
+                            }
+                            2 => {
+                                let _ = c.exit_room(players[0].1 as u32, roomid.clone()).await;
+                                cancel.cancel();
+                                self.state = AppState::GetRoom {
+                                    client: c.clone(),
+                                    input: Input::new(players[0].0.clone()),
+                                    msg: "Exited room successfully.\n\
+                                            Please enter your nickname:".into(),
+                                    button: 0,
+                                    is_input: true,
+                                };
+                                self.exitmenu.1 = 0;
+                            },
+                            3 => {
+                                let _ = c.exit_room(players[0].1 as u32, roomid.clone()).await;
+                                cancel.cancel();
+                                self.cancel.cancel();
+                            },
+                            _ => panic!("Invalid button num!"),
+                        }
+                    }
+                    AppState::GameResult {
+                        client: ref mut c, stream_listener_cancel: ref cancel,
+                        ref players, ref roomid, ..
+                    } => {
+                        match self.exitmenu.1 {
+                            0 => {}
+                            1 => {
+                                c.exit_game(players[0].1 as u32, roomid.clone()).await.unwrap();
+                                self.state = AppState::WaitReady {
+                                    client: c.clone(),
+                                    players: players.iter().map(
+                                        |p| (p.0.clone(), p.1, false)
+                                    ).collect(),
+                                    roomid: roomid.clone(),
+                                    stream_listener_cancel: cancel.clone(),
+                                    msg: "Please press ENTER to get ready!".into(),
+                                };
+                                self.exitmenu.1 = 0;
+                            }
+                            2 => {
+                                let _ = c.exit_room(players[0].1 as u32, roomid.clone()).await;
+                                cancel.cancel();
+                                self.state = AppState::GetRoom {
+                                    client: c.clone(),
+                                    input: Input::new(players[0].0.clone()),
+                                    msg: "Exited room successfully.\n\
+                                            Please enter your nickname:".into(),
+                                    button: 0,
+                                    is_input: true,
+                                };
+                                self.exitmenu.1 = 0;
+                            },
+                            3 => {
+                                let _ = c.exit_room(players[0].1 as u32, roomid.clone()).await;
+                                cancel.cancel();
+                                self.cancel.cancel();
+                            },
+                            _ => panic!("Invalid button num!"),
+                        }
+                    }
+                }
+                self.exitmenu.0 = false;
+            }
+            1 => {
+                self.exitmenu.1 += button_num - 1;
+                self.exitmenu.1 %= button_num;
+            }
+            2 => {
+                self.exitmenu.1 += 1;
+                self.exitmenu.1 %= button_num;
+            }
+            _ => panic!("Invalid exitmenu action!"),
+        }
+        true
+    }
 }
 
 // TODO:
 // give msg if no card to discard !
-// cancel stream listener when exit room
-// handle when someone exits
-// handle Esc of all states
-// handle resize min:162*49 1
+// handle Esc of all states !
+// cancel stream listener when exit room or someone exit room !
+// handle when someone exits !
 // custom room name
+// server clean room not alive per hour
