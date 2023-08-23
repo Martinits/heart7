@@ -244,7 +244,7 @@ impl Heart7 for Heart7D {
         let aroom = self.rm.get_room(&request.get_ref().roomid).await?;
         let mut room = aroom.write().await;
 
-        room.exit_game(request.get_ref().playerid as usize)?;
+        room.exit_game(request.get_ref().playerid as usize).await?;
 
         let reply = CommonReply {
             success: true,
@@ -265,7 +265,7 @@ impl Heart7 for Heart7D {
         let empty_room = {
             let aroom = self.rm.get_room(&request.get_ref().roomid).await?;
             let mut room = aroom.write().await;
-            room.exit_room(request.get_ref().playerid as usize)?
+            room.exit_room(request.get_ref().playerid as usize).await?
         };
 
         if empty_room == 0 {

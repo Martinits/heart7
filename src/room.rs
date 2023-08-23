@@ -327,7 +327,7 @@ impl Room {
         }
     }
 
-    pub fn exit_game(&mut self, pid: usize) -> RPCResult<()> {
+    pub async fn exit_game(&mut self, pid: usize) -> RPCResult<()> {
         if pid < self.players.len() {
             match self.state {
                 RoomState::NotFull =>
@@ -335,20 +335,15 @@ impl Room {
                         Code::PermissionDenied,
                         "Room is not in a game!"
                     )),
-                RoomState::EndGame => {
-                    self.ready_cnt = 0;
-                    let _ = self.players.iter_mut().map(
-                        |p| p.game.unready()
-                    );
-                    self.state = RoomState::WaitReady;
-                    Ok(())
-                },
                 _ => {
                     self.ready_cnt = 0;
                     let _ = self.players.iter_mut().map(
                         |p| p.game.unready()
                     );
                     self.state = RoomState::WaitReady;
+                    self.send_gamemsg(GameMsg {
+                        msg: Some(Msg::ExitGame(pid as u32))
+                    }).await;
                     Ok(())
                 }
             }
@@ -360,7 +355,7 @@ impl Room {
         }
     }
 
-    pub fn exit_room(&mut self, pid: usize) -> RPCResult<usize> {
+    pub async fn exit_room(&mut self, pid: usize) -> RPCResult<usize> {
         if pid < self.players.len() {
             self.ready_cnt = 0;
             self.players.remove(pid);
@@ -368,6 +363,9 @@ impl Room {
                 |p| p.game.unready()
             );
             self.state = RoomState::NotFull;
+            self.send_gamemsg(GameMsg {
+                msg: Some(Msg::ExitRoom(pid as u32))
+            }).await;
             Ok(self.players.len())
         } else {
             Err(Status::new(

@@ -60,10 +60,11 @@ fn render_ready_button<B: Backend>(frame: &mut Frame<B>, active: bool) {
 }
 
 fn render_center_msg<B: Backend>(frame: &mut Frame<B>, msg: String) {
+    let lines = msg.chars().filter(|c| *c == '\n').count() as i16 + 1;
     frame.render_widget(
         Paragraph::new(msg)
             .style(Style::default().fg(CENTER_MSG).add_modifier(Modifier::BOLD))
             .alignment(Alignment::Center),
-        rect_cut_center(frame.size(), -1, 50)
+        rect_cut_center(frame.size(), -lines, 50)
     )
 }
