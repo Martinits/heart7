@@ -4,6 +4,7 @@ use ratatui::{
     layout::*,
     style::*,
     widgets::*,
+    text::*,
     Frame
 };
 use super::players::*;
@@ -11,7 +12,7 @@ use super::common::*;
 
 pub fn wait_player<B: Backend>(
     frame: &mut Frame<B>, players: &Vec<(String, usize, bool)>,
-    msg: &String, roomid: &String)
+    msg: &Vec<String>, roomid: &String)
 {
     render_players(frame,
         players.iter().map(|p| p.0.clone()).collect::<Vec<String>>().as_ref(),
@@ -27,7 +28,7 @@ pub fn wait_player<B: Backend>(
 
 pub fn wait_ready<B: Backend>(
     frame: &mut Frame<B>, players: &Vec<(String, usize, bool)>,
-    msg: &String, roomid: &String)
+    msg: &Vec<String>, roomid: &String)
 {
     render_players(frame,
         players.iter().map(|p| p.0.clone()).collect::<Vec<String>>().as_ref(),
@@ -59,11 +60,14 @@ fn render_ready_button<B: Backend>(frame: &mut Frame<B>, active: bool) {
     frame.render_widget(get_button("Get Ready!", active), button);
 }
 
-fn render_center_msg<B: Backend>(frame: &mut Frame<B>, msg: String) {
-    let lines = msg.chars().filter(|c| *c == '\n').count() as i16 + 1;
+fn render_center_msg<B: Backend>(frame: &mut Frame<B>, msg: Vec<String>) {
+    let msg: Vec<Line> = msg.into_iter().map(
+        |m| Line::styled(m, Style::default().fg(CENTER_MSG).bold())
+    ).collect();
+    let lines = msg.len() as i16;
+
     frame.render_widget(
-        Paragraph::new(msg)
-            .style(Style::default().fg(CENTER_MSG).add_modifier(Modifier::BOLD))
+        Paragraph::new(Text::from(msg))
             .alignment(Alignment::Center),
         rect_cut_center(frame.size(), -lines, 50)
     )

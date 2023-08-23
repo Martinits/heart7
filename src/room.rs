@@ -337,7 +337,7 @@ impl Room {
                     )),
                 _ => {
                     self.ready_cnt = 0;
-                    let _ = self.players.iter_mut().map(
+                    self.players.iter_mut().for_each(
                         |p| p.game.unready()
                     );
                     self.state = RoomState::WaitReady;
@@ -359,13 +359,10 @@ impl Room {
         if pid < self.players.len() {
             self.ready_cnt = 0;
             self.players.remove(pid);
-            let _ = self.players.iter_mut().map(
+            self.players.iter_mut().for_each(
                 |p| p.game.unready()
             );
             self.state = RoomState::NotFull;
-            self.send_gamemsg(GameMsg {
-                msg: Some(Msg::ExitRoom(pid as u32))
-            }).await;
             Ok(self.players.len())
         } else {
             Err(Status::new(

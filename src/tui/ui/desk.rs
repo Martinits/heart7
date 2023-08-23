@@ -35,14 +35,16 @@ fn render_chain<B: Backend>(frame: &mut Frame<B>, cs: CardSuit,
         );
     } else if chain_big.len() == 0 {
         // only small card(s)
-        // render 7
         let mut a = rect_cut_center(a, -8, 100);
-        render_card(frame, &Card{suit: cs, num: 7}, a.clone(), CardAppearance::Horizontal, false, None);
-        // render smaller
-        a.y += 2;
-        for _ in 0..(7 - chain_small.iter().last().unwrap().0.num - 1) {
-            render_card(frame, &NULL_CARD, a.clone(), CardAppearance::Horizontal, false, None);
-            a.y += 1;
+        if chain_small.iter().last().unwrap().0.num != 7 {
+            // render 7
+            render_card(frame, &Card{suit: cs, num: 7}, a.clone(), CardAppearance::Horizontal, false, None);
+            // render smaller
+            a.y += 2;
+            for _ in 0..(7 - chain_small.iter().last().unwrap().0.num - 1) {
+                render_card(frame, &NULL_CARD, a.clone(), CardAppearance::Horizontal, false, None);
+                a.y += 1;
+            }
         }
         let mut csmall = chain_small.clone();
         csmall.reverse();

@@ -191,33 +191,30 @@ impl Heart7 for Heart7D {
         let aroom = self.rm.get_room(&roomreq.roomid).await?;
         let mut room = aroom.write().await;
 
-        if 52 == room.play_card(roomreq.playerid, play)? {
+        let cnt = room.play_card(roomreq.playerid, play)?;
+
+        let mut pone = playone.clone();
+        if let Some(Play::Hold(ref mut ci)) = pone.play {
+            ci.num = 0;
+            ci.suit = 0;
+        }
+        let playinfo = PlayInfo{
+            player: roomreq.playerid,
+            playone: Some(pone),
+        };
+        let msg = GameMsg {
+            msg: Some(Msg::Play(playinfo)),
+        };
+        info!("Sending GameMsg: {:?}", msg);
+        room.send_gamemsg(msg).await;
+
+        if cnt == 52 {
             let res = room.end_game()?;
             let ar = aroom.clone();
             tokio::spawn(async move {
                 let room = ar.read().await;
                 let msg = GameMsg {
                     msg: Some(Msg::Endgame(res)),
-                };
-                info!("Sending GameMsg: {:?}", msg);
-                room.send_gamemsg(msg).await;
-            });
-        } else {
-            let ar = aroom.clone();
-            let pid = roomreq.playerid;
-            let mut pone = playone.clone();
-            if let Some(Play::Hold(ref mut ci)) = pone.play {
-                ci.num = 0;
-                ci.suit = 0;
-            }
-            tokio::spawn(async move {
-                let room = ar.read().await;
-                let playinfo = PlayInfo{
-                    player: pid,
-                    playone: Some(pone),
-                };
-                let msg = GameMsg {
-                    msg: Some(Msg::Play(playinfo)),
                 };
                 info!("Sending GameMsg: {:?}", msg);
                 room.send_gamemsg(msg).await;
@@ -262,13 +259,25 @@ impl Heart7 for Heart7D {
 
         info!("Got ExitRoom request: {:?}", request);
 
-        let empty_room = {
+        let left_ones = {
             let aroom = self.rm.get_room(&request.get_ref().roomid).await?;
             let mut room = aroom.write().await;
-            room.exit_room(request.get_ref().playerid as usize).await?
+            let left_ones = room.exit_room(request.get_ref().playerid as usize).await?;
+            if left_ones != 0 {
+                let ar = aroom.clone();
+                tokio::spawn(async move {
+                    let room = ar.read().await;
+                    let msg = GameMsg {
+                        msg: Some(Msg::ExitRoom(room.get_room_info().unwrap()))
+                    };
+                    info!("Sending GameMsg: {:?}", msg);
+                    room.send_gamemsg(msg).await;
+                });
+            }
+            left_ones
         };
 
-        if empty_room == 0 {
+        if left_ones == 0 {
             self.rm.del_room(&request.get_ref().roomid).await?;
         }
 

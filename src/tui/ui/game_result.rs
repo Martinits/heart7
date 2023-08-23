@@ -388,7 +388,7 @@ fn render_result_msg<B: Backend>(frame: &mut Frame<B>, msg: String, msg_color: C
             ].as_ref()
         )
         .split(frame.size())[1];
-    a = rect_cut_center(a, 100, -(msg.len() as i16));
+    a = rect_cut_center(a, 100, -40);
 
     let msg = Text::from([
         Line::styled(msg, Style::default().fg(msg_color).add_modifier(Modifier::BOLD)),
@@ -430,7 +430,7 @@ fn render_result_button<B: Backend>(frame: &mut Frame<B>){
             [
                 Constraint::Percentage(10),
                 Constraint::Length(14),
-                Constraint::Percentage(9),
+                Constraint::Percentage(6),
                 Constraint::Percentage(10),
                 Constraint::Min(1),
             ].as_ref()
@@ -445,6 +445,16 @@ fn hold_sum(holds: &Vec<Card>) -> u32 {
     ).sum()
 }
 
+fn name_shorten(name: &String) -> String {
+    if name.len() > 8 {
+        let mut ret = String::from(&name[0..5]);
+        ret.push_str("...");
+        ret
+    } else {
+        name.clone()
+    }
+}
+
 pub fn game_result<B: Backend>(
     frame: &mut Frame<B>, ds: &Vec<Vec<(Card, usize)>>,
     players: &Vec<(String, usize, Vec<Card>)>, roomid: &String
@@ -455,15 +465,47 @@ pub fn game_result<B: Backend>(
 
     render_hold_result(frame, players);
 
-    let hold_sums: Vec<(usize, u32)> = players.iter().map(
+    let mut hold_sums: Vec<(usize, u32)> = players.iter().map(
         |p| hold_sum(&p.2)
     ).enumerate().collect();
-    let who_win = hold_sums.iter().last().unwrap().0;
+    hold_sums.sort_by_key(|p| p.1);
+    let mut num = 0;
+    let mut me_win = 4;
+    while num < 4 && hold_sums[num].1 == hold_sums[0].1 {
+        if hold_sums[num].0 == 0 {
+            me_win = num;
+        }
+        num += 1;
+    }
+    if me_win < 4 {
+        hold_sums.swap(me_win, 0);
+    }
 
-    let (msg, color) = match who_win {
-            0 => ("󰱱󰱱󰱱 You win!".into(), RESULT_MSG_WIN),
-            _ => (format!("󰱶󰱶󰱶 Player {} wins...", players[who_win].0), RESULT_MSG_LOSE),
+    let (msg, color) = if me_win < 4 {
+        (match num {
+            1 => format!("󰱱󰱱󰱱 You win!"),
+            2 => format!("󰱱󰱱󰱱 You and player {} win!", name_shorten(&players[hold_sums[1].0].0)),
+            3 => format!("󰱱󰱱󰱱 You and player {}, {} win!",
+                            name_shorten(&players[hold_sums[1].0].0),
+                            name_shorten(&players[hold_sums[2].0].0),
+                        ),
+            4 => format!("Tie!"),
+            _ => panic!("Invalid num!"),
+        },
+        RESULT_MSG_WIN)
+    } else {
+        (match num {
+            1 => format!("󰱶󰱶󰱶 Player {} wins...", name_shorten(&players[hold_sums[0].0].0)),
+            2 => format!("󰱶󰱶󰱶 Player {}, {} win...",
+                            name_shorten(&players[hold_sums[0].0].0),
+                            name_shorten(&players[hold_sums[1].0].0)
+                        ),
+            3 => format!("󰱶󰱶󰱶 The other three players win..."),
+            _ => panic!("Invalid num!"),
+        },
+        RESULT_MSG_LOSE)
     };
+
     render_result_msg(frame, msg, color);
     render_result_button(frame);
 }

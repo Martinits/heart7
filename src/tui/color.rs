@@ -46,6 +46,6 @@ pub const DESK_RESULT_1:         Color = Color::Rgb(0xF9, 0x07, 0x16);
 pub const DESK_RESULT_2:         Color = Color::Rgb(0xFF, 0xCE, 0x45);
 pub const DESK_RESULT_3:         Color = Color::Rgb(0x35, 0xD0, 0xBA);
 
-pub const RESULT_MSG_WIN:        Color = Color::Rgb(0x00, 0xDF, 0xA2);
 pub const RESULT_MSG_LOSE:       Color = Color::Rgb(0x00, 0xDF, 0xA2);
+pub const RESULT_MSG_WIN:        Color = Color::Rgb(0xFF, 0x00, 0x60);
 pub const RESULT_MSG_GREY:       Color = Color::Rgb(0xC1, 0xC1, 0xC1);

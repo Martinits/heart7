@@ -466,7 +466,7 @@ pub fn gaming<B: Backend>(
 
     if let Some(m) = msg {
         render_msg(frame, m.clone());
-    } else if is_no_discard {
+    } else if next == 0 && is_no_discard {
         render_msg(frame, "No Card to Play!".into());
     }
 

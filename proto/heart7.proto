@@ -128,7 +128,7 @@ message GameMsg {
                 PlayInfo play = 5;
                 GameResult endgame = 6;
                 uint32 exit_game = 7;
-                uint32 exit_room = 8;
+                RoomInfo exit_room = 8;
         }
 }
 

@@ -43,14 +43,14 @@ pub enum AppState {
     WaitPlayer {
         client: Client,
         players: Vec<(String, usize, bool)>,
-        msg: String,
+        msg: Vec<String>,
         roomid: String,
         stream_listener_cancel: CancellationToken,
     },
     WaitReady {
         client: Client,
         players: Vec<(String, usize, bool)>,
-        msg: String,
+        msg: Vec<String>,
         roomid: String,
         stream_listener_cancel: CancellationToken,
     },
@@ -518,7 +518,7 @@ impl<B: Backend> App<B> {
                                         players: rpc::room_info_to_players(name, &rs),
                                         client: c.clone(),
                                         roomid: input.value().into(),
-                                        msg: "Waiting for other players to join room......".into(),
+                                        msg: vec!["Waiting for other players to join room......".into()],
                                         stream_listener_cancel: cancel.clone(),
                                     };
                                     self.exitmenu.1 = 0;
@@ -529,7 +529,7 @@ impl<B: Backend> App<B> {
                                         players: rpc::room_info_to_players(name, &rs),
                                         client: c.clone(),
                                         roomid: input.value().into(),
-                                        msg: "Please press ENTER to get ready!".into(),
+                                        msg: vec!["Please press ENTER to get ready!".into()],
                                         stream_listener_cancel: cancel.clone(),
                                     };
                                     self.exitmenu.1 = 0;
@@ -553,7 +553,7 @@ impl<B: Backend> App<B> {
                 match client.game_ready(players[0].1 as u32, roomid.clone()).await {
                     Ok(_) => {
                         players[0].2 = true;
-                        *msg = "Waiting for other players to get ready......".into();
+                        *msg = vec!["Waiting for other players to get ready......".into()];
                     }
                     Err(s) => panic!("Failed to GetReady: {}", s),
                 }
@@ -601,7 +601,7 @@ impl<B: Backend> App<B> {
                     ).collect(),
                     client: client.clone(),
                     roomid: roomid.clone(),
-                    msg: "Please press ENTER to get ready!".into(),
+                    msg: vec!["Please press ENTER to get ready!".into()],
                     stream_listener_cancel: cancel.clone(),
                 };
                 self.exitmenu.1 = 0;
@@ -690,15 +690,21 @@ impl<B: Backend> App<B> {
                 ref mut choose, ref cards, ..
             } if cards.len() != 0 => {
                 if is_left {
-                    if *choose > 1 {
-                        *choose -= 1;
-                    }
+                    *choose += cards.len() + 1 - 1;
                 } else {
                     *choose += 1;
-                    if *choose > cards.len() {
-                        *choose = cards.len();
-                    }
                 }
+                *choose %= cards.len() + 1;
+                // if is_left {
+                //     if *choose > 1 {
+                //         *choose -= 1;
+                //     }
+                // } else {
+                //     *choose += 1;
+                //     if *choose > cards.len() {
+                //         *choose = cards.len();
+                //     }
+                // }
                 true
             }
             _ => {
@@ -817,19 +823,15 @@ impl<B: Backend> App<B> {
                             self.state = AppState::WaitReady{
                                 client: client.clone(),
                                 players: players.clone(),
-                                msg: "Please press ENTER to get ready!".into(),
+                                msg: vec!["Please press ENTER to get ready!".into()],
                                 roomid: roomid.clone(),
                                 stream_listener_cancel: stream_listener_cancel.clone(),
                             };
                             self.exitmenu.1 = 0;
                         }
                     }
-                    Some(Msg::ExitRoom(_)) => {
-                        match client.room_status(roomid.clone()).await {
-                            Ok(ri) =>
-                                *players = rpc::room_info_to_players(&players[0].0, &ri),
-                            Err(s) => panic!("Failed to get room status: {}", s),
-                        }
+                    Some(Msg::ExitRoom(ri)) => {
+                        *players = rpc::room_info_to_players(&players[0].0, &ri);
                     }
                     None => panic!("Got empty GameMsg!"),
                     _ => panic!("Got GameMsg not possible in state WaitPlayer!"),
@@ -878,24 +880,24 @@ impl<B: Backend> App<B> {
                             Err(s) => panic!("Failed to get GameStatus on start: {}", s),
                         }
                     }
-                    Some(Msg::ExitRoom(who)) => {
-                        let ri = match client.room_status(roomid.clone()).await {
-                            Ok(ri) => ri,
-                            Err(s) => panic!("Failed to get room status: {}", s),
-                        };
-                        let exit_name = players.iter().find(|p| p.1 == who as usize).unwrap().0.clone();
+                    Some(Msg::ExitRoom(ri)) => {
                         self.state = AppState::WaitPlayer {
                             players: rpc::room_info_to_players(&players[0].0, &ri),
                             client: client.clone(),
                             roomid: roomid.clone(),
-                            msg: format!("Player {} exits room.\n\
-                                Waiting for other players to join room......", exit_name),
+                            msg: vec!["Someone exits room.".into(),
+                                "Waiting for other players to join room......".into()],
                             stream_listener_cancel: stream_listener_cancel.clone(),
                         };
                         self.exitmenu.1 = 0;
                     }
+                    Some(Msg::ExitGame(_)) => {
+                        // if who as usize != players[0].1 {
+                        //     panic!("Got ExitGame but not myself in state WaitReady!")
+                        // }
+                    }
                     None => panic!("Got empty GameMsg!"),
-                    _ => panic!("Got GameMsg not possible in state WaitPlayer!"),
+                    _ => panic!("Got GameMsg not possible in state WaitReady!"),
                 }
                 true
             }
@@ -961,23 +963,18 @@ impl<B: Backend> App<B> {
                             ).collect(),
                             roomid: roomid.clone(),
                             stream_listener_cancel: cancel.clone(),
-                            msg: format!("Player {} exits get.\n\
-                                Please press ENTER to get ready!", exit_name),
+                            msg: vec![format!("Player {} exits game.", exit_name),
+                                "Please press ENTER to get ready!".into()],
                         };
                         self.exitmenu.1 = 0;
                     }
-                    Some(Msg::ExitRoom(who)) => {
-                        let ri = match client.room_status(roomid.clone()).await {
-                            Ok(ri) => ri,
-                            Err(s) => panic!("Failed to get room status: {}", s),
-                        };
-                        let exit_name = players.iter().find(|p| p.1 == who as usize).unwrap().0.clone();
+                    Some(Msg::ExitRoom(ri)) => {
                         self.state = AppState::WaitPlayer {
                             players: rpc::room_info_to_players(&players[0].0, &ri),
                             client: client.clone(),
                             roomid: roomid.clone(),
-                            msg: format!("Player {} exits room.\n\
-                                Waiting for other players to join room......", exit_name),
+                            msg: vec!["Someone exits room.".into(),
+                                "Waiting for other players to join room......".into()],
                             stream_listener_cancel: cancel.clone(),
                         };
                         self.exitmenu.1 = 0;
@@ -992,18 +989,13 @@ impl<B: Backend> App<B> {
             } => {
                 match msg.msg {
                     Some(Msg::ExitGame(_)) => false,
-                    Some(Msg::ExitRoom(who)) => {
-                        let ri = match client.room_status(roomid.clone()).await {
-                            Ok(ri) => ri,
-                            Err(s) => panic!("Failed to get room status: {}", s),
-                        };
-                        let exit_name = players.iter().find(|p| p.1 == who as usize).unwrap().0.clone();
+                    Some(Msg::ExitRoom(ri)) => {
                         self.state = AppState::WaitPlayer {
                             players: rpc::room_info_to_players(&players[0].0, &ri),
                             client: client.clone(),
                             roomid: roomid.clone(),
-                            msg: format!("Player {} exits room.\n\
-                                Waiting for other players to join room......", exit_name),
+                            msg: vec!["Someone exits room.".into(),
+                                "Waiting for other players to join room......".into()],
                             stream_listener_cancel: cancel.clone(),
                         };
                         self.exitmenu.1 = 0;
@@ -1030,7 +1022,7 @@ impl<B: Backend> App<B> {
         }
         // check my holds
         assert!(holds.len() == ret[0].2.len());
-        assert!(ret[0].2.iter().zip(holds).any(|(a, b)| *a != *b));
+        assert!(!ret[0].2.iter().zip(holds).any(|(a, b)| *a != *b));
         ret
     }
 
@@ -1121,7 +1113,7 @@ impl<B: Backend> App<B> {
                                     ).collect(),
                                     roomid: roomid.clone(),
                                     stream_listener_cancel: cancel.clone(),
-                                    msg: "Please press ENTER to get ready!".into(),
+                                    msg: vec!["Please press ENTER to get ready!".into()],
                                 };
                                 self.exitmenu.1 = 0;
                             }
@@ -1161,7 +1153,7 @@ impl<B: Backend> App<B> {
                                     ).collect(),
                                     roomid: roomid.clone(),
                                     stream_listener_cancel: cancel.clone(),
-                                    msg: "Please press ENTER to get ready!".into(),
+                                    msg: vec!["Please press ENTER to get ready!".into()],
                                 };
                                 self.exitmenu.1 = 0;
                             }
@@ -1204,9 +1196,8 @@ impl<B: Backend> App<B> {
 }
 
 // TODO:
-// give msg if no card to discard !
-// handle Esc of all states !
-// cancel stream listener when exit room or someone exit room !
-// handle when someone exits !
+// multiple winner
+// draw hold 0
 // custom room name
 // server clean room not alive per hour
+// server close room for someone not alive for 1 min
