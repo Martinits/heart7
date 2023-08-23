@@ -8,6 +8,7 @@ pub mod gaming;
 pub mod wait;
 pub mod players;
 pub mod game_result;
+pub mod resize;
 
 pub use home_page::*;
 pub use ask_name::*;
@@ -19,6 +20,7 @@ pub use gaming::*;
 pub use wait::*;
 pub use players::*;
 pub use game_result::*;
+pub use resize::*;
 
 use super::app::AppState;
 use super::color::*;

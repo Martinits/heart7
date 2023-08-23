@@ -33,10 +33,11 @@ async fn main() -> AppResult<()> {
 
     let backend = CrosstermBackend::new(io::stdout());
     let terminal = Terminal::new(backend)?;
+    let sz = terminal.size()?;
     let tui = Tui::new(terminal);
 
     let (tx, rx) = mpsc::channel(DEFAULT_CHANNEL_SIZE);
-    let mut app = App::new(tui, &cancel, tx.clone(), rx).await;
+    let mut app = App::new(tui, &cancel, tx.clone(), rx, sz).await;
     app.init()?;
 
     let event = EventHandler::new();

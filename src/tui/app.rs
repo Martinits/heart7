@@ -5,6 +5,7 @@ use super::ui;
 use tokio::sync::mpsc;
 use tokio_util::sync::CancellationToken;
 use ratatui::backend::Backend;
+use ratatui::layout::Rect;
 use tui::tui::Tui;
 use tui_input::Input;
 use tui_input::backend::crossterm::EventHandler;
@@ -117,6 +118,8 @@ pub struct App<B: Backend> {
     state: AppState,
     tx: mpsc::Sender<Action>,
     rx: mpsc::Receiver<Action>,
+    block_event: bool,
+    sz: (u16, u16),
 }
 
 impl<B: Backend> App<B> {
@@ -125,9 +128,12 @@ impl<B: Backend> App<B> {
         cancel: &CancellationToken,
         tx: mpsc::Sender<Action>,
         rx: mpsc::Receiver<Action>,
+        sz: Rect,
     ) -> Self {
         Self {
             tui,
+            block_event: false,
+            sz: (sz.width, sz.height),
             cancel: cancel.clone(),
             state: Default::default(),
             // state: AppState::Gaming{
@@ -357,22 +363,36 @@ impl<B: Backend> App<B> {
                     draw_or_not = match action {
                         None => panic!("Channel to app closed!"),
                         Some(a) => match a {
-                            Action::Esc => self.handle_esc(),
-                            Action::Enter => self.handle_enter().await,
-                            Action::LeftArrow => self.handle_lr_arrow(true),
-                            Action::RightArrow => self.handle_lr_arrow(false),
-                            Action::UpArrow => self.handle_ud_arrow(true),
-                            Action::DownArrow => self.handle_ud_arrow(false),
-                            Action::Type(c) => self.handle_type(c),
-                            Action::CtrlC => panic!("Got Ctrl-C!"),
-                            Action::Resize(_, _) => true,
+                            Action::Esc if !self.block_event
+                                => self.handle_esc(),
+                            Action::Enter if !self.block_event
+                                => self.handle_enter().await,
+                            Action::LeftArrow if !self.block_event
+                                => self.handle_lr_arrow(true),
+                            Action::RightArrow if !self.block_event
+                                => self.handle_lr_arrow(false),
+                            Action::UpArrow if !self.block_event
+                                => self.handle_ud_arrow(true),
+                            Action::DownArrow if !self.block_event
+                                => self.handle_ud_arrow(false),
+                            Action::Type(c) if !self.block_event
+                                => self.handle_type(c),
+                            Action::CtrlC
+                                => panic!("Got Ctrl-C!"),
+                            Action::Resize(x, y) => {
+                                self.sz = (x, y);
+                                true
+                            },
                             Action::Refresh => true,
-                            Action::Backspace => self.handle_del(true),
-                            Action::Delete => self.handle_del(false),
+                            Action::Backspace if !self.block_event
+                                => self.handle_del(true),
+                            Action::Delete if !self.block_event
+                                => self.handle_del(false),
                             Action::ServerConnectResult(r)
                                 => self.handle_server_connect_result(r),
                             Action::StreamMsg(msg)
                                 => self.handle_stream_msg(msg).await,
+                            _ => false,
                         }
                     }
                 }
@@ -383,7 +403,13 @@ impl<B: Backend> App<B> {
     }
 
     fn draw(&mut self) -> AppResult<()> {
-        self.tui.draw(|frame| ui::render(frame, &self.state))?;
+        if self.sz.0 < 160 || self.sz.1 < 48 {
+            self.block_event = true;
+            self.tui.draw(|frame| ui::resize(frame, self.sz))?;
+        } else {
+            self.block_event = false;
+            self.tui.draw(|frame| ui::render(frame, &self.state))?;
+        }
         Ok(())
     }
 
@@ -915,5 +941,5 @@ impl<B: Backend> App<B> {
 // cancel stream listener when exit room
 // handle when someone exits
 // handle Esc of all states
-// handle resize min:162*49
+// handle resize min:162*49 1
 // custom room name
