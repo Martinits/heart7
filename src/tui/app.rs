@@ -26,12 +26,18 @@ pub enum AppState {
         msg: String,
         connecting: bool,
     },
-    GetRoom {
+    AskName {
         client: Client,
         input: Input,
         msg: String,
         button: u16,
         is_input: bool,
+    },
+    NewRoom {
+        client: Client,
+        input: Input,
+        msg: String,
+        name: String,
     },
     JoinRoom {
         client: Client,
@@ -458,31 +464,18 @@ impl<B: Backend> App<B> {
                 *msg = format!("Try connecting to {} ......", input.value());
                 true
             }
-            AppState::GetRoom {
-                ref input, ref mut msg, button, client: ref mut c, is_input
+            AppState::AskName {
+                ref input, button, client: ref mut c, is_input, ..
             } if !is_input => {
                 if button == 0{
                     // new room
                     info!("Player {} chooses to new room", input.value());
-                    match c.new_room(input.value().into()).await {
-                        Ok(roomid) => {
-                            info!("Get NewRoom result from server, enter JoinRoom state");
-                            self.state = AppState::JoinRoom {
-                                client: c.clone(),
-                                input: Input::new(roomid),
-                                msg: format!("Hello, {}!\n\
-                                        Successfully created a room, ID is shown below.\n\
-                                        Please press ENTER to join room:", input.value()),
-                                name: input.value().into(),
-                                stream_listener_cancel: CancellationToken::new(),
-                            };
-                            self.exitmenu.1 = 0;
-                        },
-                        Err(s) => {
-                            *msg = format!("Making NewRoom request to server failed:\n\
-                                            {}\n\
-                                            Please retry:", s);
-                        }
+                    self.state = AppState::NewRoom {
+                        client: c.clone(),
+                        input: Input::default(),
+                        name: input.value().into(),
+                        msg: format!("Hello, {}!\n\
+                                Please enter new room name:", input.value()),
                     }
                 } else {
                     //join room
@@ -496,6 +489,29 @@ impl<B: Backend> App<B> {
                         stream_listener_cancel: CancellationToken::new(),
                     };
                     self.exitmenu.1 = 0;
+                }
+                true
+            }
+            AppState::NewRoom { client: ref mut c, ref input, ref name, ref mut msg} => {
+                match c.new_room(input.value().into()).await {
+                    Ok(()) => {
+                        info!("Get NewRoom result from server, enter JoinRoom state");
+                        self.state = AppState::JoinRoom {
+                            client: c.clone(),
+                            input: Input::new(input.value().into()),
+                            msg: format!("Hello, {}!\n\
+                                    Successfully created a room, ID is shown below.\n\
+                                    Please press ENTER to join room:", name),
+                            name: name.clone(),
+                            stream_listener_cancel: CancellationToken::new(),
+                        };
+                        self.exitmenu.1 = 0;
+                    },
+                    Err(s) => {
+                        *msg = format!("Making NewRoom request to server failed:\n\
+                                        {}\n\
+                                        Please retry:", s);
+                    }
                 }
                 true
             }
@@ -623,7 +639,7 @@ impl<B: Backend> App<B> {
                 );
                 true
             }
-            AppState::GetRoom {ref mut input, is_input, ..} if is_input => {
+            AppState::AskName {ref mut input, is_input, ..} if is_input => {
                 input.handle_event(
                     &CrosstermEvent::Key(
                         KeyEvent::new(KeyCode::Char(c), KeyModifiers::NONE)
@@ -631,7 +647,7 @@ impl<B: Backend> App<B> {
                 );
                 true
             }
-            AppState::JoinRoom {ref mut input, ..} => {
+            AppState::NewRoom {ref mut input, ..} | AppState::JoinRoom {ref mut input, ..} => {
                 input.handle_event(
                     &CrosstermEvent::Key(
                         KeyEvent::new(KeyCode::Char(c), KeyModifiers::NONE)
@@ -658,7 +674,7 @@ impl<B: Backend> App<B> {
                 );
                 true
             }
-            AppState::GetRoom {ref mut input, is_input, ref mut button, ..} => {
+            AppState::AskName {ref mut input, is_input, ref mut button, ..} => {
                 if is_input {
                     input.handle_event(
                         &CrosstermEvent::Key(
@@ -675,7 +691,7 @@ impl<B: Backend> App<B> {
                 true
 
             }
-            AppState::JoinRoom {ref mut input, ..} => {
+            AppState::NewRoom {ref mut input, ..} | AppState::JoinRoom {ref mut input, ..} => {
                 input.handle_event(
                     &CrosstermEvent::Key(
                         KeyEvent::new(
@@ -715,7 +731,7 @@ impl<B: Backend> App<B> {
 
     fn handle_ud_arrow(&mut self, _is_up: bool) -> bool {
         match self.state {
-            AppState::GetRoom { ref mut is_input, ..} => {
+            AppState::AskName { ref mut is_input, ..} => {
                 *is_input = !*is_input;
                 true
             }
@@ -748,13 +764,13 @@ impl<B: Backend> App<B> {
                 );
                 true
             }
-            AppState::GetRoom {ref mut input, is_input, ..} if is_input => {
+            AppState::AskName {ref mut input, is_input, ..} if is_input => {
                 input.handle_event(
                     &CrosstermEvent::Key(KeyEvent::new(keycode, KeyModifiers::NONE))
                 );
                 true
             }
-            AppState::JoinRoom {ref mut input, ..}=> {
+            AppState::NewRoom {ref mut input, ..} | AppState::JoinRoom {ref mut input, ..} => {
                 input.handle_event(
                     &CrosstermEvent::Key(KeyEvent::new(keycode, KeyModifiers::NONE))
                 );
@@ -773,7 +789,7 @@ impl<B: Backend> App<B> {
                     match r {
                         Ok(c) => {
                             info!("Server {} Connected, enter GetRoom state", c.get_addr());
-                            self.state = AppState::GetRoom {
+                            self.state = AppState::AskName {
                                 client: c,
                                 input: Input::default(),
                                 msg: "Game server connected.\n\
@@ -1045,14 +1061,15 @@ impl<B: Backend> App<B> {
 
     async fn handle_exitmenu_event(&mut self, action: u32) -> bool {
         let button_num = match self.state {
-            AppState::GetServer {..} | AppState::GetRoom {..} | AppState::JoinRoom {..} => 2,
+            AppState::GetServer {..} | AppState::AskName {..}
+            | AppState::JoinRoom {..} | AppState::NewRoom {..} => 2,
             AppState::WaitPlayer {..} | AppState::WaitReady {..} => 3,
             AppState::Gaming {..} | AppState::GameResult {..} => 4,
         };
         match action {
             0 => {
                 match self.state {
-                    AppState::GetServer {..} | AppState::GetRoom {..} => {
+                    AppState::GetServer {..} | AppState::AskName {..} | AppState::NewRoom {..} => {
                         match self.exitmenu.1 {
                             0 => {},
                             1 => self.cancel.cancel(),
@@ -1080,7 +1097,7 @@ impl<B: Backend> App<B> {
                             1 => {
                                 let _ = c.exit_room(players[0].1 as u32, roomid.clone()).await;
                                 cancel.cancel();
-                                self.state = AppState::GetRoom {
+                                self.state = AppState::AskName {
                                     client: c.clone(),
                                     input: Input::new(players[0].0.clone()),
                                     msg: "Exited room successfully.\n\
@@ -1120,7 +1137,7 @@ impl<B: Backend> App<B> {
                             2 => {
                                 let _ = c.exit_room(players[0].1 as u32, roomid.clone()).await;
                                 cancel.cancel();
-                                self.state = AppState::GetRoom {
+                                self.state = AppState::AskName {
                                     client: c.clone(),
                                     input: Input::new(players[0].0.clone()),
                                     msg: "Exited room successfully.\n\
@@ -1160,7 +1177,7 @@ impl<B: Backend> App<B> {
                             2 => {
                                 let _ = c.exit_room(players[0].1 as u32, roomid.clone()).await;
                                 cancel.cancel();
-                                self.state = AppState::GetRoom {
+                                self.state = AppState::AskName {
                                     client: c.clone(),
                                     input: Input::new(players[0].0.clone()),
                                     msg: "Exited room successfully.\n\

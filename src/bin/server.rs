@@ -15,16 +15,16 @@ pub struct Heart7D {
 impl Heart7 for Heart7D {
     async fn new_room(
         &self,
-        request: Request<PlayerInfo>,
-    ) -> Result<Response<NewRoomReply>, Status> {
+        request: Request<NewRoomReq>,
+    ) -> Result<Response<CommonReply>, Status> {
 
         info!("Got NewRoom request: {:?}", request);
 
-        let aroom = self.rm.new_room().await?;
-        let room = aroom.read().await;
+        let _ = self.rm.new_room(&request.get_ref().roomid).await?;
 
-        let reply = NewRoomReply{
-            roomid: room.get_id()
+        let reply = CommonReply {
+            success: true,
+            msg: "Ok".into(),
         };
 
         info!("NewRoom response: {:?}", reply);

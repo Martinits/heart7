@@ -3,7 +3,7 @@ syntax = "proto3";
 package heart7_rpc;
 
 service Heart7 {
-        rpc NewRoom (PlayerInfo) returns (NewRoomReply);
+        rpc NewRoom (NewRoomReq) returns (CommonReply);
         rpc JoinRoom (JoinRoomReq) returns (stream GameMsg);
         rpc RoomStatus (RoomReq) returns (RoomInfo);
         rpc GameReady (RoomReq) returns (GameReadyReply);
@@ -18,7 +18,7 @@ message PlayerInfo {
         string name = 1;
 }
 
-message NewRoomReply {
+message NewRoomReq {
         string roomid = 1;
 }
 

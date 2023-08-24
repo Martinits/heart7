@@ -44,12 +44,21 @@ impl Client {
         self.addr.clone()
     }
 
-    pub async fn new_room(&mut self, name: String) -> AppResult<String> {
-        let request = Request::new(PlayerInfo {
-            name
+    pub async fn new_room(&mut self, name: String) -> AppResult<()> {
+        let request = Request::new(NewRoomReq {
+            roomid: name
         });
 
-        Ok(self.c.new_room(request).await?.into_inner().roomid)
+        let r = self.c.new_room(request).await?.into_inner();
+        if r.success {
+            assert!(r.msg == "Ok");
+            Ok(())
+        } else {
+            Err(Box::new(Status::new(
+                Code::Internal,
+                format!("Server response false when new room, {}", r.msg)
+            )))
+        }
     }
 
     pub async fn join_room(&mut self, name: String, roomid: String) -> AppResult<GameStream> {

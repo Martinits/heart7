@@ -10,7 +10,7 @@ use tui_input::Input;
 use super::common::*;
 
 pub fn join_room<B: Backend>(frame: &mut Frame<B>, input: &Input, msg: &String) {
-    let prompt = render_prompt(frame);
+    let prompt = render_prompt_window(frame);
 
     let chunks = Layout::default()
         .direction(Direction::Vertical)

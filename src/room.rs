@@ -42,30 +42,27 @@ struct Player {
 }
 
 impl RoomManager {
-    pub async fn new_room(&self) -> RPCResult<ARoom> {
-        let id = uuid::Uuid::new_v4().to_string();
+    pub async fn new_room(&self, name: &String) -> RPCResult<ARoom> {
+        let mut rooms = self.rooms.write().await;
+
+        if let Some(_) = rooms.get(name) {
+            return Err(Status::new(
+                Code::AlreadyExists,
+                format!("Room {} already exists!", name),
+            ));
+        }
 
         let r = Room {
             state: RoomState::NotFull,
             players: Vec::new(),
-            id: id.clone(),
+            id: name.clone(),
             ready_cnt: 0,
             next: 0,
             ..Default::default()
-
         };
 
-        let mut rooms = self.rooms.write().await;
-
-        if let Some(_) = rooms.get(&id) {
-            return Err(Status::new(
-                Code::AlreadyExists,
-                format!("Room {} already exists!", id),
-            ));
-        }
-
         let ar = Arc::new(RwLock::new(r));
-        rooms.insert(id.clone(), ar.clone());
+        rooms.insert(name.clone(), ar.clone());
         Ok(ar)
     }
 

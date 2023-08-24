@@ -10,6 +10,7 @@ pub mod players;
 pub mod game_result;
 pub mod resize;
 pub mod exit_menu;
+pub mod new_room;
 
 pub use home_page::*;
 pub use ask_name::*;
@@ -23,6 +24,7 @@ pub use players::*;
 pub use game_result::*;
 pub use resize::*;
 pub use exit_menu::*;
+pub use new_room::*;
 
 use super::app::AppState;
 use super::color::*;
@@ -45,7 +47,8 @@ pub fn render<B: Backend>(frame: &mut Frame<B>, appstate: &AppState, exit: (bool
 
     if exit.0 {
         let button_num = match appstate {
-            AppState::GetServer {..} | AppState::GetRoom {..} | AppState::JoinRoom {..} => 2,
+            AppState::GetServer {..} | AppState::AskName {..}
+            | AppState::JoinRoom {..} | AppState::NewRoom { .. } => 2,
             AppState::WaitPlayer {..} | AppState::WaitReady {..} => 3,
             AppState::Gaming {..} | AppState::GameResult {..} => 4,
         };
@@ -54,8 +57,10 @@ pub fn render<B: Backend>(frame: &mut Frame<B>, appstate: &AppState, exit: (bool
         match appstate {
             AppState::GetServer {connecting, input, msg}
                 => home_page(frame, input, msg, connecting),
-            AppState::GetRoom {input, msg, button, is_input, ..}
+            AppState::AskName {input, msg, button, is_input, ..}
                 => ask_name(frame, input, msg, button, is_input),
+            AppState::NewRoom { input, msg, ..}
+                => new_room(frame, input, msg),
             AppState::JoinRoom {input, msg, ..}
                 => join_room(frame, input, msg),
             AppState::WaitPlayer {players, msg, roomid, ..}

@@ -12,7 +12,7 @@ use super::common::*;
 pub fn ask_name<B: Backend>(frame: &mut Frame<B>, input: &Input,
                         msg: &String, button: &u16, is_input: &bool
 ) {
-    let prompt = render_prompt(frame);
+    let prompt = render_prompt_window(frame);
 
     let chunks = Layout::default()
         .direction(Direction::Vertical)

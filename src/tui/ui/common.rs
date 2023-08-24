@@ -95,7 +95,7 @@ pub fn render_game_info<B: Backend>(frame: &mut Frame<B>, roomid: String) {
     )
 }
 
-pub fn render_prompt<B: Backend>(frame: &mut Frame<B>) -> Rect {
+pub fn render_prompt_window<B: Backend>(frame: &mut Frame<B>) -> Rect {
     let prompt = rect_cut_center(frame.size(), 40, 50);
 
     frame.render_widget(
