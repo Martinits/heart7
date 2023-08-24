@@ -17,6 +17,7 @@ use crossterm::event::{
 };
 use crate::game::Card;
 use crate::client::desk::*;
+use std::panic;
 
 pub type AppResult<T> = Result<T, Box<dyn Error>>;
 
@@ -264,6 +265,14 @@ impl<B: Backend> App<B> {
         Ok(())
     }
 
+    fn add_cancel_to_panic(cancel: CancellationToken) {
+        let panic_hook = panic::take_hook();
+        panic::set_hook(Box::new(move |panic| {
+            cancel.cancel();
+            panic_hook(panic);
+        }));
+    }
+
     async fn handle_enter(&mut self) -> bool {
         match self.state {
             AppState::GetServer {
@@ -291,14 +300,16 @@ impl<B: Backend> App<B> {
                 } else {
                     //join room
                     info!("Player {} chooses to join room, enter JoinRoom state", input.value());
+                    let scancel = CancellationToken::new();
                     self.state = AppState::JoinRoom {
                         name: input.value().into(),
                         input: Input::default(),
                         client: c.clone(),
                         msg: format!("Hello, {}!\n\
                                 Please enter room ID:", input.value()),
-                        stream_listener_cancel: CancellationToken::new(),
+                        stream_listener_cancel: scancel.clone(),
                     };
+                    Self::add_cancel_to_panic(scancel);
                     self.exitmenu.1 = 0;
                 }
                 true
@@ -307,6 +318,7 @@ impl<B: Backend> App<B> {
                 match c.new_room(input.value().into()).await {
                     Ok(()) => {
                         info!("Get NewRoom result from server, enter JoinRoom state");
+                        let scancel = CancellationToken::new();
                         self.state = AppState::JoinRoom {
                             client: c.clone(),
                             input: Input::new(input.value().into()),
@@ -314,8 +326,9 @@ impl<B: Backend> App<B> {
                                     Successfully created a room, ID is shown below.\n\
                                     Please press ENTER to join room:", name),
                             name: name.clone(),
-                            stream_listener_cancel: CancellationToken::new(),
+                            stream_listener_cancel: scancel.clone(),
                         };
+                        Self::add_cancel_to_panic(scancel);
                         self.exitmenu.1 = 0;
                     },
                     Err(s) => {
