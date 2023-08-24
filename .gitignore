@@ -15,3 +15,5 @@ target/
 /target
 
 *.log
+
+.cargo
