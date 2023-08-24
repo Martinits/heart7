@@ -1213,7 +1213,5 @@ impl<B: Backend> App<B> {
 }
 
 // TODO:
-// custom room name
 // server clean room not alive per hour
 // server close room for someone not alive for 1 min
-// readme

@@ -5,6 +5,7 @@ use std::error::Error;
 use log::LevelFilter;
 use log4rs::append::console::ConsoleAppender;
 use log4rs::config::{Appender, Config, Root};
+use clap::Parser;
 
 #[derive(Debug, Default)]
 pub struct Heart7D {
@@ -291,6 +292,14 @@ impl Heart7 for Heart7D {
     }
 }
 
+#[derive(Parser, Debug)]
+#[command(name="Heart7 Server", author="Martinit", about="Heart7 Card Game Server", long_about=None)]
+struct Args {
+    /// Listen address: <IP>:<PORT>
+    #[arg(long, default_value("0.0.0.0:20007"))]
+    listen: String,
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let logconsole = ConsoleAppender::builder().build();
@@ -301,7 +310,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
                    .build(LevelFilter::Debug))?;
     log4rs::init_config(config)?;
 
-    let sock_addr = format!("0.0.0.0:{}", DEFAULT_PORT).parse()?;
+    let args = Args::parse();
+
+
+    let sock_addr = args.listen.parse()?;
     let server = Heart7D::default();
 
     info!("Heart7 Server serving on {}..", sock_addr);
