@@ -4,6 +4,7 @@ use std::sync::Arc;
 use tokio::sync::mpsc::{self, Sender, Receiver};
 use crate::{*, game::*, desk::*};
 use rand::{thread_rng, seq::SliceRandom};
+use tokio::time;
 
 type ARoom = Arc<RwLock<Room>>;
 type MsgTX = Sender<Result<GameMsg, Status>>;
@@ -24,6 +25,7 @@ pub struct Room {
     desk: Desk,
     thisround: Vec<Card>,
     play_cnt: u32,
+    alive: bool,
 }
 
 #[derive(Debug, Default, PartialEq)]
@@ -42,6 +44,31 @@ struct Player {
 }
 
 impl RoomManager {
+    pub fn spawn_watch_dog(&self) {
+        let arooms = self.rooms.clone();
+        tokio::spawn(async move {
+            loop {
+                time::sleep(time::Duration::from_secs(3600)).await;
+
+                let mut rooms = arooms.write().await;
+                let keys: Vec<String> = rooms.iter().map(
+                    |(id, _)| id.clone()
+                ).collect();
+
+                for id in keys.iter() {
+                    let aroom = rooms.get(id).unwrap().clone();
+                    let mut room = aroom.write().await;
+                    if room.is_alive() {
+                        room.unset_alive();
+                    } else {
+                        info!("Removing room {} by watch dog", id);
+                        rooms.remove(id).unwrap();
+                    }
+                }
+            }
+        });
+    }
+
     pub async fn new_room(&self, name: &String) -> RPCResult<ARoom> {
         let mut rooms = self.rooms.write().await;
 
@@ -58,6 +85,7 @@ impl RoomManager {
             id: name.clone(),
             ready_cnt: 0,
             next: 0,
+            alive: true,
             ..Default::default()
         };
 
@@ -68,6 +96,7 @@ impl RoomManager {
 
     pub async fn get_room(&self, id: &String) -> RPCResult<ARoom> {
         if let Some(ar) = self.rooms.read().await.get(id) {
+            ar.write().await.set_alive();
             Ok(ar.clone())
         } else {
             Err(Status::new(
@@ -91,6 +120,18 @@ impl RoomManager {
 
 // must hold Room lock before calling
 impl Room {
+    pub fn is_alive(&self) -> bool {
+        self.alive
+    }
+
+    pub fn set_alive(&mut self) {
+        self.alive = true;
+    }
+
+    pub fn unset_alive(&mut self) {
+        self.alive = false;
+    }
+
     pub fn get_id(&self) -> String {
         self.id.clone()
     }

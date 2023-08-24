@@ -7,6 +7,12 @@ pub struct Heart7D {
     rm: RoomManager,
 }
 
+impl Heart7D {
+    pub fn spawn_watch_dog(&self) {
+        self.rm.spawn_watch_dog();
+    }
+}
+
 #[tonic::async_trait]
 impl Heart7 for Heart7D {
     async fn new_room(

@@ -29,6 +29,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let sock_addr = args.listen.parse()?;
     let server = Heart7D::default();
+    server.spawn_watch_dog();
 
     info!("Heart7 Server serving on {}..", sock_addr);
     Server::builder()
