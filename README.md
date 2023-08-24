@@ -5,6 +5,12 @@
 
   ![gaming](assets/gaming.png)
 
+- Requirements
+
+  - Nerd Fonts
+  - 一个现代的终端模拟器，比如alacritty、kitty等
+  - 不保证Windows上的编译、运行和显示
+
 - 实现
 
   - C/S架构，通信使用gRPC（tonic + tokio）
