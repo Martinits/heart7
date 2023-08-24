@@ -432,19 +432,24 @@ impl<B: Backend> App<B> {
                 true
             }
             AppState::GameResult {
-                ref client, ref players, ref roomid, stream_listener_cancel: ref cancel, ..
+                ref mut client, ref players, ref roomid, stream_listener_cancel: ref cancel, ..
             } => {
                 info!("Confirmed GameResult, enter WaitReady state");
-                self.state = AppState::WaitReady {
-                    players: players.iter().map(
-                        |p| (p.0.clone(), p.1, false)
-                    ).collect(),
-                    client: client.clone(),
-                    roomid: roomid.clone(),
-                    msg: vec!["Please press ENTER to get ready!".into()],
-                    stream_listener_cancel: cancel.clone(),
-                };
-                self.exitmenu.1 = 0;
+                match client.exit_game(players[0].1 as u32, roomid.clone()).await {
+                    Ok(_) => {
+                        self.state = AppState::WaitReady {
+                            players: players.iter().map(
+                                |p| (p.0.clone(), p.1, false)
+                            ).collect(),
+                            client: client.clone(),
+                            roomid: roomid.clone(),
+                            msg: vec!["Please press ENTER to get ready!".into()],
+                            stream_listener_cancel: cancel.clone(),
+                        };
+                        self.exitmenu.1 = 0;
+                    }
+                    Err(s) => panic!("Failed to ExitGame in GameResult: {}", s),
+                }
                 true
             }
             _ => {
@@ -873,6 +878,21 @@ impl<B: Backend> App<B> {
                             stream_listener_cancel: cancel.clone(),
                         };
                         self.exitmenu.1 = 0;
+                        true
+                    }
+                    Some(Msg::WhoReady(who)) => {
+                        info!("Stream got WhoReady in GameResult, enter WaitReady state");
+                        let mut ps: Vec<(String, usize, bool)> = players.iter().map(
+                            |p| (p.0.clone(), p.1, false)
+                        ).collect();
+                        Self::someone_get_ready(&mut ps, who as usize);
+                        self.state = AppState::WaitReady {
+                            client: client.clone(),
+                            msg: vec!["Please press ENTER to get ready!".into()],
+                            roomid: roomid.clone(),
+                            stream_listener_cancel: cancel.clone(),
+                            players: ps,
+                        };
                         true
                     }
                     _ => panic!("Got impossible GameMsg in state GameResult!"),
