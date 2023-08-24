@@ -19,6 +19,8 @@ pub enum CardAppearance {
     Empty,
     Hold,
     Half,
+    Clear,
+    ClearHalf,
 }
 
 pub fn get_card_text(card: &Card) -> (String, String) {
@@ -68,6 +70,7 @@ pub fn render_card<B: Backend>(
         CardSuit::Club => Style::default().fg(CLUB),
         CardSuit::Diamond => Style::default().fg(DIAMOND),
     };
+    let clear_style = Style::default().fg(CARD_CLEAR);
 
     let (text_suit, text_num) = get_card_text(card);
     let text = match ca {
@@ -117,6 +120,25 @@ pub fn render_card<B: Backend>(
                     Line::styled("", card_suit_style),
                     Line::styled("", card_suit_style),
                     Line::styled("HOLD!", card_suit_style).alignment(Alignment::Center),
+                ].to_vec()
+            )
+        }
+        CardAppearance::Clear => {
+            Text::from(
+                [
+                    Line::styled("", clear_style),
+                    Line::styled("CLEAR", clear_style).alignment(Alignment::Center),
+                    Line::styled("", clear_style),
+                    Line::styled("", clear_style),
+                    Line::styled("CLEAR", clear_style).alignment(Alignment::Center),
+                ].to_vec()
+            )
+        }
+        CardAppearance::ClearHalf => {
+            Text::from(
+                [
+                    Line::styled("", clear_style),
+                    Line::styled("CLEAR", clear_style).alignment(Alignment::Center),
                 ].to_vec()
             )
         }

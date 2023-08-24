@@ -1196,8 +1196,7 @@ impl<B: Backend> App<B> {
 }
 
 // TODO:
-// multiple winner
-// draw hold 0
 // custom room name
 // server clean room not alive per hour
 // server close room for someone not alive for 1 min
+// readme

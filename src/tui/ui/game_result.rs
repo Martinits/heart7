@@ -85,7 +85,7 @@ fn render_hold_result<B: Backend>(
         )
         .split(a)[1];
     render_one_player(frame, players[0].0.clone(), a, Some(DESK_RESULT_0));
-    render_my_holds(frame, &players[0].2);
+    render_my_holds(frame, &players[0].2, players[0].2.len() == 0);
 
     //right
     let a = Layout::default()
@@ -169,7 +169,16 @@ fn render_hold_result<B: Backend>(
         )
         .split(a[5]);
     let mut holds = holds_rect[3];
-    if players[1].2.len() <= 7 {
+    if players[1].2.len() == 0 {
+        holds = rect_cut_center(holds, -8, 100);
+        holds.x += 3 * (7 - 1);
+        holds.width = 11;
+        holds.height = 8;
+        render_card(frame, &NULL_CARD, holds.clone(),
+            CardAppearance::Clear,
+            false, Some(CARD_CLEAR_BOREDER)
+        );
+    } else if players[1].2.len() <= 7 {
         holds = rect_cut_center(holds, -8, 100);
         holds.x += 3 * (7 - players[1].2.len() as u16);
         holds.width = 11;
@@ -244,7 +253,15 @@ fn render_hold_result<B: Backend>(
         sum_a[1]
     );
     let mut holds = holds_rect[1];
-    if players[3].2.len() <= 7 {
+    if players[3].2.len() == 0 {
+        holds = rect_cut_center(holds, -8, 100);
+        holds.width = 11;
+        holds.height = 8;
+        render_card(frame, &NULL_CARD, holds.clone(),
+            CardAppearance::Clear,
+            false, Some(CARD_CLEAR_BOREDER)
+        );
+    } else if players[3].2.len() <= 7 {
         holds = rect_cut_center(holds, -8, 100);
         holds.width = 11;
         holds.height = 8;
@@ -362,19 +379,25 @@ fn render_hold_result<B: Backend>(
     holds_rect.width = 11;
     holds_rect.height = 5;
 
-    for (i, c) in players[2].2.iter().enumerate() {
-        render_card(frame, c, holds_rect.clone(),
-            if i == players[2].2.len() - 1 {
-                CardAppearance::Half
-            } else {
-                CardAppearance::Vertical
-            },
-            false,
-            Some(MYCARD_BORDER)
+    if players[2].2.len() == 0 {
+        render_card(frame, &NULL_CARD, holds_rect.clone(),
+            CardAppearance::ClearHalf,
+            false, Some(CARD_CLEAR_BOREDER)
         );
-        holds_rect.x += 3;
+    } else {
+        for (i, c) in players[2].2.iter().enumerate() {
+            render_card(frame, c, holds_rect.clone(),
+                if i == players[2].2.len() - 1 {
+                    CardAppearance::Half
+                } else {
+                    CardAppearance::Vertical
+                },
+                false,
+                Some(MYCARD_BORDER)
+            );
+            holds_rect.x += 3;
+        }
     }
-
 }
 
 fn render_result_msg<B: Backend>(frame: &mut Frame<B>, msg: String, msg_color: Color){

@@ -290,7 +290,7 @@ fn render_last<B: Backend>(frame: &mut Frame<B>, last: Option<&Card>, who: usize
     }
 }
 
-pub fn render_my_holds<B: Backend>(frame: &mut Frame<B>, holds: &Vec<Card>) {
+pub fn render_my_holds<B: Backend>(frame: &mut Frame<B>, holds: &Vec<Card>, clear: bool) {
     let mut a = Layout::default()
         .direction(Direction::Vertical)
         .vertical_margin(1)
@@ -342,6 +342,13 @@ pub fn render_my_holds<B: Backend>(frame: &mut Frame<B>, holds: &Vec<Card>) {
             ].as_ref()
         )
         .split(a)[2];
+
+    if clear {
+        a = rect_cut_center(a, -8, -11);
+        render_card(frame, &NULL_CARD, a,
+            CardAppearance::Clear, false, Some(CARD_CLEAR_BOREDER));
+        return;
+    }
 
     let mut needed_width = holds.len() as u16 *3 + 8;
     let mut might_overflow = false;
@@ -478,7 +485,7 @@ pub fn gaming<B: Backend>(
         render_last(frame, last, (next+3)%4);
     }
 
-    render_my_holds(frame, holds);
+    render_my_holds(frame, holds, false);
 
     render_game_button(frame,
         if next == 0 {
