@@ -20,3 +20,4 @@ pub const DEFAULT_CHANNEL_SIZE: usize = 64;
 pub mod tui;
 
 pub mod client;
+pub mod server;
