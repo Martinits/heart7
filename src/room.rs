@@ -5,6 +5,7 @@ use tokio::sync::mpsc::{self, Sender, Receiver};
 use crate::{*, game::*, desk::*};
 use rand::{thread_rng, seq::SliceRandom};
 use tokio::time;
+use tokio_util::sync::CancellationToken;
 
 type ARoom = Arc<RwLock<Room>>;
 type MsgTX = Sender<Result<GameMsg, Status>>;
@@ -26,6 +27,8 @@ pub struct Room {
     thisround: Vec<Card>,
     play_cnt: u32,
     alive: bool,
+    watch_dog_cancel: CancellationToken,
+    player_alive: bool,
 }
 
 #[derive(Debug, Default, PartialEq)]
@@ -47,6 +50,7 @@ impl RoomManager {
     pub fn spawn_watch_dog(&self) {
         let arooms = self.rooms.clone();
         tokio::spawn(async move {
+            info!("Room watch dog running");
             loop {
                 time::sleep(time::Duration::from_secs(3600)).await;
 
@@ -86,11 +90,70 @@ impl RoomManager {
             ready_cnt: 0,
             next: 0,
             alive: true,
+            watch_dog_cancel: CancellationToken::new(),
+            player_alive: true,
             ..Default::default()
         };
 
+        let cancel = r.watch_dog_cancel.clone();
+
         let ar = Arc::new(RwLock::new(r));
         rooms.insert(name.clone(), ar.clone());
+
+        // spawn watch dog
+        let aroom = ar.clone();
+        tokio::spawn(async move {
+            loop {
+                tokio::select! {
+                    _ = cancel.cancelled() => {
+                        break;
+                    }
+                    _ = time::sleep(time::Duration::from_secs(600)) => {
+                        let mut room = aroom.write().await;
+                        info!("Player watch dog shoots for room {}", room.get_id());
+                        match room.state {
+                            RoomState::WaitReady => {
+                                if room.player_alive {
+                                    room.player_alive = false;
+                                } else {
+                                    let pids: Vec<usize> = room.players.iter()
+                                    .enumerate().filter(
+                                        |p| !p.1.game.is_ready()
+                                    ).map(
+                                        |p| p.0
+                                    ).collect();
+                                    info!("In WaitReady: player watch dog kills {:?}", pids);
+                                    pids.into_iter().for_each(
+                                        |pid| {
+                                            room.exit_room(pid).unwrap();
+                                        }
+                                    );
+                                    let ri = room.get_room_info().unwrap();
+                                    room.send_gamemsg(GameMsg{
+                                        msg: Some(Msg::LoseConnection(ri))
+                                    }).await;
+                                }
+                            }
+                            RoomState::Gaming => {
+                                if room.player_alive {
+                                    room.player_alive = false;
+                                } else {
+                                    let next = room.next;
+                                    info!("In Gaming: player watch dog kills {:?}", next);
+                                    room.exit_room(next).unwrap();
+                                    let ri = room.get_room_info().unwrap();
+                                    room.send_gamemsg(GameMsg{
+                                        msg: Some(Msg::LoseConnection(ri))
+                                    }).await;
+                                }
+                            }
+                            _ => {}
+                        }
+                    }
+                }
+            }
+        });
+
         Ok(ar)
     }
 
@@ -107,7 +170,8 @@ impl RoomManager {
     }
 
     pub async fn del_room(&self, id: &String) -> RPCResult<()> {
-        if let Some(_) = self.rooms.write().await.remove(id) {
+        if let Some(ar) = self.rooms.write().await.remove(id) {
+            ar.read().await.cancel();
             Ok(())
         } else {
             Err(Status::new(
@@ -134,6 +198,10 @@ impl Room {
 
     pub fn get_id(&self) -> String {
         self.id.clone()
+    }
+
+    pub fn cancel(&self) {
+        self.watch_dog_cancel.cancel();
     }
 
     fn get_ready_list(&self) -> ReadyList {
@@ -204,6 +272,7 @@ impl Room {
         if let Some(p) = self.players.get_mut(pid) {
             p.game.ready()?;
             self.ready_cnt += 1;
+            self.player_alive = true;
             Ok(4 - self.ready_cnt)
         } else {
             Err(Status::new(
@@ -309,6 +378,8 @@ impl Room {
             )
         )?;
 
+        self.player_alive = true;
+
         p.game.is_valid_play(&self.desk, play, self.play_cnt == 0)?;
 
         p.game.play_card(play)?;
@@ -373,6 +444,7 @@ impl Room {
                         Code::PermissionDenied,
                         "Room is not in a game!"
                     )),
+                RoomState::WaitReady => Ok(()),
                 _ => {
                     self.ready_cnt = 0;
                     self.players.iter_mut().for_each(
@@ -393,7 +465,7 @@ impl Room {
         }
     }
 
-    pub async fn exit_room(&mut self, pid: usize) -> RPCResult<usize> {
+    pub fn exit_room(&mut self, pid: usize) -> RPCResult<usize> {
         if pid < self.players.len() {
             self.ready_cnt = 0;
             self.players.remove(pid);

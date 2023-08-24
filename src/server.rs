@@ -264,7 +264,7 @@ impl Heart7 for Heart7D {
         let left_ones = {
             let aroom = self.rm.get_room(&request.get_ref().roomid).await?;
             let mut room = aroom.write().await;
-            let left_ones = room.exit_room(request.get_ref().playerid as usize).await?;
+            let left_ones = room.exit_room(request.get_ref().playerid as usize)?;
             if left_ones != 0 {
                 let ar = aroom.clone();
                 tokio::spawn(async move {

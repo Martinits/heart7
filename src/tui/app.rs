@@ -143,195 +143,6 @@ impl<B: Backend> App<B> {
             sz: (sz.width, sz.height),
             cancel: cancel.clone(),
             state: Default::default(),
-            // state: AppState::Gaming{
-            //     client: Client{
-            //         c: heart7_client::Heart7Client::connect("http://127.0.0.1:20007").await.unwrap(),
-            //         addr:"127.0.0.1:20007".into()
-            //     },
-            //     players: vec![
-            //         ("first".into(), 0, 0),
-            //         ("second".into(), 1, 0),
-            //         ("third".into(), 2, 0),
-            //         ("fourth".into(), 3, 0)
-            //     ],
-            //     next: 3,
-            //     choose: 0,
-            //     last: Some(Card{suit:CardSuit::Spade, num: 13}),
-            //     cards: vec![
-            //         Card { suit: CardSuit::Spade, num: 3},
-            //         Card { suit: CardSuit::Diamond, num: 11},
-            //         Card { suit: CardSuit::Club, num: 13},
-            //         Card { suit: CardSuit::Spade, num: 4},
-            //         Card { suit: CardSuit::Heart, num: 1},
-            //         Card { suit: CardSuit::Diamond, num: 12},
-            //         Card { suit: CardSuit::Heart, num: 7},
-            //         Card { suit: CardSuit::Spade, num: 6},
-            //         Card { suit: CardSuit::Club, num: 2},
-            //         Card { suit: CardSuit::Heart, num: 8},
-            //         Card { suit: CardSuit::Spade, num: 10},
-            //         Card { suit: CardSuit::Diamond, num: 3},
-            //         Card { suit: CardSuit::Club, num: 1},
-            //     ],
-            //     holds: vec![
-            //         Card { suit: CardSuit::Spade, num: 4},
-            //         Card { suit: CardSuit::Heart, num: 1},
-            //         Card { suit: CardSuit::Diamond, num: 12},
-            //         Card { suit: CardSuit::Heart, num: 7},
-            //         Card { suit: CardSuit::Spade, num: 6},
-            //         Card { suit: CardSuit::Club, num: 2},
-            //         Card { suit: CardSuit::Heart, num: 8},
-            //         Card { suit: CardSuit::Spade, num: 10},
-            //         Card { suit: CardSuit::Diamond, num: 3},
-            //         Card { suit: CardSuit::Club, num: 1},
-            //     ],
-            //     has_last: true,
-            //     desk: Desk {
-            //         diamond: (vec![
-            //             (Card{suit:CardSuit::Diamond, num: 1}, 1),
-            //             (Card{suit:CardSuit::Diamond, num: 2}, 2),
-            //             (Card{suit:CardSuit::Diamond, num: 3}, 1),
-            //             (Card{suit:CardSuit::Diamond, num: 4}, 1),
-            //         ],
-            //         vec![
-            //             (Card{suit:CardSuit::Diamond, num: 13}, 0),
-            //         ]),
-            //         ..Default::default()
-            //     },
-            //     roomid: "jbhfvhsbdfvhbkdsfhbv".into(),
-            //     button: 0,
-            //     play_cnt: 0,
-            //     msg: None,
-            //     stream_listener_cancel: CancellationToken::new(),
-            // },
-            // state: AppState::GameResult{
-            //     stream_listener_cancel: CancellationToken::new(),
-            //     ds: vec![
-            //         vec![
-            //             (Card{suit: CardSuit::Spade, num: 1}, 3),
-            //             (Card{suit: CardSuit::Spade, num: 2}, 0),
-            //             (Card{suit: CardSuit::Spade, num: 3}, 1),
-            //             (Card{suit: CardSuit::Spade, num: 4}, 1),
-            //             (Card{suit: CardSuit::Spade, num: 5}, 2),
-            //             (Card{suit: CardSuit::Spade, num: 6}, 3),
-            //             (Card{suit: CardSuit::Spade, num: 7}, 0),
-            //             (Card{suit: CardSuit::Spade, num: 8}, 0),
-            //             (Card{suit: CardSuit::Spade, num: 9}, 1),
-            //             (Card{suit: CardSuit::Spade, num: 10}, 2),
-            //             (Card{suit: CardSuit::Spade, num: 11}, 3),
-            //             (Card{suit: CardSuit::Spade, num: 12}, 0),
-            //             (Card{suit: CardSuit::Spade, num: 13}, 1),
-            //         ],
-            //         vec![
-            //             (Card{suit: CardSuit::Heart, num: 1}, 2),
-            //             (Card{suit: CardSuit::Heart, num: 2}, 3),
-            //             (Card{suit: CardSuit::Heart, num: 3}, 0),
-            //             (Card{suit: CardSuit::Heart, num: 4}, 0),
-            //             (Card{suit: CardSuit::Heart, num: 5}, 1),
-            //             (Card{suit: CardSuit::Heart, num: 6}, 3),
-            //             (Card{suit: CardSuit::Heart, num: 7}, 0),
-            //             (Card{suit: CardSuit::Heart, num: 8}, 2),
-            //             (Card{suit: CardSuit::Heart, num: 9}, 3),
-            //             (Card{suit: CardSuit::Heart, num: 10}, 1),
-            //             (Card{suit: CardSuit::Heart, num: 11}, 0),
-            //             (Card{suit: CardSuit::Heart, num: 12}, 2),
-            //             (Card{suit: CardSuit::Heart, num: 13}, 1),
-            //         ],
-            //         vec![
-            //             (Card{suit: CardSuit::Club, num: 3}, 0),
-            //             (Card{suit: CardSuit::Club, num: 4}, 2),
-            //             (Card{suit: CardSuit::Club, num: 5}, 0),
-            //             (Card{suit: CardSuit::Club, num: 6}, 2),
-            //             (Card{suit: CardSuit::Club, num: 7}, 1),
-            //             (Card{suit: CardSuit::Club, num: 8}, 2),
-            //             (Card{suit: CardSuit::Club, num: 9}, 1),
-            //             (Card{suit: CardSuit::Club, num: 10}, 3),
-            //             (Card{suit: CardSuit::Club, num: 11}, 3),
-            //             (Card{suit: CardSuit::Club, num: 12}, 0),
-            //         ],
-            //         vec![
-            //             (Card{suit: CardSuit::Diamond, num: 1}, 2),
-            //             (Card{suit: CardSuit::Diamond, num: 2}, 1),
-            //             (Card{suit: CardSuit::Diamond, num: 3}, 0),
-            //             (Card{suit: CardSuit::Diamond, num: 4}, 1),
-            //             (Card{suit: CardSuit::Diamond, num: 5}, 1),
-            //             (Card{suit: CardSuit::Diamond, num: 6}, 3),
-            //             (Card{suit: CardSuit::Diamond, num: 7}, 1),
-            //             (Card{suit: CardSuit::Diamond, num: 8}, 0),
-            //             (Card{suit: CardSuit::Diamond, num: 9}, 0),
-            //             (Card{suit: CardSuit::Diamond, num: 10}, 2),
-            //             (Card{suit: CardSuit::Diamond, num: 11}, 2),
-            //             (Card{suit: CardSuit::Diamond, num: 12}, 1),
-            //             (Card{suit: CardSuit::Diamond, num: 13}, 0),
-            //         ],
-            //     ],
-            //     client: Client{
-            //         c: heart7_client::Heart7Client::connect("http://127.0.0.1:20007").await.unwrap(),
-            //         addr:"127.0.0.1:20007".into()
-            //     },
-            //     roomid: "jbhfvhsbdfvhbkdsfhbv".into(),
-            //     players: vec![
-            //         ("first".into(), 0, vec![
-            //             Card { suit: CardSuit::Spade, num: 4},
-            //             Card { suit: CardSuit::Heart, num: 1},
-            //             Card { suit: CardSuit::Diamond, num: 12},
-            //             Card { suit: CardSuit::Heart, num: 7},
-            //             Card { suit: CardSuit::Spade, num: 6},
-            //             Card { suit: CardSuit::Club, num: 2},
-            //             Card { suit: CardSuit::Heart, num: 8},
-            //             Card { suit: CardSuit::Spade, num: 10},
-            //             Card { suit: CardSuit::Diamond, num: 3},
-            //             Card { suit: CardSuit::Club, num: 1},
-            //             Card { suit: CardSuit::Heart, num: 8},
-            //             Card { suit: CardSuit::Club, num: 9},
-            //             Card { suit: CardSuit::Diamond, num: 3},
-            //         ]),
-            //         ("second".into(), 1, vec![
-            //             Card { suit: CardSuit::Spade, num: 4},
-            //             Card { suit: CardSuit::Heart, num: 1},
-            //             Card { suit: CardSuit::Diamond, num: 12},
-            //             Card { suit: CardSuit::Heart, num: 7},
-            //             Card { suit: CardSuit::Spade, num: 6},
-            //             Card { suit: CardSuit::Club, num: 2},
-            //             Card { suit: CardSuit::Heart, num: 8},
-            //             Card { suit: CardSuit::Spade, num: 10},
-            //             Card { suit: CardSuit::Diamond, num: 3},
-            //             Card { suit: CardSuit::Club, num: 1},
-            //             Card { suit: CardSuit::Heart, num: 8},
-            //             Card { suit: CardSuit::Club, num: 9},
-            //             Card { suit: CardSuit::Diamond, num: 3},
-            //         ]),
-            //         ("third".into(), 2, vec![
-            //             Card { suit: CardSuit::Spade, num: 4},
-            //             Card { suit: CardSuit::Heart, num: 1},
-            //             Card { suit: CardSuit::Diamond, num: 12},
-            //             Card { suit: CardSuit::Heart, num: 7},
-            //             Card { suit: CardSuit::Spade, num: 6},
-            //             Card { suit: CardSuit::Club, num: 2},
-            //             Card { suit: CardSuit::Heart, num: 8},
-            //             Card { suit: CardSuit::Spade, num: 10},
-            //             Card { suit: CardSuit::Diamond, num: 3},
-            //             Card { suit: CardSuit::Club, num: 1},
-            //             Card { suit: CardSuit::Heart, num: 8},
-            //             Card { suit: CardSuit::Club, num: 9},
-            //             Card { suit: CardSuit::Diamond, num: 3},
-            //         ]),
-            //         ("fourth".into(), 3, vec![
-            //             Card { suit: CardSuit::Spade, num: 4},
-            //             Card { suit: CardSuit::Heart, num: 1},
-            //             Card { suit: CardSuit::Diamond, num: 12},
-            //             Card { suit: CardSuit::Heart, num: 7},
-            //             Card { suit: CardSuit::Spade, num: 6},
-            //             Card { suit: CardSuit::Club, num: 2},
-            //             Card { suit: CardSuit::Heart, num: 8},
-            //             Card { suit: CardSuit::Spade, num: 10},
-            //             Card { suit: CardSuit::Diamond, num: 3},
-            //             Card { suit: CardSuit::Club, num: 1},
-            //             Card { suit: CardSuit::Heart, num: 8},
-            //             Card { suit: CardSuit::Club, num: 9},
-            //             Card { suit: CardSuit::Diamond, num: 3},
-            //         ])
-            //     ]
-            // },
             tx,
             rx,
         }
@@ -912,6 +723,17 @@ impl<B: Backend> App<B> {
                         //     panic!("Got ExitGame but not myself in state WaitReady!")
                         // }
                     }
+                    Some(Msg::LoseConnection(ri)) => {
+                        self.state = AppState::WaitPlayer {
+                            players: rpc::room_info_to_players(&players[0].0, &ri),
+                            client: client.clone(),
+                            roomid: roomid.clone(),
+                            msg: vec!["Someone lost connection...".into(),
+                                "Waiting for other players to join room......".into()],
+                            stream_listener_cancel: stream_listener_cancel.clone(),
+                        };
+                        self.exitmenu.1 = 0;
+                    }
                     None => panic!("Got empty GameMsg!"),
                     _ => panic!("Got GameMsg not possible in state WaitReady!"),
                 }
@@ -995,6 +817,17 @@ impl<B: Backend> App<B> {
                         };
                         self.exitmenu.1 = 0;
                     }
+                    Some(Msg::LoseConnection(ri)) => {
+                        self.state = AppState::WaitPlayer {
+                            players: rpc::room_info_to_players(&players[0].0, &ri),
+                            client: client.clone(),
+                            roomid: roomid.clone(),
+                            msg: vec!["Someone lost connection...".into(),
+                                "Waiting for other players to join room......".into()],
+                            stream_listener_cancel: cancel.clone(),
+                        };
+                        self.exitmenu.1 = 0;
+                    }
                     _ => panic!("Got GameMsg other than Msg::Play in state Gaming!"),
                 }
                 true
@@ -1011,6 +844,18 @@ impl<B: Backend> App<B> {
                             client: client.clone(),
                             roomid: roomid.clone(),
                             msg: vec!["Someone exits room.".into(),
+                                "Waiting for other players to join room......".into()],
+                            stream_listener_cancel: cancel.clone(),
+                        };
+                        self.exitmenu.1 = 0;
+                        true
+                    }
+                    Some(Msg::LoseConnection(ri)) => {
+                        self.state = AppState::WaitPlayer {
+                            players: rpc::room_info_to_players(&players[0].0, &ri),
+                            client: client.clone(),
+                            roomid: roomid.clone(),
+                            msg: vec!["Someone lost connection...".into(),
                                 "Waiting for other players to join room......".into()],
                             stream_listener_cancel: cancel.clone(),
                         };
@@ -1211,7 +1056,3 @@ impl<B: Backend> App<B> {
         true
     }
 }
-
-// TODO:
-// server clean room not alive per hour
-// server close room for someone not alive for 1 min
