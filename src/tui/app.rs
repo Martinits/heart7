@@ -437,16 +437,21 @@ impl<B: Backend> App<B> {
                 info!("Confirmed GameResult, enter WaitReady state");
                 match client.exit_game(players[0].1 as u32, roomid.clone()).await {
                     Ok(_) => {
-                        self.state = AppState::WaitReady {
-                            players: players.iter().map(
-                                |p| (p.0.clone(), p.1, false)
-                            ).collect(),
-                            client: client.clone(),
-                            roomid: roomid.clone(),
-                            msg: vec!["Please press ENTER to get ready!".into()],
-                            stream_listener_cancel: cancel.clone(),
-                        };
-                        self.exitmenu.1 = 0;
+                        match client.room_status(roomid.clone()).await {
+                            Ok(ri) => {
+                                let ps = rpc::room_info_to_players(&players[0].0, &ri);
+                                assert!(!ps[0].2);
+                                self.state = AppState::WaitReady {
+                                    players: ps,
+                                    client: client.clone(),
+                                    roomid: roomid.clone(),
+                                    msg: vec!["Please press ENTER to get ready!".into()],
+                                    stream_listener_cancel: cancel.clone(),
+                                };
+                                self.exitmenu.1 = 0;
+                            }
+                            Err(s) => panic!("Failed to get RoomStatus in switching to WaitReady: {}", s),
+                        }
                     }
                     Err(s) => panic!("Failed to ExitGame in GameResult: {}", s),
                 }
@@ -880,19 +885,8 @@ impl<B: Backend> App<B> {
                         self.exitmenu.1 = 0;
                         true
                     }
-                    Some(Msg::WhoReady(who)) => {
-                        info!("Stream got WhoReady in GameResult, enter WaitReady state");
-                        let mut ps: Vec<(String, usize, bool)> = players.iter().map(
-                            |p| (p.0.clone(), p.1, false)
-                        ).collect();
-                        Self::someone_get_ready(&mut ps, who as usize);
-                        self.state = AppState::WaitReady {
-                            client: client.clone(),
-                            msg: vec!["Please press ENTER to get ready!".into()],
-                            roomid: roomid.clone(),
-                            stream_listener_cancel: cancel.clone(),
-                            players: ps,
-                        };
+                    Some(Msg::WhoReady(_)) => {
+                        info!("Stream got WhoReady in GameResult, drop");
                         true
                     }
                     _ => panic!("Got impossible GameMsg in state GameResult!"),
@@ -1041,14 +1035,15 @@ impl<B: Backend> App<B> {
                             0 => {}
                             1 => {
                                 c.exit_game(players[0].1 as u32, roomid.clone()).await.unwrap();
+                                let ri = c.room_status(roomid.clone()).await.unwrap();
+                                let ps = rpc::room_info_to_players(&players[0].0, &ri);
+                                assert!(!ps[0].2);
                                 self.state = AppState::WaitReady {
+                                    players: ps,
                                     client: c.clone(),
-                                    players: players.iter().map(
-                                        |p| (p.0.clone(), p.1, false)
-                                    ).collect(),
                                     roomid: roomid.clone(),
-                                    stream_listener_cancel: cancel.clone(),
                                     msg: vec!["Please press ENTER to get ready!".into()],
+                                    stream_listener_cancel: cancel.clone(),
                                 };
                                 self.exitmenu.1 = 0;
                             }
