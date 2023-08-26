@@ -66,6 +66,7 @@ impl RoomManager {
                         room.unset_alive();
                     } else {
                         info!("Removing room {} by watch dog", id);
+                        room.cancel();
                         rooms.remove(id).unwrap();
                     }
                 }
