@@ -140,14 +140,8 @@ impl Game {
             Play::Discard(ci) => {
                 let c = Card::from_info(ci);
                 if self.has_card(&c) {
-                    if desk.is_valid_discard(&c, is_first) {
-                        Ok(())
-                    } else {
-                        Err(Status::new(
-                            Code::PermissionDenied,
-                            "You can't play this card!"
-                        ))
-                    }
+                    desk.is_valid_discard(&c, is_first)?;
+                    Ok(())
                 } else {
                     Err(Status::new(
                         Code::PermissionDenied,

@@ -113,11 +113,20 @@ impl Desk {
         }
     }
 
-    pub fn is_valid_discard(&self, c: &Card, is_first: bool) -> bool {
-        if let Some(_) = self.discard_candidates(is_first).iter().find(|&cc| cc == c) {
-            true
+    pub fn is_valid_discard(&self, c: &Card, is_first: bool) -> RPCResult<()> {
+        let cand = self.discard_candidates(is_first);
+        if cand.len() == 0{
+            Err(Status::new(
+                Code::PermissionDenied,
+                "You have no card to play!"
+            ))
+        } else if let Some(_) = cand.iter().find(|&cc| cc == c) {
+            Ok(())
         } else {
-            false
+            Err(Status::new(
+                Code::PermissionDenied,
+                "You can't play this card!"
+            ))
         }
     }
 
