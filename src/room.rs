@@ -39,7 +39,7 @@ enum RoomState {
     EndGame,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Player {
     name: String,
     gamemsg_tx: MsgTX,
@@ -116,18 +116,8 @@ impl RoomManager {
                                 if room.player_alive {
                                     room.player_alive = false;
                                 } else {
-                                    let pids: Vec<usize> = room.players.iter()
-                                    .enumerate().filter(
-                                        |p| !p.1.game.is_ready()
-                                    ).map(
-                                        |p| p.0
-                                    ).collect();
-                                    info!("In WaitReady: player watch dog kills {:?}", pids);
-                                    pids.into_iter().for_each(
-                                        |pid| {
-                                            room.exit_room(pid).unwrap();
-                                        }
-                                    );
+                                    info!("In WaitReady: player watch dog kills unready");
+                                    room.kill_unready().unwrap();
                                     let ri = room.get_room_info().unwrap();
                                     room.send_gamemsg(GameMsg{
                                         msg: Some(Msg::LoseConnection(ri))
@@ -466,6 +456,7 @@ impl Room {
     }
 
     pub fn exit_room(&mut self, pid: usize) -> RPCResult<usize> {
+        debug!("{:?}", self.players.len());
         if pid < self.players.len() {
             self.ready_cnt = 0;
             self.players.remove(pid);
@@ -480,5 +471,23 @@ impl Room {
                 format!("Player {} not exist!", pid),
             ))
         }
+    }
+
+    pub fn kill_unready(&mut self) -> RPCResult<usize> {
+        assert!(self.state == RoomState::WaitReady);
+
+        info!("Killing unready: {:?}", self.players.iter().filter(
+            |p| !p.game.is_ready()
+        ).map(
+            |p| p.name.clone()
+        ).collect::<String>());
+
+        self.players = self.players.iter().filter(
+            |p| p.game.is_ready()
+        ).cloned().collect();
+
+        self.ready_cnt = 0;
+        self.state = RoomState::NotFull;
+        Ok(self.players.len())
     }
 }
