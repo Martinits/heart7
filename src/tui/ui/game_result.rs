@@ -470,8 +470,8 @@ fn hold_sum(holds: &Vec<Card>) -> u32 {
 
 fn name_shorten(name: &String) -> String {
     if name.len() > 8 {
-        let mut ret = String::from(&name[0..5]);
-        ret.push_str("...");
+        let mut ret = String::from(&name[0..6]);
+        ret.push_str("..");
         ret
     } else {
         name.clone()
