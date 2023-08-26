@@ -10,6 +10,7 @@
   - Nerd Fonts
   - 一个现代的终端模拟器，比如alacritty、kitty等
   - 不保证Windows上的编译、运行和显示
+  - 不要使用任何除ascii可显示字符以外的字符！！！！！
 
 - 实现
 
