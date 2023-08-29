@@ -86,7 +86,10 @@ impl Client {
                     maybe_msg = stream.message() => {
                         match maybe_msg {
                             Err(s) => panic!("GameStream error: {}", s),
-                            Ok(None) => info!("GameStream closed!"),
+                            Ok(None) => {
+                                info!("GameStream closed! Stream listener exits!");
+                                break;
+                            }
                             Ok(Some(msg)) => txc.send(Action::StreamMsg(msg)).await
                                 .expect("Send Action::StreamMsg to app")
                         }
