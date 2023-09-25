@@ -187,8 +187,7 @@ impl Client {
     }
 }
 
-// used for WaitPlayers and WaitReady state
-pub fn room_info_to_players(myname: &String, ri: &RoomInfo) -> Vec<(String, usize, bool)> {
+pub fn room_info_to_players(myidx: usize, ri: &RoomInfo) -> Vec<(String, usize, bool)> {
     let mut players = vec![("".into(), 0, false); 4];
     for i in 0..ri.players.len() {
         players[i].0 = ri.players[i].name.clone();
@@ -199,10 +198,6 @@ pub fn room_info_to_players(myname: &String, ri: &RoomInfo) -> Vec<(String, usiz
             players[*i as usize].2 = true;
         }
     }
-    if let Some(idx) = ri.players.iter().position(|p| p.name == *myname) {
-        players.rotate_left(idx)
-    } else {
-        panic!("Cannot find myself in RoomInfo!");
-    }
+    players.rotate_left(myidx);
     players
 }

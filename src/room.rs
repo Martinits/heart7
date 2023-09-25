@@ -120,9 +120,9 @@ impl RoomManager {
                                     info!("In WaitReady: player watch dog kills unready");
                                     room.kill_unready().unwrap();
                                     let ri = room.get_room_info().unwrap();
-                                    room.send_gamemsg(GameMsg{
-                                        msg: Some(Msg::LoseConnection(ri))
-                                    }).await;
+                                    room.send_gamemsg(
+                                        Msg::LoseConnection(ri)
+                                    ).await;
                                 }
                             }
                             RoomState::Gaming => {
@@ -133,9 +133,9 @@ impl RoomManager {
                                     info!("In Gaming: player watch dog kills {:?}", next);
                                     room.exit_room(next).unwrap();
                                     let ri = room.get_room_info().unwrap();
-                                    room.send_gamemsg(GameMsg{
-                                        msg: Some(Msg::LoseConnection(ri))
-                                    }).await;
+                                    room.send_gamemsg(
+                                        Msg::LoseConnection(ri)
+                                    ).await;
                                 }
                             }
                             _ => {}
@@ -206,6 +206,7 @@ impl Room {
         ReadyList { l }
     }
 
+    // this function does not set the `myidx` item
     pub fn get_room_info(&self) -> RPCResult<RoomInfo> {
         Ok(RoomInfo {
             roomid: self.id.clone(),
@@ -244,9 +245,15 @@ impl Room {
         Ok(rx)
     }
 
-    pub async fn send_gamemsg(&self, msg: GameMsg) {
-        for p in self.players.iter() {
-            if let Err(e) = p.gamemsg_tx.send(Ok(msg.clone())).await {
+    pub async fn send_gamemsg(&self, msg: Msg) {
+        for (i, p) in self.players.iter().enumerate() {
+            if let Err(e) = p.gamemsg_tx.send(
+                Ok(
+                    GameMsg {
+                        msg: Some(msg.clone()),
+                        your_id: i as u32,
+                    }
+                )).await {
                 error!("Cannot send gamemsg: {:?}", e);
             }
         }
@@ -315,9 +322,7 @@ impl Room {
 
         self.state = RoomState::Gaming;
 
-        let msg = GameMsg {
-            msg: Some(Msg::Start(self.next as u32))
-        };
+        let msg = Msg::Start(self.next as u32);
         info!("Sending GameMsg: {:?}", msg);
         self.send_gamemsg(msg).await;
     }
@@ -442,9 +447,7 @@ impl Room {
                         |p| p.game.unready()
                     );
                     self.state = RoomState::WaitReady;
-                    self.send_gamemsg(GameMsg {
-                        msg: Some(Msg::ExitGame(pid as u32))
-                    }).await;
+                    self.send_gamemsg(Msg::ExitGame(pid as u32)).await;
                     Ok(())
                 }
             }

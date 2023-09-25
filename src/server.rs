@@ -65,9 +65,7 @@ impl Heart7 for Heart7D {
             let ar = aroom.clone();
             tokio::spawn(async move {
                 let room = ar.read().await;
-                let msg = GameMsg {
-                    msg: Some(Msg::RoomInfo(room.get_room_info().unwrap()))
-                };
+                let msg = Msg::RoomInfo(room.get_room_info().unwrap());
                 info!("Sending GameMsg: {:?}", msg);
                 room.send_gamemsg(msg).await;
             });
@@ -107,9 +105,7 @@ impl Heart7 for Heart7D {
             let ar = aroom.clone();
             tokio::spawn(async move {
                 let room = ar.read().await;
-                let msg = GameMsg {
-                    msg: Some(Msg::WhoReady(request.get_ref().playerid))
-                };
+                let msg = Msg::WhoReady(request.get_ref().playerid);
                 info!("Sending GameMsg: {:?}", msg);
                 room.send_gamemsg(msg).await;
             });
@@ -204,9 +200,7 @@ impl Heart7 for Heart7D {
             player: roomreq.playerid,
             playone: Some(pone),
         };
-        let msg = GameMsg {
-            msg: Some(Msg::Play(playinfo)),
-        };
+        let msg = Msg::Play(playinfo);
         info!("Sending GameMsg: {:?}", msg);
         room.send_gamemsg(msg).await;
 
@@ -215,9 +209,7 @@ impl Heart7 for Heart7D {
             let ar = aroom.clone();
             tokio::spawn(async move {
                 let room = ar.read().await;
-                let msg = GameMsg {
-                    msg: Some(Msg::Endgame(res)),
-                };
+                let msg = Msg::Endgame(res);
                 info!("Sending GameMsg: {:?}", msg);
                 room.send_gamemsg(msg).await;
             });
@@ -269,9 +261,7 @@ impl Heart7 for Heart7D {
                 let ar = aroom.clone();
                 tokio::spawn(async move {
                     let room = ar.read().await;
-                    let msg = GameMsg {
-                        msg: Some(Msg::ExitRoom(room.get_room_info().unwrap()))
-                    };
+                    let msg = Msg::ExitRoom(room.get_room_info().unwrap());
                     info!("Sending GameMsg: {:?}", msg);
                     room.send_gamemsg(msg).await;
                 });

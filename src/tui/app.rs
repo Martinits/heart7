@@ -349,35 +349,14 @@ impl<B: Backend> App<B> {
                         // spawn stream listerning task
                         info!("Spawning GameStream listener...");
                         Client::spawn_stream_listener(stream, cancel, &self.tx);
-                        info!("Querying RoomStatus...");
-                        match c.room_status(input.value().into()).await {
-                            Ok(rs) => match rs.state {
-                                Some(State::NotFull(_)) => {
-                                    info!("Join room {}, enter WaitPlayer state", input.value());
-                                    self.state = AppState::WaitPlayer {
-                                        players: rpc::room_info_to_players(name, &rs),
-                                        client: c.clone(),
-                                        roomid: input.value().into(),
-                                        msg: vec!["Waiting for other players to join room......".into()],
-                                        stream_listener_cancel: cancel.clone(),
-                                    };
-                                    self.exitmenu.1 = 0;
-                                }
-                                Some(State::WaitReady(_)) => {
-                                    info!("Join room {}, enter WaitReady state", input.value());
-                                    self.state = AppState::WaitReady {
-                                        players: rpc::room_info_to_players(name, &rs),
-                                        client: c.clone(),
-                                        roomid: input.value().into(),
-                                        msg: vec!["Please press ENTER to get ready!".into()],
-                                        stream_listener_cancel: cancel.clone(),
-                                    };
-                                    self.exitmenu.1 = 0;
-                                }
-                                _ => panic!("Unexpected RoomStatus after JoinRoom!"),
-                            }
-                            Err(s) => panic!("Failed to get RoomStatus after JoinRoom: {}", s),
-                        }
+                        self.state = AppState::WaitPlayer {
+                            players: vec![("".into(), 4, false); 4],
+                            client: c.clone(),
+                            roomid: input.value().into(),
+                            msg: vec!["Waiting for other players to join room......".into()],
+                            stream_listener_cancel: cancel.clone(),
+                        };
+                        self.exitmenu.1 = 0;
                     }
                     Err(s) => {
                         *msg = format!("Making JoinRoom request to server failed:\n\
@@ -439,7 +418,7 @@ impl<B: Backend> App<B> {
                     Ok(_) => {
                         match client.room_status(roomid.clone()).await {
                             Ok(ri) => {
-                                let ps = rpc::room_info_to_players(&players[0].0, &ri);
+                                let ps = rpc::room_info_to_players(players[0].1, &ri);
                                 assert!(!ps[0].2);
                                 self.state = AppState::WaitReady {
                                     players: ps,
@@ -667,7 +646,7 @@ impl<B: Backend> App<B> {
             } => {
                 match msg.msg {
                     Some(Msg::RoomInfo(ri)) => {
-                        *players = rpc::room_info_to_players(&players[0].0, &ri);
+                        *players = rpc::room_info_to_players(msg.your_id as usize, &ri);
                         if let Some(State::WaitReady(_)) =  ri.state {
                             info!("Stream got RoomInfo: WaitReady, enter WaitReady state");
                             self.state = AppState::WaitReady{
@@ -681,7 +660,7 @@ impl<B: Backend> App<B> {
                         }
                     }
                     Some(Msg::ExitRoom(ri)) => {
-                        *players = rpc::room_info_to_players(&players[0].0, &ri);
+                        *players = rpc::room_info_to_players(msg.your_id as usize, &ri);
                     }
                     None => panic!("Got empty GameMsg!"),
                     _ => panic!("Got GameMsg not possible in state WaitPlayer!"),
@@ -693,7 +672,7 @@ impl<B: Backend> App<B> {
             } => {
                 match msg.msg {
                     Some(Msg::RoomInfo(ri)) => {
-                        *players = rpc::room_info_to_players(&players[0].0, &ri);
+                        *players = rpc::room_info_to_players(msg.your_id as usize, &ri);
                     }
                     Some(Msg::WhoReady(who)) => {
                         Self::someone_get_ready(players, who as usize);
@@ -732,7 +711,7 @@ impl<B: Backend> App<B> {
                     }
                     Some(Msg::ExitRoom(ri)) => {
                         self.state = AppState::WaitPlayer {
-                            players: rpc::room_info_to_players(&players[0].0, &ri),
+                            players: rpc::room_info_to_players(msg.your_id as usize, &ri),
                             client: client.clone(),
                             roomid: roomid.clone(),
                             msg: vec!["Someone exits room.".into(),
@@ -748,7 +727,7 @@ impl<B: Backend> App<B> {
                     }
                     Some(Msg::LoseConnection(ri)) => {
                         self.state = AppState::WaitPlayer {
-                            players: rpc::room_info_to_players(&players[0].0, &ri),
+                            players: rpc::room_info_to_players(msg.your_id as usize, &ri),
                             client: client.clone(),
                             roomid: roomid.clone(),
                             msg: vec!["Someone lost connection...".into(),
@@ -831,7 +810,7 @@ impl<B: Backend> App<B> {
                     }
                     Some(Msg::ExitRoom(ri)) => {
                         self.state = AppState::WaitPlayer {
-                            players: rpc::room_info_to_players(&players[0].0, &ri),
+                            players: rpc::room_info_to_players(msg.your_id as usize, &ri),
                             client: client.clone(),
                             roomid: roomid.clone(),
                             msg: vec!["Someone exits room.".into(),
@@ -842,7 +821,7 @@ impl<B: Backend> App<B> {
                     }
                     Some(Msg::LoseConnection(ri)) => {
                         self.state = AppState::WaitPlayer {
-                            players: rpc::room_info_to_players(&players[0].0, &ri),
+                            players: rpc::room_info_to_players(msg.your_id as usize, &ri),
                             client: client.clone(),
                             roomid: roomid.clone(),
                             msg: vec!["Someone lost connection...".into(),
@@ -856,14 +835,14 @@ impl<B: Backend> App<B> {
                 true
             }
             AppState::GameResult {
-                ref mut players, ref mut client, ref roomid,
+                ref mut client, ref roomid,
                 stream_listener_cancel: ref cancel, ..
             } => {
                 match msg.msg {
                     Some(Msg::ExitGame(_)) => false,
                     Some(Msg::ExitRoom(ri)) => {
                         self.state = AppState::WaitPlayer {
-                            players: rpc::room_info_to_players(&players[0].0, &ri),
+                            players: rpc::room_info_to_players(msg.your_id as usize, &ri),
                             client: client.clone(),
                             roomid: roomid.clone(),
                             msg: vec!["Someone exits room.".into(),
@@ -875,7 +854,7 @@ impl<B: Backend> App<B> {
                     }
                     Some(Msg::LoseConnection(ri)) => {
                         self.state = AppState::WaitPlayer {
-                            players: rpc::room_info_to_players(&players[0].0, &ri),
+                            players: rpc::room_info_to_players(msg.your_id as usize, &ri),
                             client: client.clone(),
                             roomid: roomid.clone(),
                             msg: vec!["Someone lost connection...".into(),
@@ -1036,7 +1015,7 @@ impl<B: Backend> App<B> {
                             1 => {
                                 c.exit_game(players[0].1 as u32, roomid.clone()).await.unwrap();
                                 let ri = c.room_status(roomid.clone()).await.unwrap();
-                                let ps = rpc::room_info_to_players(&players[0].0, &ri);
+                                let ps = rpc::room_info_to_players(players[0].1, &ri);
                                 assert!(!ps[0].2);
                                 self.state = AppState::WaitReady {
                                     players: ps,

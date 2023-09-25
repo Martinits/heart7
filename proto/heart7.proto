@@ -121,6 +121,7 @@ message GameResult {
 }
 
 message GameMsg {
+        uint32 your_id = 1;
         oneof msg {
                 RoomInfo room_info = 2;
                 uint32 who_ready = 3;
