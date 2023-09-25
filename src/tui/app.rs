@@ -86,21 +86,6 @@ pub enum AppState {
     },
 }
 
-impl Default for AppState {
-    fn default() -> Self {
-        AppState::GetServer {
-            input: server_addr_prompt(),
-            msg: "Welcome to Seven-of-Heart !!!\n\
-                    Please enter game server address:".into(),
-            connecting: false,
-        }
-    }
-}
-
-fn server_addr_prompt() -> Input {
-    Input::new(format!("127.0.0.1:{}", DEFAULT_PORT)).with_cursor(0)
-}
-
 pub enum Action {
     Enter,
     LeftArrow,
@@ -127,6 +112,7 @@ pub struct App<B: Backend> {
     block_event: bool,
     sz: (u16, u16),
     exitmenu: (bool, u32),
+    default_addr: String,
 }
 
 impl<B: Backend> App<B> {
@@ -136,6 +122,7 @@ impl<B: Backend> App<B> {
         tx: mpsc::Sender<Action>,
         rx: mpsc::Receiver<Action>,
         sz: Rect,
+        default_addr: String,
     ) -> Self {
         Self {
             tui,
@@ -143,9 +130,15 @@ impl<B: Backend> App<B> {
             exitmenu: (false, 0),
             sz: (sz.width, sz.height),
             cancel: cancel.clone(),
-            state: Default::default(),
+            state: AppState::GetServer {
+                input: Input::new(default_addr.clone()).with_cursor(0),
+                msg: "Welcome to Seven-of-Heart !!!\n\
+                        Please enter game server address:".into(),
+                connecting: false,
+            },
             tx,
             rx,
+            default_addr,
         }
     }
 
@@ -613,7 +606,7 @@ impl<B: Backend> App<B> {
                             self.exitmenu.1 = 0;
                         },
                         Err(s) => {
-                            *input = server_addr_prompt();
+                            *input = Input::new(self.default_addr.clone()).with_cursor(0);
                             *msg = format!("Connecting to server failed:\n\
                                             {}\n\
                                             Please retry:", s);
