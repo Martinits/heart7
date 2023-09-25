@@ -906,7 +906,7 @@ impl<B: Backend> App<B> {
             // check hold num
             assert!(*h as usize == hs[*idx].holds.len());
             ret[i].2 = hs[*idx].holds.iter().map(|c| Card::from_info(c)).collect();
-            ret[i].2.sort();
+            // ret[i].2.sort();
         }
         // check my holds
         assert!(holds.len() == ret[0].2.len());

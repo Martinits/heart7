@@ -4,7 +4,7 @@ use std::collections::HashSet;
 #[derive(Debug, Default, Clone)]
 pub struct Game {
     cards: HashSet<Card>,
-    holds: HashSet<Card>,
+    holds: Vec<Card>,
     ready: bool,
 }
 
@@ -128,11 +128,11 @@ impl Game {
     }
 
     fn has_card(&self, c: &Card) -> bool {
-        if let Some(_) = self.cards.iter().find(|&cc| cc == c) {
-            true
-        } else {
-            false
-        }
+        self.cards.iter().find(|&cc| cc == c).is_some()
+    }
+
+    fn not_held(&self, c: &Card) -> bool {
+        self.holds.iter().find(|&cc| cc == c).is_none()
     }
 
     pub fn is_valid_play(&self, desk: &Desk, play: &Play, is_first: bool) -> RPCResult<()>{
@@ -151,7 +151,7 @@ impl Game {
             },
             Play::Hold(ci) => {
                 let c = Card::from_info(ci);
-                if self.has_card(&c) {
+                if self.has_card(&c) && self.not_held(&c) {
                     let desk_cand = desk.discard_candidates(is_first);
                     if desk_cand.intersection(&self.cards).any(|_| true) {
                         Err(Status::new(
@@ -186,9 +186,7 @@ impl Game {
                 if !self.cards.remove(&c) {
                     error!("Remove a card that player doesn't own!");
                 }
-                if !self.holds.insert(c) {
-                    error!("Already held this card!");
-                }
+                self.holds.push(c);
                 Ok(())
             }
         }
