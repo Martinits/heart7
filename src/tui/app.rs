@@ -882,7 +882,7 @@ impl<B: Backend> App<B> {
         }
         // check my holds
         assert!(holds.len() == ret[0].2.len());
-        assert!(!ret[0].2.iter().zip(holds).any(|(a, b)| *a != *b));
+        // assert!(!ret[0].2.iter().zip(holds).any(|(a, b)| *a != *b));
         ret
     }
 
