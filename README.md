@@ -7,6 +7,7 @@
 
 - Requirements
 
+  - protobuf (protoc)
   - Nerd Fonts
   - 一个现代的终端模拟器，比如alacritty、kitty等
   - 不保证Windows上的编译、运行和显示
