@@ -1,4 +1,3 @@
-use crate::client::AppResult;
 use crossterm::event::{DisableMouseCapture, EnableMouseCapture};
 use crossterm::terminal::{self, EnterAlternateScreen, LeaveAlternateScreen};
 use std::io;
@@ -7,6 +6,7 @@ use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
 use ratatui::Frame;
 use tokio_util::sync::CancellationToken;
+use anyhow::Result;
 
 type TuiBackend = CrosstermBackend<std::io::Stdout>;
 
@@ -19,7 +19,7 @@ impl Tui {
         Self { terminal }
     }
 
-    pub fn init(&mut self, cancel: &CancellationToken) -> AppResult<()> {
+    pub fn init(&mut self, cancel: &CancellationToken) -> Result<()> {
         terminal::enable_raw_mode()?;
         crossterm::execute!(io::stderr(), EnterAlternateScreen, EnableMouseCapture)?;
 
@@ -36,7 +36,7 @@ impl Tui {
         Ok(())
     }
 
-    pub fn draw<F>(&mut self, f: F) -> AppResult<()>
+    pub fn draw<F>(&mut self, f: F) -> Result<()>
     where
         F: FnOnce(&mut Frame<TuiBackend>),
     {
@@ -45,13 +45,13 @@ impl Tui {
         Ok(())
     }
 
-    fn reset() -> AppResult<()> {
+    fn reset() -> Result<()> {
         terminal::disable_raw_mode()?;
         crossterm::execute!(io::stdout(), LeaveAlternateScreen, DisableMouseCapture)?;
         Ok(())
     }
 
-    pub fn exit(&mut self) -> AppResult<()> {
+    pub fn exit(&mut self) -> Result<()> {
         Self::reset()?;
         self.terminal.show_cursor()?;
         Ok(())

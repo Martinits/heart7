@@ -1,20 +1,20 @@
 use crate::*;
-use crate::client::rpc::{self, Client};
+use crate::client::rpc::{self, Client as RpcClient};
 use super::*;
 use tui_input::Input;
 
-impl App {
-    pub fn handle_server_connect_result(&mut self, r: Result<Client, String>) -> bool {
+impl Client {
+    pub fn handle_server_connect_result(&mut self, r: Result<RpcClient, String>) -> bool {
         match self.state {
-            AppState::GetServer {ref mut input, ref mut msg, ref mut connecting} => {
+            ClientState::GetServer {ref mut input, ref mut msg, ref mut connecting} => {
                 if !*connecting {
-                    warn!("AppState is not connecting, drop server connecting result!");
+                    warn!("Client is not connecting, drop server connecting result!");
                     return false
                 }
                 match r {
                     Ok(c) => {
                         info!("Server {} Connected, enter GetRoom state", c.get_addr());
-                        self.state = AppState::AskName {
+                        self.state = ClientState::AskName {
                             client: c,
                             input: Input::default(),
                             msg: "Game server connected.\n\
@@ -41,7 +41,7 @@ impl App {
     pub async fn handle_stream_msg(&mut self, msg: GameMsg) -> bool {
         debug!("Got GameMsg: {:?}", msg);
         match self.state {
-            AppState::WaitPlayer {
+            ClientState::WaitPlayer {
                 ref mut client, ref mut players, ref roomid, ref stream_listener_cancel, ..
             } => {
                 match msg.msg {
@@ -49,7 +49,7 @@ impl App {
                         *players = rpc::room_info_to_players(msg.your_id as usize, &ri);
                         if let Some(State::WaitReady(_)) =  ri.state {
                             info!("Stream got RoomInfo: WaitReady, enter WaitReady state");
-                            self.state = AppState::WaitReady{
+                            self.state = ClientState::WaitReady{
                                 client: client.clone(),
                                 players: players.clone(),
                                 msg: vec!["Please press ENTER to get ready!".into()],
@@ -67,7 +67,7 @@ impl App {
                 }
                 true
             }
-            AppState::WaitReady {
+            ClientState::WaitReady {
                 ref mut client, ref mut players, ref roomid, ref stream_listener_cancel, ..
             } => {
                 match msg.msg {
@@ -87,7 +87,7 @@ impl App {
                         ).collect();
                         cards.sort();
 
-                        self.state = AppState::Gaming{
+                        self.state = ClientState::Gaming{
                             client: client.clone(),
                             roomid: roomid.clone(),
                             players: players.iter().map(
@@ -109,7 +109,7 @@ impl App {
                         self.exitmenu.1 = 0;
                     }
                     Some(Msg::ExitRoom(ri)) => {
-                        self.state = AppState::WaitPlayer {
+                        self.state = ClientState::WaitPlayer {
                             players: rpc::room_info_to_players(msg.your_id as usize, &ri),
                             client: client.clone(),
                             roomid: roomid.clone(),
@@ -125,7 +125,7 @@ impl App {
                         // }
                     }
                     Some(Msg::LoseConnection(ri)) => {
-                        self.state = AppState::WaitPlayer {
+                        self.state = ClientState::WaitPlayer {
                             players: rpc::room_info_to_players(msg.your_id as usize, &ri),
                             client: client.clone(),
                             roomid: roomid.clone(),
@@ -140,7 +140,7 @@ impl App {
                 }
                 true
             }
-            AppState::Gaming {
+            ClientState::Gaming {
                 ref mut players, ref mut next, ref mut last, ref mut has_last,
                 ref mut desk, ref mut play_cnt, ref mut client, ref roomid, ref holds,
                 stream_listener_cancel: ref cancel, ..
@@ -176,7 +176,7 @@ impl App {
                         let ds = desk.expect("Empty DeskResult in GameResult from server!");
                         // actually it should be already sorted
                         // holds.sort();
-                        self.state = AppState::GameResult{
+                        self.state = ClientState::GameResult{
                             ds: Self::parse_desk_result(&ds, players),
                             players: Self::parse_hold_result(&hold, players, holds),
                             client: client.clone(),
@@ -187,7 +187,7 @@ impl App {
                     }
                     Some(Msg::ExitGame(who)) => {
                         let exit_name = players.iter().find(|p| p.1 == who as usize).unwrap().0.clone();
-                        self.state = AppState::WaitReady {
+                        self.state = ClientState::WaitReady {
                             client: client.clone(),
                             players: players.iter().map(
                                 |p| (p.0.clone(), p.1, false)
@@ -200,7 +200,7 @@ impl App {
                         self.exitmenu.1 = 0;
                     }
                     Some(Msg::ExitRoom(ri)) => {
-                        self.state = AppState::WaitPlayer {
+                        self.state = ClientState::WaitPlayer {
                             players: rpc::room_info_to_players(msg.your_id as usize, &ri),
                             client: client.clone(),
                             roomid: roomid.clone(),
@@ -211,7 +211,7 @@ impl App {
                         self.exitmenu.1 = 0;
                     }
                     Some(Msg::LoseConnection(ri)) => {
-                        self.state = AppState::WaitPlayer {
+                        self.state = ClientState::WaitPlayer {
                             players: rpc::room_info_to_players(msg.your_id as usize, &ri),
                             client: client.clone(),
                             roomid: roomid.clone(),
@@ -225,14 +225,14 @@ impl App {
                 }
                 true
             }
-            AppState::GameResult {
+            ClientState::GameResult {
                 ref mut client, ref roomid,
                 stream_listener_cancel: ref cancel, ..
             } => {
                 match msg.msg {
                     Some(Msg::ExitGame(_)) => false,
                     Some(Msg::ExitRoom(ri)) => {
-                        self.state = AppState::WaitPlayer {
+                        self.state = ClientState::WaitPlayer {
                             players: rpc::room_info_to_players(msg.your_id as usize, &ri),
                             client: client.clone(),
                             roomid: roomid.clone(),
@@ -244,7 +244,7 @@ impl App {
                         true
                     }
                     Some(Msg::LoseConnection(ri)) => {
-                        self.state = AppState::WaitPlayer {
+                        self.state = ClientState::WaitPlayer {
                             players: rpc::room_info_to_players(msg.your_id as usize, &ri),
                             client: client.clone(),
                             roomid: roomid.clone(),

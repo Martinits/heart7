@@ -51,9 +51,9 @@ fn render_my_cards<B: Backend>(frame: &mut Frame<B>, cards: &Vec<Card>,
         }
         render_card(frame, c, a.clone(),
             if i == cards.len()- 1 {
-                CardAppearance::All
+                CardStyle::All
             } else {
-                CardAppearance::Vertical
+                CardStyle::Vertical
             },
             !hints[i],
             if hints[i] { Some(MYCARD_BORDER) } else { Some(MYCARD_BORDER_DIM) }
@@ -283,10 +283,10 @@ fn render_last<B: Backend>(frame: &mut Frame<B>, last: Option<&Card>, who: usize
 
     if let Some(c) = last {
         // discard
-        render_card(frame, c, a, CardAppearance::All, false, Some(NEXT_TURN));
+        render_card(frame, c, a, CardStyle::All, false, Some(NEXT_TURN));
     } else {
         // hold
-        render_card(frame, &NULL_CARD, a, CardAppearance::Hold, false, Some(NEXT_TURN));
+        render_card(frame, &NULL_CARD, a, CardStyle::Hold, false, Some(NEXT_TURN));
     }
 }
 
@@ -346,7 +346,7 @@ pub fn render_my_holds<B: Backend>(frame: &mut Frame<B>, holds: &Vec<Card>, clea
     if clear {
         a = rect_cut_center(a, -8, -11);
         render_card(frame, &NULL_CARD, a,
-            CardAppearance::Clear, false, Some(CARD_CLEAR_BOREDER));
+            CardStyle::Clear, false, Some(CARD_CLEAR_BOREDER));
         return;
     }
 
@@ -366,9 +366,9 @@ pub fn render_my_holds<B: Backend>(frame: &mut Frame<B>, holds: &Vec<Card>, clea
         }
         render_card(frame, c, a.clone(),
             if !might_overflow && i == holds.len() - 1 {
-                CardAppearance::All
+                CardStyle::All
             } else {
-                CardAppearance::Vertical
+                CardStyle::Vertical
             },
             false,
             Some(MYCARD_BORDER)

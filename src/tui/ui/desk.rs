@@ -26,11 +26,11 @@ fn render_chain<B: Backend>(frame: &mut Frame<B>, cs: CardSuit,
     if chain_small.len() == 0 && chain_big.len() == 0 {
         //empty chain
         let a = rect_cut_center(a, -8, 100);
-        render_card(frame, &Card{suit: cs, num: 1}, a, CardAppearance::Empty, false, None);
+        render_card(frame, &Card{suit: cs, num: 1}, a, CardStyle::Empty, false, None);
     } else if chain_big.len() == 0 && chain_small.len() == 1 && chain_small[0].0.num == 7 {
         // only a seven
         let a = rect_cut_center(a, -8, 100);
-        render_card(frame, &chain_small[0].0, a, CardAppearance::All, false,
+        render_card(frame, &chain_small[0].0, a, CardStyle::All, false,
             get_card_highlight(chain_small[0].1)
         );
     } else if chain_big.len() == 0 {
@@ -38,11 +38,11 @@ fn render_chain<B: Backend>(frame: &mut Frame<B>, cs: CardSuit,
         let mut a = rect_cut_center(a, -8, 100);
         if chain_small.iter().last().unwrap().0.num != 7 {
             // render 7
-            render_card(frame, &Card{suit: cs, num: 7}, a.clone(), CardAppearance::Horizontal, false, None);
+            render_card(frame, &Card{suit: cs, num: 7}, a.clone(), CardStyle::Horizontal, false, None);
             // render smaller
             a.y += 2;
             for _ in 0..(7 - chain_small.iter().last().unwrap().0.num - 1) {
-                render_card(frame, &NULL_CARD, a.clone(), CardAppearance::Horizontal, false, None);
+                render_card(frame, &NULL_CARD, a.clone(), CardStyle::Horizontal, false, None);
                 a.y += 1;
             }
         }
@@ -50,13 +50,13 @@ fn render_chain<B: Backend>(frame: &mut Frame<B>, cs: CardSuit,
         csmall.reverse();
         for i in 0..csmall.len() - 1 {
             assert!(csmall[i].1 != 0);
-            render_card(frame, &csmall[i].0, a, CardAppearance::Horizontal, false,
+            render_card(frame, &csmall[i].0, a, CardStyle::Horizontal, false,
                 get_card_highlight(csmall[i].1)
             );
             a.y += 2;
         }
         // last one
-        render_card(frame, &chain_small[0].0, a, CardAppearance::All, false,
+        render_card(frame, &chain_small[0].0, a, CardStyle::All, false,
             get_card_highlight(chain_small[0].1)
         );
     } else {
@@ -73,19 +73,19 @@ fn render_chain<B: Backend>(frame: &mut Frame<B>, cs: CardSuit,
         //render from top
         //big highlighted
         for (ec, hi) in chain_big.iter() {
-            render_card(frame, ec, a.clone(), CardAppearance::Horizontal, false,
+            render_card(frame, ec, a.clone(), CardStyle::Horizontal, false,
                 get_card_highlight(*hi)
             );
             a.y += 2;
         }
         //big folded
         for _ in 0..(big_last_num - 7 - 1) {
-            render_card(frame, &NULL_CARD, a.clone(), CardAppearance::Horizontal, false, None);
+            render_card(frame, &NULL_CARD, a.clone(), CardStyle::Horizontal, false, None);
             a.y += 1;
         }
         //small folded
         for _ in 0..(7 - chain_small.iter().last().unwrap().0.num) {
-            render_card(frame, &NULL_CARD, a.clone(), CardAppearance::Horizontal, false, None);
+            render_card(frame, &NULL_CARD, a.clone(), CardStyle::Horizontal, false, None);
             a.y += 1;
         }
         //small highlighted
@@ -93,13 +93,13 @@ fn render_chain<B: Backend>(frame: &mut Frame<B>, cs: CardSuit,
         csmall.reverse();
         for i in 0..csmall.len() - 1 {
             assert!(csmall[i].1 != 0);
-            render_card(frame, &csmall[i].0, a, CardAppearance::Horizontal, false,
+            render_card(frame, &csmall[i].0, a, CardStyle::Horizontal, false,
                 get_card_highlight(csmall[i].1)
             );
             a.y += 2;
         }
         // last one
-        render_card(frame, &chain_small[0].0, a, CardAppearance::All, false,
+        render_card(frame, &chain_small[0].0, a, CardStyle::All, false,
             get_card_highlight(chain_small[0].1)
         );
     }

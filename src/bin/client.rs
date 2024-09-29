@@ -1,5 +1,5 @@
 use heart7::*;
-use heart7::client::{App, AppResult};
+use heart7::client::Client;
 use tui::term_event::TermEventHandler;
 use tui::tui::Tui;
 use std::io;
@@ -12,6 +12,7 @@ use log::LevelFilter;
 use log4rs::append::file::FileAppender;
 use log4rs::config::{Appender, Config, Root};
 use clap::Parser;
+use anyhow::Result;
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -22,7 +23,7 @@ struct Args {
 }
 
 #[tokio::main]
-async fn main() -> AppResult<()> {
+async fn main() -> Result<()> {
     let args = Args::parse();
 
     let logfile = match env::var("LOGFILE") {
@@ -48,19 +49,19 @@ async fn main() -> AppResult<()> {
     let tui = Tui::new(terminal);
 
     let (tx, rx) = mpsc::channel(DEFAULT_CHANNEL_SIZE);
-    let mut app = App::new(tui, &cancel, tx.clone(), rx, sz, args.addr).await;
-    app.init()?;
+    let mut client = Client::new(tui, &cancel, tx.clone(), rx, sz, args.addr).await;
+    client.init()?;
 
     let te = TermEventHandler::new();
-    info!("Starting event handler...");
+    info!("Starting terminal event handler...");
     te.run(DEFAULT_CHANNEL_SIZE, &cancel, tx)?;
 
     info!("Starting main task...");
     // main task: state manager + render task + rpc client
-    app.run().await?;
+    client.run().await?;
 
     info!("Exiting...");
-    app.exit()?;
+    client.exit()?;
 
     Ok(())
 }

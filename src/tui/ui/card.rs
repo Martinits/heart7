@@ -12,7 +12,7 @@ use crate::game::Card;
 
 pub const NULL_CARD: Card = Card { suit: CardSuit::Spade, num: 1};
 
-pub enum CardAppearance {
+pub enum CardStyle {
     All,
     Vertical,
     Horizontal,
@@ -51,7 +51,7 @@ pub fn get_card_text(card: &Card) -> (String, String) {
 }
 
 pub fn render_card<B: Backend>(
-    frame: &mut Frame<B>, card: &Card, a: Rect, ca: CardAppearance,
+    frame: &mut Frame<B>, card: &Card, a: Rect, ca: CardStyle,
     dim: bool, highlight: Option<Color>
 ) {
     let mut block_style = if let Some(c) = highlight {
@@ -74,7 +74,7 @@ pub fn render_card<B: Backend>(
 
     let (text_suit, text_num) = get_card_text(card);
     let text = match ca {
-        CardAppearance::All => {
+        CardStyle::All => {
             Text::from(
                 [
                     Line::styled(text_num.clone(), card_suit_style),
@@ -88,7 +88,7 @@ pub fn render_card<B: Backend>(
                 ].to_vec()
             )
         }
-        CardAppearance::Vertical => {
+        CardStyle::Vertical => {
             Text::from(
                 [
                     Line::styled(text_num.clone(), card_suit_style),
@@ -96,12 +96,12 @@ pub fn render_card<B: Backend>(
                 ].to_vec()
             )
         }
-        CardAppearance::Horizontal => {
+        CardStyle::Horizontal => {
             Text::from(
                 Line::styled(format!("{} {}", text_num.clone(), text_suit.clone()), card_suit_style),
             )
         }
-        CardAppearance::Empty => {
+        CardStyle::Empty => {
             Text::from(
                 [
                     Line::styled("", card_suit_style),
@@ -112,7 +112,7 @@ pub fn render_card<B: Backend>(
                 ].to_vec()
             )
         }
-        CardAppearance::Hold => {
+        CardStyle::Hold => {
             Text::from(
                 [
                     Line::styled("", card_suit_style),
@@ -123,7 +123,7 @@ pub fn render_card<B: Backend>(
                 ].to_vec()
             )
         }
-        CardAppearance::Clear => {
+        CardStyle::Clear => {
             Text::from(
                 [
                     Line::styled("", clear_style),
@@ -134,7 +134,7 @@ pub fn render_card<B: Backend>(
                 ].to_vec()
             )
         }
-        CardAppearance::ClearHalf => {
+        CardStyle::ClearHalf => {
             Text::from(
                 [
                     Line::styled("", clear_style),
@@ -142,7 +142,7 @@ pub fn render_card<B: Backend>(
                 ].to_vec()
             )
         }
-        CardAppearance::Half => {
+        CardStyle::Half => {
             Text::from(
                 [
                     Line::styled(text_num.clone(), card_suit_style),

@@ -8,13 +8,13 @@ pub enum ExitMenuEvent {
     MoveDown,
 }
 
-impl App {
+impl Client {
     pub async fn handle_exitmenu_event(&mut self, e: ExitMenuEvent) -> bool {
         let button_num = match self.state {
-            AppState::GetServer {..} | AppState::AskName {..}
-            | AppState::JoinRoom {..} | AppState::NewRoom {..} => 2,
-            AppState::WaitPlayer {..} | AppState::WaitReady {..} => 3,
-            AppState::Gaming {..} | AppState::GameResult {..} => 4,
+            ClientState::GetServer {..} | ClientState::AskName {..}
+            | ClientState::JoinRoom {..} | ClientState::NewRoom {..} => 2,
+            ClientState::WaitPlayer {..} | ClientState::WaitReady {..} => 3,
+            ClientState::Gaming {..} | ClientState::GameResult {..} => 4,
         };
         match e {
             ExitMenuEvent::Enter => self.handle_exitmenu_enter().await,
@@ -32,14 +32,14 @@ impl App {
 
     pub async fn handle_exitmenu_enter(&mut self) {
         match self.state {
-            AppState::GetServer {..} | AppState::AskName {..} | AppState::NewRoom {..} => {
+            ClientState::GetServer {..} | ClientState::AskName {..} | ClientState::NewRoom {..} => {
                 match self.exitmenu.1 {
                     0 => {},
                     1 => self.cancel.cancel(),
                     _ => panic!("Invalid button num!"),
                 }
             }
-            AppState::JoinRoom { stream_listener_cancel: ref cancel, ..} => {
+            ClientState::JoinRoom { stream_listener_cancel: ref cancel, ..} => {
                 // whether or not the stream listener is spawned, we just cancel
                 cancel.cancel();
                 match self.exitmenu.1 {
@@ -48,10 +48,10 @@ impl App {
                     _ => panic!("Invalid button num!"),
                 }
             }
-            AppState::WaitPlayer {
+            ClientState::WaitPlayer {
                 client: ref mut c, stream_listener_cancel: ref cancel,
                 ref players, ref roomid, ..
-            } | AppState::WaitReady {
+            } | ClientState::WaitReady {
                 client: ref mut c, stream_listener_cancel: ref cancel,
                 ref players, ref roomid, ..
             } => {
@@ -60,7 +60,7 @@ impl App {
                     1 => {
                         let _ = c.exit_room(players[0].1 as u32, roomid.clone()).await;
                         cancel.cancel();
-                        self.state = AppState::AskName {
+                        self.state = ClientState::AskName {
                             client: c.clone(),
                             input: Input::new(players[0].0.clone()),
                             msg: "Exited room successfully.\n\
@@ -78,7 +78,7 @@ impl App {
                     _ => panic!("Invalid button num!"),
                 }
             }
-            AppState::Gaming {
+            ClientState::Gaming {
                 client: ref mut c, stream_listener_cancel: ref cancel,
                 ref players, ref roomid, ..
             } => {
@@ -86,7 +86,7 @@ impl App {
                     0 => {}
                     1 => {
                         c.exit_game(players[0].1 as u32, roomid.clone()).await.unwrap();
-                        self.state = AppState::WaitReady {
+                        self.state = ClientState::WaitReady {
                             client: c.clone(),
                             players: players.iter().map(
                                 |p| (p.0.clone(), p.1, false)
@@ -100,7 +100,7 @@ impl App {
                     2 => {
                         let _ = c.exit_room(players[0].1 as u32, roomid.clone()).await;
                         cancel.cancel();
-                        self.state = AppState::AskName {
+                        self.state = ClientState::AskName {
                             client: c.clone(),
                             input: Input::new(players[0].0.clone()),
                             msg: "Exited room successfully.\n\
@@ -118,7 +118,7 @@ impl App {
                     _ => panic!("Invalid button num!"),
                 }
             }
-            AppState::GameResult {
+            ClientState::GameResult {
                 client: ref mut c, stream_listener_cancel: ref cancel,
                 ref players, ref roomid, ..
             } => {
@@ -129,7 +129,7 @@ impl App {
                         let ri = c.room_status(roomid.clone()).await.unwrap();
                         let ps = rpc::room_info_to_players(players[0].1, &ri);
                         assert!(!ps[0].2);
-                        self.state = AppState::WaitReady {
+                        self.state = ClientState::WaitReady {
                             players: ps,
                             client: c.clone(),
                             roomid: roomid.clone(),
@@ -141,7 +141,7 @@ impl App {
                     2 => {
                         let _ = c.exit_room(players[0].1 as u32, roomid.clone()).await;
                         cancel.cancel();
-                        self.state = AppState::AskName {
+                        self.state = ClientState::AskName {
                             client: c.clone(),
                             input: Input::new(players[0].0.clone()),
                             msg: "Exited room successfully.\n\

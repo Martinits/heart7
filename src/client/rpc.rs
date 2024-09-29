@@ -1,11 +1,11 @@
 use crate::{*, heart7_client::*};
 use tonic::transport::Channel;
 use tokio::sync::mpsc;
-use crate::client::AppEvent;
+use crate::client::ClientEvent;
 use std::net::Ipv4Addr;
-use crate::client::AppResult;
 use tonic::codec::Streaming;
 use tokio_util::sync::CancellationToken;
+use anyhow::Result;
 
 #[derive(Clone)]
 pub struct Client {
@@ -16,7 +16,7 @@ pub struct Client {
 pub type GameStream = Streaming<GameMsg>;
 
 impl Client {
-    pub fn connect_spawn(addr: &str, tx: &mpsc::Sender<AppEvent>) {
+    pub fn connect_spawn(addr: &str, tx: &mpsc::Sender<ClientEvent>) {
         let txc = tx.clone();
         let addr = addr.to_string();
         tokio::spawn(async move {
@@ -24,7 +24,7 @@ impl Client {
                 Some(i) => (addr[0..i].into(), addr[i+1..].into()),
                 None => ("".into(), "".into())
             };
-            txc.send(AppEvent::ServerConnectResult(
+            txc.send(ClientEvent::ServerConnectResult(
                 if ip.len() == 0 || port.len() == 0 {
                     Err("Invalid ip or port!".into())
                 } else if !ip.parse::<Ipv4Addr>().is_ok() {
@@ -36,7 +36,7 @@ impl Client {
                         Err(e) => Err(e.to_string()),
                     }
                 }
-            )).await.expect("Send Action::ServerConnectResult to app");
+            )).await.expect("Send Action::ServerConnectResult to client");
         });
     }
 
@@ -44,7 +44,7 @@ impl Client {
         self.addr.clone()
     }
 
-    pub async fn new_room(&mut self, name: String) -> AppResult<()> {
+    pub async fn new_room(&mut self, name: String) -> Result<()> {
         let request = Request::new(NewRoomReq {
             roomid: name
         });
@@ -54,14 +54,14 @@ impl Client {
             assert!(r.msg == "Ok");
             Ok(())
         } else {
-            Err(Box::new(Status::new(
+            Err(Status::new(
                 Code::Internal,
                 format!("Server response false when new room, {}", r.msg)
-            )))
+            ).into())
         }
     }
 
-    pub async fn join_room(&mut self, name: String, roomid: String) -> AppResult<GameStream> {
+    pub async fn join_room(&mut self, name: String, roomid: String) -> Result<GameStream> {
         let request = Request::new(JoinRoomReq{
             player: Some(PlayerInfo { name }),
             roomid
@@ -73,7 +73,7 @@ impl Client {
     pub fn spawn_stream_listener(
         mut stream: GameStream,
         cancel: &CancellationToken,
-        tx: &mpsc::Sender<AppEvent>)
+        tx: &mpsc::Sender<ClientEvent>)
     {
         let txc = tx.clone();
         let cancel = cancel.clone();
@@ -90,8 +90,8 @@ impl Client {
                                 info!("GameStream closed! Stream listener exits!");
                                 break;
                             }
-                            Ok(Some(msg)) => txc.send(AppEvent::StreamMsg(msg)).await
-                                .expect("Send Action::StreamMsg to app")
+                            Ok(Some(msg)) => txc.send(ClientEvent::StreamMsg(msg)).await
+                                .expect("Send Action::StreamMsg to client"),
                         }
                     }
                 }
@@ -99,7 +99,7 @@ impl Client {
         });
     }
 
-    pub async fn room_status(&mut self, roomid: String) -> AppResult<RoomInfo> {
+    pub async fn room_status(&mut self, roomid: String) -> Result<RoomInfo> {
         let request = Request::new(RoomReq{
             playerid: 0,
             roomid
@@ -108,7 +108,7 @@ impl Client {
         Ok(self.c.room_status(request).await?.into_inner())
     }
 
-    pub async fn game_ready(&mut self, pid: u32, roomid: String) -> AppResult<GameReadyReply> {
+    pub async fn game_ready(&mut self, pid: u32, roomid: String) -> Result<GameReadyReply> {
         let request = Request::new(RoomReq{
             playerid: pid,
             roomid
@@ -117,7 +117,7 @@ impl Client {
         Ok(self.c.game_ready(request).await?.into_inner())
     }
 
-    pub async fn game_status(&mut self, pid: u32, roomid: String) -> AppResult<GameInfo> {
+    pub async fn game_status(&mut self, pid: u32, roomid: String) -> Result<GameInfo> {
         let request = Request::new(RoomReq{
             playerid: pid,
             roomid
@@ -126,7 +126,7 @@ impl Client {
         Ok(self.c.game_status(request).await?.into_inner())
     }
 
-    pub async fn play_card(&mut self, pid: u32, roomid: String, play: Play) -> AppResult<()> {
+    pub async fn play_card(&mut self, pid: u32, roomid: String, play: Play) -> Result<()> {
         let roomreq = RoomReq{
             playerid: pid,
             roomid
@@ -143,14 +143,14 @@ impl Client {
             assert!(r.msg == "Ok");
             Ok(())
         } else {
-            Err(Box::new(Status::new(
+            Err(Status::new(
                 Code::Internal,
                 format!("Server response false when playing card, {}", r.msg)
-            )))
+            ).into())
         }
     }
 
-    pub async fn exit_game(&mut self, pid: u32, roomid: String) -> AppResult<()> {
+    pub async fn exit_game(&mut self, pid: u32, roomid: String) -> Result<()> {
         let request = Request::new(RoomReq{
             playerid: pid,
             roomid
@@ -161,14 +161,14 @@ impl Client {
             assert!(r.msg == "Ok");
             Ok(())
         } else {
-            Err(Box::new(Status::new(
+            Err(Status::new(
                 Code::Internal,
                 format!("Server response false when exit game, {}", r.msg)
-            )))
+            ).into())
         }
     }
 
-    pub async fn exit_room(&mut self, pid: u32, roomid: String) -> AppResult<()> {
+    pub async fn exit_room(&mut self, pid: u32, roomid: String) -> Result<()> {
         let request = Request::new(RoomReq{
             playerid: pid,
             roomid
@@ -179,10 +179,10 @@ impl Client {
             assert!(r.msg == "Ok");
             Ok(())
         } else {
-            Err(Box::new(Status::new(
+            Err(Status::new(
                 Code::Internal,
                 format!("Server response false when exit room, {}", r.msg)
-            )))
+            ).into())
         }
     }
 }

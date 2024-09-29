@@ -1,5 +1,5 @@
 use crate::*;
-use crate::client::rpc::{self, Client};
+use crate::client::rpc::{self, Client as RpcClient};
 use super::*;
 use tokio_util::sync::CancellationToken;
 use crossterm::event::{
@@ -11,25 +11,25 @@ use crossterm::event::{
 use tui_input::Input;
 use tui_input::backend::crossterm::EventHandler;
 
-impl App {
+impl Client {
     pub async fn handle_enter(&mut self) -> bool {
         match self.state {
-            AppState::GetServer {
+            ClientState::GetServer {
                 ref mut input, ref mut msg, ref mut connecting
             } if !*connecting => {
                 // connect to server
-                Client::connect_spawn(input.value(), &self.tx);
+                RpcClient::connect_spawn(input.value(), &self.tx);
                 *connecting = true;
                 *msg = format!("Try connecting to {} ......", input.value());
                 true
             }
-            AppState::AskName {
+            ClientState::AskName {
                 ref input, button, client: ref mut c, is_input, ..
             } if !is_input => {
                 if button == 0{
                     // new room
                     info!("Player {} chooses to new room", input.value());
-                    self.state = AppState::NewRoom {
+                    self.state = ClientState::NewRoom {
                         client: c.clone(),
                         input: Input::default(),
                         name: input.value().into(),
@@ -40,7 +40,7 @@ impl App {
                     //join room
                     info!("Player {} chooses to join room, enter JoinRoom state", input.value());
                     let scancel = CancellationToken::new();
-                    self.state = AppState::JoinRoom {
+                    self.state = ClientState::JoinRoom {
                         name: input.value().into(),
                         input: Input::default(),
                         client: c.clone(),
@@ -53,12 +53,12 @@ impl App {
                 }
                 true
             }
-            AppState::NewRoom { client: ref mut c, ref input, ref name, ref mut msg} => {
+            ClientState::NewRoom { client: ref mut c, ref input, ref name, ref mut msg} => {
                 match c.new_room(input.value().into()).await {
                     Ok(()) => {
                         info!("Get NewRoom result from server, enter JoinRoom state");
                         let scancel = CancellationToken::new();
-                        self.state = AppState::JoinRoom {
+                        self.state = ClientState::JoinRoom {
                             client: c.clone(),
                             input: Input::new(input.value().into()),
                             msg: format!("Hello, {}!\n\
@@ -78,7 +78,7 @@ impl App {
                 }
                 true
             }
-            AppState::JoinRoom {
+            ClientState::JoinRoom {
                 ref input, ref mut msg, client: ref mut c, ref name,
                 stream_listener_cancel: ref cancel
             } => {
@@ -87,8 +87,8 @@ impl App {
                     Ok(stream) => {
                         // spawn stream listerning task
                         info!("Spawning GameStream listener...");
-                        Client::spawn_stream_listener(stream, cancel, &self.tx);
-                        self.state = AppState::WaitPlayer {
+                        RpcClient::spawn_stream_listener(stream, cancel, &self.tx);
+                        self.state = ClientState::WaitPlayer {
                             players: vec![("".into(), 4, false); 4],
                             client: c.clone(),
                             roomid: input.value().into(),
@@ -105,7 +105,7 @@ impl App {
                 }
                 true
             }
-            AppState::WaitReady {
+            ClientState::WaitReady {
                 ref mut client, ref mut players, ref roomid, ref mut msg, ..
             } if !players[0].2 => {
                 let _ = client.game_ready(players[0].1 as u32, roomid.clone()).await
@@ -114,7 +114,7 @@ impl App {
                 *msg = vec!["Waiting for other players to get ready......".into()];
                 true
             }
-            AppState::Gaming {
+            ClientState::Gaming {
                 client: ref mut c, ref players, ref mut choose, ref mut cards,
                 ref mut holds, ref roomid, ref button, ref next, ref mut msg, ..
             } if cards.len() != 0 && *choose != 0 && *next == 0 => {
@@ -146,7 +146,7 @@ impl App {
                 }
                 true
             }
-            AppState::GameResult {
+            ClientState::GameResult {
                 ref mut client, ref players, ref roomid, stream_listener_cancel: ref cancel, ..
             } => {
                 info!("Confirmed GameResult, enter WaitReady state");
@@ -158,7 +158,7 @@ impl App {
                             );
                 let ps = rpc::room_info_to_players(players[0].1, &ri);
                 assert!(!ps[0].2);
-                self.state = AppState::WaitReady {
+                self.state = ClientState::WaitReady {
                     players: ps,
                     client: client.clone(),
                     roomid: roomid.clone(),
@@ -176,7 +176,7 @@ impl App {
 
     pub fn handle_typing(&mut self, c: char) -> bool {
         match self.state {
-            AppState::GetServer {ref mut input, connecting, ..} if !connecting => {
+            ClientState::GetServer {ref mut input, connecting, ..} if !connecting => {
                 input.handle_event(
                     &CrosstermEvent::Key(
                         KeyEvent::new(KeyCode::Char(c), KeyModifiers::NONE)
@@ -184,7 +184,7 @@ impl App {
                 );
                 true
             }
-            AppState::AskName {ref mut input, is_input, ..} if is_input => {
+            ClientState::AskName {ref mut input, is_input, ..} if is_input => {
                 input.handle_event(
                     &CrosstermEvent::Key(
                         KeyEvent::new(KeyCode::Char(c), KeyModifiers::NONE)
@@ -192,7 +192,7 @@ impl App {
                 );
                 true
             }
-            AppState::NewRoom {ref mut input, ..} | AppState::JoinRoom {ref mut input, ..} => {
+            ClientState::NewRoom {ref mut input, ..} | ClientState::JoinRoom {ref mut input, ..} => {
                 input.handle_event(
                     &CrosstermEvent::Key(
                         KeyEvent::new(KeyCode::Char(c), KeyModifiers::NONE)
@@ -208,7 +208,7 @@ impl App {
 
     pub fn handle_lr_arrow(&mut self, is_left: bool) -> bool {
         match self.state {
-            AppState::GetServer {ref mut input, connecting, ..} if !connecting => {
+            ClientState::GetServer {ref mut input, connecting, ..} if !connecting => {
                 input.handle_event(
                     &CrosstermEvent::Key(
                         KeyEvent::new(
@@ -219,7 +219,7 @@ impl App {
                 );
                 true
             }
-            AppState::AskName {ref mut input, is_input, ref mut button, ..} => {
+            ClientState::AskName {ref mut input, is_input, ref mut button, ..} => {
                 if is_input {
                     input.handle_event(
                         &CrosstermEvent::Key(
@@ -235,7 +235,7 @@ impl App {
                 }
                 true
             }
-            AppState::NewRoom {ref mut input, ..} | AppState::JoinRoom {ref mut input, ..} => {
+            ClientState::NewRoom {ref mut input, ..} | ClientState::JoinRoom {ref mut input, ..} => {
                 input.handle_event(
                     &CrosstermEvent::Key(
                         KeyEvent::new(
@@ -246,7 +246,7 @@ impl App {
                 );
                 true
             }
-            AppState::Gaming {
+            ClientState::Gaming {
                 ref mut choose, ref cards, ..
             } if cards.len() != 0 => {
                 if is_left {
@@ -275,11 +275,11 @@ impl App {
 
     pub fn handle_ud_arrow(&mut self, _is_up: bool) -> bool {
         match self.state {
-            AppState::AskName { ref mut is_input, ..} => {
+            ClientState::AskName { ref mut is_input, ..} => {
                 *is_input = !*is_input;
                 true
             }
-            AppState::Gaming {
+            ClientState::Gaming {
                 ref mut button, ref next, ..
             } if *next == 0 => {
                 *button += 1;
@@ -302,19 +302,19 @@ impl App {
             KeyCode::Delete
         };
         match self.state {
-            AppState::GetServer {ref mut input, connecting, ..} if !connecting => {
+            ClientState::GetServer {ref mut input, connecting, ..} if !connecting => {
                 input.handle_event(
                     &CrosstermEvent::Key(KeyEvent::new(keycode, KeyModifiers::NONE))
                 );
                 true
             }
-            AppState::AskName {ref mut input, is_input, ..} if is_input => {
+            ClientState::AskName {ref mut input, is_input, ..} if is_input => {
                 input.handle_event(
                     &CrosstermEvent::Key(KeyEvent::new(keycode, KeyModifiers::NONE))
                 );
                 true
             }
-            AppState::NewRoom {ref mut input, ..} | AppState::JoinRoom {ref mut input, ..} => {
+            ClientState::NewRoom {ref mut input, ..} | ClientState::JoinRoom {ref mut input, ..} => {
                 input.handle_event(
                     &CrosstermEvent::Key(KeyEvent::new(keycode, KeyModifiers::NONE))
                 );

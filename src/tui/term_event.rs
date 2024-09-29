@@ -1,4 +1,4 @@
-use crate::client::{AppResult, AppEvent};
+use crate::client::ClientEvent;
 use crossterm::event::{
     Event as CrosstermEvent,
     EventStream,
@@ -11,6 +11,7 @@ use crossterm::event::{
 use futures::{FutureExt, StreamExt};
 use tokio::sync::mpsc;
 use tokio_util::sync::CancellationToken;
+use anyhow::Result;
 
 #[derive(Clone, Copy, Debug)]
 pub enum TermEvent {
@@ -31,8 +32,8 @@ impl TermEventHandler {
 
     pub fn run(&self, channel_buffer_size: usize,
                cancel: &CancellationToken,
-               app_tx: mpsc::Sender<AppEvent>,
-    ) -> AppResult<()> {
+               client_tx: mpsc::Sender<ClientEvent>,
+    ) -> Result<()> {
         let (tx, mut rx) = mpsc::channel(channel_buffer_size);
 
         // spawn crossterm event poller task
@@ -73,12 +74,12 @@ impl TermEventHandler {
                             None => panic!("Channel to crossterm_event closed!"),
                             Some(TermEvent::Tick) => {},
                             Some(TermEvent::Key(key)) => {
-                                Self::handle_key_events(key, &app_tx).await;
+                                Self::handle_key_events(key, &client_tx).await;
                             },
                             Some(TermEvent::Mouse(_)) => {}
                             Some(TermEvent::Resize(x, y)) => {
-                                app_tx.send(AppEvent::Resize(x, y)).await
-                                    .expect("Send Action::Resize to app");
+                                client_tx.send(ClientEvent::Resize(x, y)).await
+                                    .expect("Send Action::Resize to client");
                             }
                             Some(TermEvent::Error) => {
                                 panic!("Received Error from crossterm_event!");
@@ -111,42 +112,42 @@ impl TermEventHandler {
         }
     }
 
-    async fn handle_key_events(key: KeyEvent, tx: &mpsc::Sender<AppEvent>) {
+    async fn handle_key_events(key: KeyEvent, tx: &mpsc::Sender<ClientEvent>) {
         match key.code {
             KeyCode::Enter => {
-                tx.send(AppEvent::Enter).await.expect("Send Action::Enter to app");
+                tx.send(ClientEvent::Enter).await.expect("Send Action::Enter to client");
             }
             KeyCode::Esc => {
-                tx.send(AppEvent::Esc).await.expect("Send Action::Esc to app");
+                tx.send(ClientEvent::Esc).await.expect("Send Action::Esc to client");
             }
             KeyCode::Char(c) => {
                 if key.modifiers == KeyModifiers::CONTROL
                    && (c == 'c' || c == 'C') {
-                    tx.send(AppEvent::CtrlC).await.expect("Send Action::CtrlC to app");
+                    tx.send(ClientEvent::CtrlC).await.expect("Send Action::CtrlC to client");
                 } else if key.modifiers == KeyModifiers::CONTROL
                    && (c == 'l' || c == 'L') {
-                    tx.send(AppEvent::Refresh).await.expect("Send Action::Refresh to app");
+                    tx.send(ClientEvent::Refresh).await.expect("Send Action::Refresh to client");
                 } else {
-                    tx.send(AppEvent::Type(c)).await.expect("Send Action::Type to app");
+                    tx.send(ClientEvent::Type(c)).await.expect("Send Action::Type to client");
                 }
             }
             KeyCode::Left => {
-                tx.send(AppEvent::LeftArrow).await.expect("Send Action::LeftArrow to app");
+                tx.send(ClientEvent::LeftArrow).await.expect("Send Action::LeftArrow to client");
             }
             KeyCode::Right => {
-                tx.send(AppEvent::RightArrow).await.expect("Send Action::RightArrow to app");
+                tx.send(ClientEvent::RightArrow).await.expect("Send Action::RightArrow to client");
             }
             KeyCode::Up => {
-                tx.send(AppEvent::UpArrow).await.expect("Send Action::UpArrow to app");
+                tx.send(ClientEvent::UpArrow).await.expect("Send Action::UpArrow to client");
             }
             KeyCode::Down => {
-                tx.send(AppEvent::DownArrow).await.expect("Send Action::DownArrow to app");
+                tx.send(ClientEvent::DownArrow).await.expect("Send Action::DownArrow to client");
             }
             KeyCode::Backspace => {
-                tx.send(AppEvent::Backspace).await.expect("Send Action::Backspace to app");
+                tx.send(ClientEvent::Backspace).await.expect("Send Action::Backspace to client");
             }
             KeyCode::Delete => {
-                tx.send(AppEvent::Delete).await.expect("Send Action::Delete to app");
+                tx.send(ClientEvent::Delete).await.expect("Send Action::Delete to client");
             }
             _ => {}
         }

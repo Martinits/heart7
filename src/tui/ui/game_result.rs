@@ -48,9 +48,9 @@ fn render_desk_result<B: Backend>(
             for (i, (c, who)) in chain.iter().enumerate() {
                 render_card(frame, c, a.clone(),
                     if i == chain.len() - 1 {
-                        CardAppearance::All
+                        CardStyle::All
                     } else {
-                        CardAppearance::Horizontal
+                        CardStyle::Horizontal
                     },
                     false, Some(colors[*who]));
                 a.y += 2;
@@ -175,7 +175,7 @@ fn render_hold_result<B: Backend>(
         holds.width = 11;
         holds.height = 8;
         render_card(frame, &NULL_CARD, holds.clone(),
-            CardAppearance::Clear,
+            CardStyle::Clear,
             false, Some(CARD_CLEAR_BOREDER)
         );
     } else if players[1].2.len() <= 7 {
@@ -186,9 +186,9 @@ fn render_hold_result<B: Backend>(
         for (i, c) in players[1].2.iter().enumerate() {
             render_card(frame, c, holds.clone(),
                 if i == players[1].2.len() - 1 {
-                    CardAppearance::All
+                    CardStyle::All
                 } else {
-                    CardAppearance::Vertical
+                    CardStyle::Vertical
                 },
                 false, Some(MYCARD_BORDER)
             );
@@ -201,9 +201,9 @@ fn render_hold_result<B: Backend>(
         for i in 0..=6 {
             render_card(frame, &players[1].2[i], holds.clone(),
                 if i == 6 {
-                    CardAppearance::All
+                    CardStyle::All
                 } else {
-                    CardAppearance::Vertical
+                    CardStyle::Vertical
                 },
                 false, Some(MYCARD_BORDER)
             );
@@ -215,9 +215,9 @@ fn render_hold_result<B: Backend>(
         for i in 7..players[1].2.len() {
             render_card(frame, &players[1].2[i], holds.clone(),
                 if i == players[1].2.len() - 1 {
-                    CardAppearance::All
+                    CardStyle::All
                 } else {
-                    CardAppearance::Vertical
+                    CardStyle::Vertical
                 },
                 false, Some(MYCARD_BORDER)
             );
@@ -258,7 +258,7 @@ fn render_hold_result<B: Backend>(
         holds.width = 11;
         holds.height = 8;
         render_card(frame, &NULL_CARD, holds.clone(),
-            CardAppearance::Clear,
+            CardStyle::Clear,
             false, Some(CARD_CLEAR_BOREDER)
         );
     } else if players[3].2.len() <= 7 {
@@ -268,9 +268,9 @@ fn render_hold_result<B: Backend>(
         for (i, c) in players[3].2.iter().enumerate() {
             render_card(frame, c, holds.clone(),
                 if i == players[3].2.len() - 1 {
-                    CardAppearance::All
+                    CardStyle::All
                 } else {
-                    CardAppearance::Vertical
+                    CardStyle::Vertical
                 },
                 false, Some(MYCARD_BORDER)
             );
@@ -283,9 +283,9 @@ fn render_hold_result<B: Backend>(
         for i in 0..=6 {
             render_card(frame, &players[3].2[i], holds.clone(),
                 if i == 6 {
-                    CardAppearance::All
+                    CardStyle::All
                 } else {
-                    CardAppearance::Vertical
+                    CardStyle::Vertical
                 },
                 false, Some(MYCARD_BORDER)
             );
@@ -296,9 +296,9 @@ fn render_hold_result<B: Backend>(
         for i in 7..players[3].2.len() {
             render_card(frame, &players[3].2[i], holds.clone(),
                 if i == players[3].2.len() - 1 {
-                    CardAppearance::All
+                    CardStyle::All
                 } else {
-                    CardAppearance::Vertical
+                    CardStyle::Vertical
                 },
                 false, Some(MYCARD_BORDER)
             );
@@ -381,16 +381,16 @@ fn render_hold_result<B: Backend>(
 
     if players[2].2.len() == 0 {
         render_card(frame, &NULL_CARD, holds_rect.clone(),
-            CardAppearance::ClearHalf,
+            CardStyle::ClearHalf,
             false, Some(CARD_CLEAR_BOREDER)
         );
     } else {
         for (i, c) in players[2].2.iter().enumerate() {
             render_card(frame, c, holds_rect.clone(),
                 if i == players[2].2.len() - 1 {
-                    CardAppearance::Half
+                    CardStyle::Half
                 } else {
-                    CardAppearance::Vertical
+                    CardStyle::Vertical
                 },
                 false,
                 Some(MYCARD_BORDER)

@@ -4,9 +4,8 @@ mod rpc_handler;
 mod key_handler;
 mod exit_handler;
 
-use std::error::Error;
 use crate::*;
-use crate::client::rpc::Client;
+use crate::client::rpc::Client as RpcClient;
 use crate::tui::ui;
 use tokio::sync::mpsc;
 use tokio_util::sync::CancellationToken;
@@ -17,6 +16,7 @@ use crate::game::Card;
 use crate::client::desk::*;
 use std::panic;
 use exit_handler::ExitMenuEvent;
+use anyhow::Result;
 
 fn add_cancel_to_panic(cancel: CancellationToken) {
     let panic_hook = panic::take_hook();
@@ -26,50 +26,48 @@ fn add_cancel_to_panic(cancel: CancellationToken) {
     }));
 }
 
-pub type AppResult<T> = Result<T, Box<dyn Error>>;
-
-pub enum AppState {
+pub enum ClientState {
     GetServer {
         input: Input,
         msg: String,
         connecting: bool,
     },
     AskName {
-        client: Client,
+        client: RpcClient,
         input: Input,
         msg: String,
         button: u16,
         is_input: bool,
     },
     NewRoom {
-        client: Client,
+        client: RpcClient,
         input: Input,
         msg: String,
         name: String,
     },
     JoinRoom {
-        client: Client,
+        client: RpcClient,
         input: Input,
         msg: String,
         name: String,
         stream_listener_cancel: CancellationToken,
     },
     WaitPlayer {
-        client: Client,
+        client: RpcClient,
         players: Vec<(String, usize, bool)>,
         msg: Vec<String>,
         roomid: String,
         stream_listener_cancel: CancellationToken,
     },
     WaitReady {
-        client: Client,
+        client: RpcClient,
         players: Vec<(String, usize, bool)>,
         msg: Vec<String>,
         roomid: String,
         stream_listener_cancel: CancellationToken,
     },
     Gaming {
-        client: Client,
+        client: RpcClient,
         players: Vec<(String, usize, u32)>, //(name, idx, hold)
         next: usize,
         choose: usize, // 0 for none
@@ -86,14 +84,14 @@ pub enum AppState {
     },
     GameResult {
         ds: Vec<Vec<(Card, usize)>>,
-        client: Client,
+        client: RpcClient,
         players: Vec<(String, usize, Vec<Card>)>,
         roomid: String,
         stream_listener_cancel: CancellationToken,
     },
 }
 
-pub enum AppEvent {
+pub enum ClientEvent {
     Enter,
     LeftArrow,
     RightArrow,
@@ -106,28 +104,28 @@ pub enum AppEvent {
     Refresh,
     Backspace,
     Delete,
-    ServerConnectResult(Result<Client, String>),
+    ServerConnectResult(Result<RpcClient, String>),
     StreamMsg(GameMsg),
 }
 
-pub struct App {
+pub struct Client {
     tui: Tui,
     cancel: CancellationToken,
-    state: AppState,
-    tx: mpsc::Sender<AppEvent>,
-    rx: mpsc::Receiver<AppEvent>,
+    state: ClientState,
+    tx: mpsc::Sender<ClientEvent>,
+    rx: mpsc::Receiver<ClientEvent>,
     block_event: bool,
     sz: (u16, u16),
     exitmenu: (bool, u32),
     default_addr: String,
 }
 
-impl App {
+impl Client {
     pub async fn new(
         tui: Tui,
         cancel: &CancellationToken,
-        tx: mpsc::Sender<AppEvent>,
-        rx: mpsc::Receiver<AppEvent>,
+        tx: mpsc::Sender<ClientEvent>,
+        rx: mpsc::Receiver<ClientEvent>,
         sz: Rect,
         default_addr: String,
     ) -> Self {
@@ -137,7 +135,7 @@ impl App {
             exitmenu: (false, 0),
             sz: (sz.width, sz.height),
             cancel: cancel.clone(),
-            state: AppState::GetServer {
+            state: ClientState::GetServer {
                 input: Input::new(default_addr.clone()).with_cursor(0),
                 msg: "Welcome to Seven-of-Heart !!!\n\
                         Please enter game server address:".into(),
@@ -149,72 +147,72 @@ impl App {
         }
     }
 
-    pub fn init(&mut self) -> AppResult<()> {
+    pub fn init(&mut self) -> Result<()> {
         self.tui.init(&self.cancel)?;
         Ok(())
     }
 
-    async fn appevent_dispatcher(&mut self, a: AppEvent) -> bool {
+    async fn event_dispatcher(&mut self, a: ClientEvent) -> bool {
         if self.exitmenu.0 {
             match a {
-                AppEvent::Esc if !self.block_event
+                ClientEvent::Esc if !self.block_event
                     => self.handle_esc(),
-                AppEvent::Enter if !self.block_event
+                ClientEvent::Enter if !self.block_event
                     => self.handle_exitmenu_event(ExitMenuEvent::Enter).await,
-                AppEvent::UpArrow if !self.block_event
+                ClientEvent::UpArrow if !self.block_event
                     => self.handle_exitmenu_event(ExitMenuEvent::MoveUp).await,
-                AppEvent::DownArrow if !self.block_event
+                ClientEvent::DownArrow if !self.block_event
                     => self.handle_exitmenu_event(ExitMenuEvent::MoveDown).await,
-                AppEvent::CtrlC
+                ClientEvent::CtrlC
                     => panic!("Got Ctrl-C!"),
-                AppEvent::Resize(x, y) => {
+                ClientEvent::Resize(x, y) => {
                     self.sz = (x, y);
                     true
                 },
-                AppEvent::Refresh => true,
-                AppEvent::ServerConnectResult(r)
+                ClientEvent::Refresh => true,
+                ClientEvent::ServerConnectResult(r)
                     => self.handle_server_connect_result(r),
-                AppEvent::StreamMsg(msg)
+                ClientEvent::StreamMsg(msg)
                     => self.handle_stream_msg(msg).await,
                 _ => false,
             }
         } else {
             match a {
-                AppEvent::Esc if !self.block_event
+                ClientEvent::Esc if !self.block_event
                     => self.handle_esc(),
-                AppEvent::Enter if !self.block_event
+                ClientEvent::Enter if !self.block_event
                     => self.handle_enter().await,
-                AppEvent::LeftArrow if !self.block_event
+                ClientEvent::LeftArrow if !self.block_event
                     => self.handle_lr_arrow(true),
-                AppEvent::RightArrow if !self.block_event
+                ClientEvent::RightArrow if !self.block_event
                     => self.handle_lr_arrow(false),
-                AppEvent::UpArrow if !self.block_event
+                ClientEvent::UpArrow if !self.block_event
                     => self.handle_ud_arrow(true),
-                AppEvent::DownArrow if !self.block_event
+                ClientEvent::DownArrow if !self.block_event
                     => self.handle_ud_arrow(false),
-                AppEvent::Type(c) if !self.block_event
+                ClientEvent::Type(c) if !self.block_event
                     => self.handle_typing(c),
-                AppEvent::CtrlC
+                ClientEvent::CtrlC
                     => panic!("Got Ctrl-C!"),
-                AppEvent::Resize(x, y) => {
+                ClientEvent::Resize(x, y) => {
                     self.sz = (x, y);
                     true
                 },
-                AppEvent::Refresh => true,
-                AppEvent::Backspace if !self.block_event
+                ClientEvent::Refresh => true,
+                ClientEvent::Backspace if !self.block_event
                     => self.handle_del(true),
-                AppEvent::Delete if !self.block_event
+                ClientEvent::Delete if !self.block_event
                     => self.handle_del(false),
-                AppEvent::ServerConnectResult(r)
+                ClientEvent::ServerConnectResult(r)
                     => self.handle_server_connect_result(r),
-                AppEvent::StreamMsg(msg)
+                ClientEvent::StreamMsg(msg)
                     => self.handle_stream_msg(msg).await,
                 _ => false,
             }
         }
     }
 
-    pub async fn run(&mut self) -> AppResult<()> {
+    pub async fn run(&mut self) -> Result<()> {
         // Client Workflow
         //  1. new room
         //  2. join room -> stream
@@ -240,8 +238,8 @@ impl App {
                 }
                 action = self.rx.recv() => {
                     draw_or_not = match action {
-                        None => panic!("Channel to app closed!"),
-                        Some(a) => self.appevent_dispatcher(a).await,
+                        None => panic!("Channel to client closed!"),
+                        Some(a) => self.event_dispatcher(a).await,
                     }
                 }
             }
@@ -250,7 +248,7 @@ impl App {
         Ok(())
     }
 
-    fn draw(&mut self) -> AppResult<()> {
+    fn draw(&mut self) -> Result<()> {
         if self.sz.0 < 160 || self.sz.1 < 48 {
             self.block_event = true;
             self.tui.draw(|frame| ui::resize(frame, self.sz))?;
@@ -261,7 +259,7 @@ impl App {
         Ok(())
     }
 
-    pub fn exit(&mut self) -> AppResult<()> {
+    pub fn exit(&mut self) -> Result<()> {
         // self.cancel.cancel();
         self.tui.exit()?;
         Ok(())
