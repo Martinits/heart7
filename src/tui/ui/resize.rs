@@ -6,7 +6,7 @@ use ratatui::{
     widgets::*,
     Frame
 };
-use super::common::*;
+use super::*;
 
 pub fn resize<B: Backend>(frame: &mut Frame<B>, sz: (u16, u16)) {
     let a = rect_cut_center(frame.size(), -5, -30);

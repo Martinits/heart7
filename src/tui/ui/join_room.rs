@@ -7,7 +7,7 @@ use ratatui::{
     Frame
 };
 use tui_input::Input;
-use super::common::*;
+use super::*;
 
 pub fn ui_join_room<B: Backend>(frame: &mut Frame<B>, input: &Input, msg: &String) {
     let prompt = render_prompt_window(frame);

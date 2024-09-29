@@ -8,7 +8,7 @@ use ratatui::{
     Frame
 };
 use super::players::*;
-use super::common::*;
+use super::*;
 
 pub fn ui_wait_player<B: Backend>(
     frame: &mut Frame<B>, players: &Vec<(String, usize, bool)>,

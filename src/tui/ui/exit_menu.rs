@@ -6,7 +6,7 @@ use ratatui::{
     widgets::*,
     Frame
 };
-use super::common::*;
+use super::*;
 
 pub fn render_exit_menu<B: Backend>(frame: &mut Frame<B>, button_num: u32, which: u32) {
     assert!(which < button_num);

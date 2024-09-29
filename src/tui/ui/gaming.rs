@@ -8,7 +8,7 @@ use ratatui::{
 };
 use crate::game::Card;
 use crate::client::desk::*;
-use super::common::*;
+use super::*;
 use super::card::*;
 use super::players::*;
 use super::desk::*;

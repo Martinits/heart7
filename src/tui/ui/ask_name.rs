@@ -7,7 +7,7 @@ use ratatui::{
     Frame
 };
 use tui_input::Input;
-use super::common::*;
+use super::*;
 
 pub fn ui_ask_name<B: Backend>(frame: &mut Frame<B>, input: &Input,
                         msg: &String, button: &u16, is_input: &bool

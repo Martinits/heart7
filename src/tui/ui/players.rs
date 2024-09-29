@@ -7,7 +7,7 @@ use ratatui::{
     text::*,
     Frame
 };
-use super::common::*;
+use super::*;
 
 fn render_ready<B: Backend>(frame: &mut Frame<B>, a: Rect) {
     frame.render_widget(
