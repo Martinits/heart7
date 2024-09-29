@@ -478,7 +478,7 @@ fn name_shorten(name: &String) -> String {
     }
 }
 
-pub fn game_result<B: Backend>(
+pub fn ui_game_result<B: Backend>(
     frame: &mut Frame<B>, ds: &Vec<Vec<(Card, usize)>>,
     players: &Vec<(String, usize, Vec<Card>)>, roomid: &String
 ) {

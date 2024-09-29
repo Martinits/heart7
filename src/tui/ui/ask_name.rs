@@ -9,7 +9,7 @@ use ratatui::{
 use tui_input::Input;
 use super::common::*;
 
-pub fn ask_name<B: Backend>(frame: &mut Frame<B>, input: &Input,
+pub fn ui_ask_name<B: Backend>(frame: &mut Frame<B>, input: &Input,
                         msg: &String, button: &u16, is_input: &bool
 ) {
     let prompt = render_prompt_window(frame);

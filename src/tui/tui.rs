@@ -1,20 +1,21 @@
-use super::app::AppResult;
+use crate::client::AppResult;
 use crossterm::event::{DisableMouseCapture, EnableMouseCapture};
 use crossterm::terminal::{self, EnterAlternateScreen, LeaveAlternateScreen};
 use std::io;
 use std::panic;
-use ratatui::backend::Backend;
+use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
 use ratatui::Frame;
 use tokio_util::sync::CancellationToken;
 
-#[derive(Debug)]
-pub struct Tui<B: Backend> {
-    terminal: Terminal<B>,
+type TuiBackend = CrosstermBackend<std::io::Stdout>;
+
+pub struct Tui {
+    terminal: Terminal<TuiBackend>,
 }
 
-impl<B: Backend> Tui<B> {
-    pub fn new(terminal: Terminal<B>) -> Self {
+impl Tui {
+    pub fn new(terminal: Terminal<TuiBackend>) -> Self {
         Self { terminal }
     }
 
@@ -37,7 +38,7 @@ impl<B: Backend> Tui<B> {
 
     pub fn draw<F>(&mut self, f: F) -> AppResult<()>
     where
-        F: FnOnce(&mut Frame<B>),
+        F: FnOnce(&mut Frame<TuiBackend>),
     {
         self.terminal.draw(f)?;
         // self.terminal.draw(|frame| UI::render(frame))?;

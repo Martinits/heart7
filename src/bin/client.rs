@@ -1,6 +1,6 @@
 use heart7::*;
-use tui::app::{App, AppResult};
-use tui::event::EventHandler;
+use heart7::client::{App, AppResult};
+use tui::term_event::TermEventHandler;
 use tui::tui::Tui;
 use std::io;
 use std::env;
@@ -51,9 +51,9 @@ async fn main() -> AppResult<()> {
     let mut app = App::new(tui, &cancel, tx.clone(), rx, sz, args.addr).await;
     app.init()?;
 
-    let event = EventHandler::new();
+    let te = TermEventHandler::new();
     info!("Starting event handler...");
-    event.run(DEFAULT_CHANNEL_SIZE, &cancel, tx)?;
+    te.run(DEFAULT_CHANNEL_SIZE, &cancel, tx)?;
 
     info!("Starting main task...");
     // main task: state manager + render task + rpc client

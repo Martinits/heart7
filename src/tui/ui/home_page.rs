@@ -9,7 +9,7 @@ use ratatui::{
 use tui_input::Input;
 use super::common::*;
 
-pub fn home_page<B: Backend>(frame: &mut Frame<B>, input: &Input, msg: &String, connecting: &bool) {
+pub fn ui_home_page<B: Backend>(frame: &mut Frame<B>, input: &Input, msg: &String, connecting: &bool) {
     let prompt = render_prompt_window(frame);
 
     let chunks = Layout::default()

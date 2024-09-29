@@ -1,9 +1,9 @@
 use crate::{*, heart7_client::*};
 use tonic::transport::Channel;
 use tokio::sync::mpsc;
-use tui::app::Action;
+use crate::client::AppEvent;
 use std::net::Ipv4Addr;
-use crate::tui::app::AppResult;
+use crate::client::AppResult;
 use tonic::codec::Streaming;
 use tokio_util::sync::CancellationToken;
 
@@ -16,7 +16,7 @@ pub struct Client {
 pub type GameStream = Streaming<GameMsg>;
 
 impl Client {
-    pub fn connect_spawn(addr: &str, tx: &mpsc::Sender<Action>) {
+    pub fn connect_spawn(addr: &str, tx: &mpsc::Sender<AppEvent>) {
         let txc = tx.clone();
         let addr = addr.to_string();
         tokio::spawn(async move {
@@ -24,7 +24,7 @@ impl Client {
                 Some(i) => (addr[0..i].into(), addr[i+1..].into()),
                 None => ("".into(), "".into())
             };
-            txc.send(Action::ServerConnectResult(
+            txc.send(AppEvent::ServerConnectResult(
                 if ip.len() == 0 || port.len() == 0 {
                     Err("Invalid ip or port!".into())
                 } else if !ip.parse::<Ipv4Addr>().is_ok() {
@@ -73,7 +73,7 @@ impl Client {
     pub fn spawn_stream_listener(
         mut stream: GameStream,
         cancel: &CancellationToken,
-        tx: &mpsc::Sender<Action>)
+        tx: &mpsc::Sender<AppEvent>)
     {
         let txc = tx.clone();
         let cancel = cancel.clone();
@@ -90,7 +90,7 @@ impl Client {
                                 info!("GameStream closed! Stream listener exits!");
                                 break;
                             }
-                            Ok(Some(msg)) => txc.send(Action::StreamMsg(msg)).await
+                            Ok(Some(msg)) => txc.send(AppEvent::StreamMsg(msg)).await
                                 .expect("Send Action::StreamMsg to app")
                         }
                     }

@@ -453,7 +453,7 @@ fn render_msg<B: Backend>(frame: &mut Frame<B>, msg: String) {
     );
 }
 
-pub fn gaming<B: Backend>(
+pub fn ui_gaming<B: Backend>(
     frame: &mut Frame<B>, players: &Vec<(String, usize, u32)>, next: usize, roomid: &String,
     choose: usize, last: Option<&Card>, cards: &Vec<Card>, holds: &Vec<Card>,
     has_last: bool, desk: &Desk, button: u32, play_cnt: u32, msg: Option<&String>

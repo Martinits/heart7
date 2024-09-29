@@ -10,7 +10,7 @@ use ratatui::{
 use super::players::*;
 use super::common::*;
 
-pub fn wait_player<B: Backend>(
+pub fn ui_wait_player<B: Backend>(
     frame: &mut Frame<B>, players: &Vec<(String, usize, bool)>,
     msg: &Vec<String>, roomid: &String)
 {
@@ -26,7 +26,7 @@ pub fn wait_player<B: Backend>(
     render_ready_button(frame, false);
 }
 
-pub fn wait_ready<B: Backend>(
+pub fn ui_wait_ready<B: Backend>(
     frame: &mut Frame<B>, players: &Vec<(String, usize, bool)>,
     msg: &Vec<String>, roomid: &String)
 {
