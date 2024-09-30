@@ -1,5 +1,5 @@
 use crate::*;
-use crate::client::rpc::{self, Client as RpcClient};
+use crate::client::rpc::{self, RpcClient as RpcClient};
 use super::*;
 use tokio_util::sync::CancellationToken;
 use crossterm::event::{
@@ -108,29 +108,25 @@ impl Client {
             ClientState::WaitReady {
                 ref mut client, ref mut players, ref roomid, ref mut msg, ..
             } if !players[0].2 => {
-                let _ = client.game_ready(players[0].1 as u32, roomid.clone()).await
+                let _ = client.game_ready(players[0].1, roomid.clone()).await
                         .unwrap_or_else(|s| panic!("Failed to GetReady: {}", s));
                 players[0].2 = true;
                 *msg = vec!["Waiting for other players to get ready......".into()];
                 true
             }
             ClientState::Gaming {
-                client: ref mut c, ref players, ref mut choose, ref mut cards,
-                ref mut holds, ref roomid, ref button, ref next, ref mut msg, ..
-            } if cards.len() != 0 && *choose != 0 && *next == 0 => {
-                let play = match *button {
-                        0 => Play::Discard(cards[*choose-1].clone().into()),
-                        _ => Play::Hold(cards[*choose-1].clone().into())
+                client: ref mut c, ref mut choose, ref mut game, my_remote_idx,
+                ref roomid, ref button, ref mut msg, ..
+            } if game.do_i_have_cards() && *choose != 0 && game.is_my_turn() => {
+                let cards = game.get_my_cards();
+                let playone = PlayOne {
+                    is_discard: *button == 0,
+                    card: Some(cards[*choose-1].clone().into()),
                 };
-                match c.play_card(players[0].1 as u32, roomid.clone(), play).await {
+                match c.play_card(my_remote_idx, roomid.clone(), playone).await {
                     Ok(_) => {
-                        let c = cards.remove(*choose-1);
                         *choose = 0;
                         *msg = None;
-                        if *button == 1 {
-                            holds.push(c);
-                            holds.sort();
-                        }
                     },
                     Err(s) => {
                         if let Ok(status) = s.downcast::<Status>() {
@@ -147,16 +143,17 @@ impl Client {
                 true
             }
             ClientState::GameResult {
-                ref mut client, ref players, ref roomid, stream_listener_cancel: ref cancel, ..
+                ref mut client, ref roomid, my_remote_idx,
+                stream_listener_cancel: ref cancel, ..
             } => {
                 info!("Confirmed GameResult, enter WaitReady state");
-                let _ = client.exit_game(players[0].1 as u32, roomid.clone()).await
+                let _ = client.exit_game(my_remote_idx, roomid.clone()).await
                         .unwrap_or_else(|s| panic!("Failed to ExitGame in GameResult: {}", s));
                 let ri = client.room_status(roomid.clone()).await
                             .unwrap_or_else(|s|
                                 panic!("Failed to get RoomStatus in switching to WaitReady: {}", s)
                             );
-                let ps = rpc::room_info_to_players(players[0].1, &ri);
+                let ps = rpc::room_info_to_players(my_remote_idx, &ri);
                 assert!(!ps[0].2);
                 self.state = ClientState::WaitReady {
                     players: ps,
@@ -246,26 +243,29 @@ impl Client {
                 );
                 true
             }
-            ClientState::Gaming {
-                ref mut choose, ref cards, ..
-            } if cards.len() != 0 => {
-                if is_left {
-                    *choose += cards.len() + 1 - 1;
+            ClientState::Gaming {ref mut choose, ref game, ..} => {
+                let cn = game.get_my_card_num();
+                if cn != 0 {
+                    if is_left {
+                        *choose += cn + 1 - 1;
+                    } else {
+                        *choose += 1;
+                    }
+                    *choose %= cn + 1;
+                    // if is_left {
+                    //     if *choose > 1 {
+                    //         *choose -= 1;
+                    //     }
+                    // } else {
+                    //     *choose += 1;
+                    //     if *choose > cards.len() {
+                    //         *choose = cards.len();
+                    //     }
+                    // }
+                    true
                 } else {
-                    *choose += 1;
+                    false
                 }
-                *choose %= cards.len() + 1;
-                // if is_left {
-                //     if *choose > 1 {
-                //         *choose -= 1;
-                //     }
-                // } else {
-                //     *choose += 1;
-                //     if *choose > cards.len() {
-                //         *choose = cards.len();
-                //     }
-                // }
-                true
             }
             _ => {
                 false
@@ -280,8 +280,8 @@ impl Client {
                 true
             }
             ClientState::Gaming {
-                ref mut button, ref next, ..
-            } if *next == 0 => {
+                ref mut button, ref game, ..
+            } if game.is_my_turn() => {
                 *button += 1;
                 *button %= 2;
                 true

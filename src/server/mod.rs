@@ -1,5 +1,7 @@
+mod room;
+
 use tokio_stream::wrappers::ReceiverStream;
-use crate::room::RoomManager;
+use room::RoomManager;
 use crate::{*, heart7_server::*};
 
 #[derive(Debug, Default)]
@@ -176,35 +178,27 @@ impl Heart7 for Heart7D {
         let playone = request.get_ref().playone.as_ref().ok_or(
             Status::new(
                 Code::InvalidArgument,
-                "Empty PlayOne"
-            )
-        )?;
-        let play = playone.play.as_ref().ok_or(
-            Status::new(
-                Code::InvalidArgument,
-                "Empty PlayOne"
+                "Empty PlayCard"
             )
         )?;
 
         let aroom = self.rm.get_room(&roomreq.roomid).await?;
         let mut room = aroom.write().await;
 
-        let cnt = room.play_card(roomreq.playerid, play)?;
-
-        let mut pone = playone.clone();
-        if let Some(Play::Hold(ref mut ci)) = pone.play {
-            ci.num = 0;
-            ci.suit = 0;
-        }
-        let playinfo = PlayInfo{
+        let mut pi = PlayInfo {
             player: roomreq.playerid,
-            playone: Some(pone),
+            playone: Some(playone.clone()),
         };
-        let msg = Msg::Play(playinfo);
+        let endgame = room.play_card(pi.clone().into())?;
+
+        if !playone.is_discard {
+            pi.playone.as_mut().unwrap().card = Some(DUMMY_CARD.clone().into())
+        }
+        let msg = Msg::Play(pi);
         info!("Sending GameMsg: {:?}", msg);
         room.send_gamemsg(msg).await;
 
-        if cnt == 52 {
+        if endgame {
             let res = room.end_game()?;
             let ar = aroom.clone();
             tokio::spawn(async move {
@@ -214,7 +208,6 @@ impl Heart7 for Heart7D {
                 room.send_gamemsg(msg).await;
             });
         }
-
 
         let reply = CommonReply {
             success: true,

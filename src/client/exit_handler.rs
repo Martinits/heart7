@@ -58,7 +58,7 @@ impl Client {
                 match self.exitmenu.1 {
                     0 => {}
                     1 => {
-                        let _ = c.exit_room(players[0].1 as u32, roomid.clone()).await;
+                        let _ = c.exit_room(players[0].1, roomid.clone()).await;
                         cancel.cancel();
                         self.state = ClientState::AskName {
                             client: c.clone(),
@@ -71,7 +71,7 @@ impl Client {
                         self.exitmenu.1 = 0;
                     },
                     2 => {
-                        let _ = c.exit_room(players[0].1 as u32, roomid.clone()).await;
+                        let _ = c.exit_room(players[0].1, roomid.clone()).await;
                         cancel.cancel();
                         self.cancel.cancel();
                     },
@@ -80,16 +80,16 @@ impl Client {
             }
             ClientState::Gaming {
                 client: ref mut c, stream_listener_cancel: ref cancel,
-                ref players, ref roomid, ..
+                ref game, ref roomid, my_remote_idx, ..
             } => {
                 match self.exitmenu.1 {
                     0 => {}
                     1 => {
-                        c.exit_game(players[0].1 as u32, roomid.clone()).await.unwrap();
+                        c.exit_game(my_remote_idx, roomid.clone()).await.unwrap();
                         self.state = ClientState::WaitReady {
                             client: c.clone(),
-                            players: players.iter().map(
-                                |p| (p.0.clone(), p.1, false)
+                            players: game.get_player_names().into_iter().enumerate().map(
+                                |(i, name)| (name, Self::get_remote_idx(my_remote_idx, i), false)
                             ).collect(),
                             roomid: roomid.clone(),
                             stream_listener_cancel: cancel.clone(),
@@ -98,11 +98,11 @@ impl Client {
                         self.exitmenu.1 = 0;
                     }
                     2 => {
-                        let _ = c.exit_room(players[0].1 as u32, roomid.clone()).await;
+                        let _ = c.exit_room(my_remote_idx, roomid.clone()).await;
                         cancel.cancel();
                         self.state = ClientState::AskName {
                             client: c.clone(),
-                            input: Input::new(players[0].0.clone()),
+                            input: Input::new(game.get_my_name()),
                             msg: "Exited room successfully.\n\
                                     Please enter your nickname:".into(),
                             button: 0,
@@ -111,7 +111,7 @@ impl Client {
                         self.exitmenu.1 = 0;
                     },
                     3 => {
-                        let _ = c.exit_room(players[0].1 as u32, roomid.clone()).await;
+                        let _ = c.exit_room(my_remote_idx, roomid.clone()).await;
                         cancel.cancel();
                         self.cancel.cancel();
                     },
@@ -120,14 +120,14 @@ impl Client {
             }
             ClientState::GameResult {
                 client: ref mut c, stream_listener_cancel: ref cancel,
-                ref players, ref roomid, ..
+                ref players, my_remote_idx, ref roomid, ..
             } => {
                 match self.exitmenu.1 {
                     0 => {}
                     1 => {
-                        c.exit_game(players[0].1 as u32, roomid.clone()).await.unwrap();
+                        c.exit_game(my_remote_idx, roomid.clone()).await.unwrap();
                         let ri = c.room_status(roomid.clone()).await.unwrap();
-                        let ps = rpc::room_info_to_players(players[0].1, &ri);
+                        let ps = rpc::room_info_to_players(my_remote_idx, &ri);
                         assert!(!ps[0].2);
                         self.state = ClientState::WaitReady {
                             players: ps,
@@ -139,7 +139,7 @@ impl Client {
                         self.exitmenu.1 = 0;
                     }
                     2 => {
-                        let _ = c.exit_room(players[0].1 as u32, roomid.clone()).await;
+                        let _ = c.exit_room(my_remote_idx, roomid.clone()).await;
                         cancel.cancel();
                         self.state = ClientState::AskName {
                             client: c.clone(),
@@ -152,7 +152,7 @@ impl Client {
                         self.exitmenu.1 = 0;
                     },
                     3 => {
-                        let _ = c.exit_room(players[0].1 as u32, roomid.clone()).await;
+                        let _ = c.exit_room(my_remote_idx, roomid.clone()).await;
                         cancel.cancel();
                         self.cancel.cancel();
                     },

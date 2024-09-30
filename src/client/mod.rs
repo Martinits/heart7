@@ -1,19 +1,17 @@
 mod rpc;
-pub mod desk;
-mod rpc_handler;
+mod msg_handler;
 mod key_handler;
 mod exit_handler;
 
 use crate::*;
-use crate::client::rpc::Client as RpcClient;
+use crate::client::rpc::RpcClient;
 use crate::tui::ui;
 use tokio::sync::mpsc;
 use tokio_util::sync::CancellationToken;
 use ratatui::layout::Rect;
 use tui::tui::Tui;
 use tui_input::Input;
-use crate::game::Card;
-use crate::client::desk::*;
+use crate::rule::*;
 use std::panic;
 use exit_handler::ExitMenuEvent;
 use anyhow::Result;
@@ -68,24 +66,19 @@ pub enum ClientState {
     },
     Gaming {
         client: RpcClient,
-        players: Vec<(String, usize, u32)>, //(name, idx, hold)
-        next: usize,
         choose: usize, // 0 for none
-        last: Option<Card>, // None for hold
-        cards: Vec<Card>,
-        holds: Vec<Card>,
-        has_last: bool,
-        desk: Desk,
+        game: Game,
+        my_remote_idx: usize,
         roomid: String,
         button: u32,
-        play_cnt: u32,
         msg: Option<String>,
         stream_listener_cancel: CancellationToken,
     },
     GameResult {
         ds: Vec<Vec<(Card, usize)>>,
         client: RpcClient,
-        players: Vec<(String, usize, Vec<Card>)>,
+        my_remote_idx: usize,
+        players: Vec<(String, Vec<Card>)>,
         roomid: String,
         stream_listener_cancel: CancellationToken,
     },
@@ -227,9 +220,9 @@ impl Client {
         // 11. handle when someone exits
         // 12. handle Esc of all states
 
-        let mut draw_or_not = true;
+        let mut need_redraw = true;
         loop {
-            if draw_or_not {
+            if need_redraw {
                 self.draw()?;
             }
             tokio::select! {
@@ -237,7 +230,7 @@ impl Client {
                     break;
                 }
                 action = self.rx.recv() => {
-                    draw_or_not = match action {
+                    need_redraw = match action {
                         None => panic!("Channel to client closed!"),
                         Some(a) => self.event_dispatcher(a).await,
                     }

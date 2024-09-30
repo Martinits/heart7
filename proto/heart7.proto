@@ -88,10 +88,8 @@ message GameInfo {
 }
 
 message PlayOne {
-        oneof play {
-                CardInfo discard = 1;
-                CardInfo hold = 2;
-        }
+        bool is_discard = 1;
+        CardInfo card = 2;
 }
 
 message PlayInfo {
@@ -115,7 +113,7 @@ message HoldList {
         repeated CardInfo holds = 1;
 }
 
-message GameResult {
+message GameEnding {
         DeskResult desk = 1;
         repeated HoldList hold = 2;
 }
@@ -127,7 +125,7 @@ message GameMsg {
                 uint32 who_ready = 3;
                 uint32 start = 4;
                 PlayInfo play = 5;
-                GameResult endgame = 6;
+                GameEnding endgame = 6;
                 uint32 exit_game = 7;
                 RoomInfo exit_room = 8;
                 RoomInfo lose_connection = 9;

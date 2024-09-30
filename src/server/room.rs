@@ -2,8 +2,8 @@ use std::collections::HashMap;
 use tokio::sync::RwLock;
 use std::sync::Arc;
 use tokio::sync::mpsc::{self, Sender, Receiver};
-use crate::{*, game::*, desk::*};
-use rand::{thread_rng, seq::SliceRandom};
+use crate::*;
+use crate::rule::*;
 use tokio::time;
 use tokio_util::sync::CancellationToken;
 
@@ -18,14 +18,10 @@ pub struct RoomManager {
 
 #[derive(Debug, Default)]
 pub struct Room {
-    players: Vec<Player>,
     state: RoomState,
-    ready_cnt: u32,
     id: String,
-    next: usize,
-    desk: Desk,
-    thisround: Vec<Card>,
-    play_cnt: u32,
+    game: Game,
+    gamemsg_tx: Vec<MsgTX>,
     alive: bool,
     watch_dog_cancel: CancellationToken,
     player_alive: bool,
@@ -37,13 +33,6 @@ enum RoomState {
     WaitReady,
     Gaming,
     EndGame,
-}
-
-#[derive(Debug, Clone)]
-struct Player {
-    name: String,
-    gamemsg_tx: MsgTX,
-    game: Game,
 }
 
 impl RoomManager {
@@ -86,10 +75,7 @@ impl RoomManager {
 
         let r = Room {
             state: RoomState::NotFull,
-            players: Vec::new(),
             id: name.clone(),
-            ready_cnt: 0,
-            next: 0,
             alive: true,
             watch_dog_cancel: CancellationToken::new(),
             player_alive: true,
@@ -129,7 +115,7 @@ impl RoomManager {
                                 if room.player_alive {
                                     room.player_alive = false;
                                 } else {
-                                    let next = room.next;
+                                    let next = room.game.get_next();
                                     info!("In Gaming: player watch dog kills {:?}", next);
                                     room.exit_room(next).unwrap();
                                     let ri = room.get_room_info().unwrap();
@@ -196,27 +182,22 @@ impl Room {
     }
 
     fn get_ready_list(&self) -> ReadyList {
-        let mut l: Vec<u32> = Vec::new();
-        for (i, p) in self.players.iter().enumerate() {
-            if p.game.is_ready() {
-                l.push(i as u32);
-            }
+        ReadyList {
+            l: self.game.get_ready_list().into_iter().map(|s| s as u32).collect()
         }
-
-        ReadyList { l }
     }
 
     // this function does not set the `myidx` item
     pub fn get_room_info(&self) -> RPCResult<RoomInfo> {
         Ok(RoomInfo {
             roomid: self.id.clone(),
-            players: self.players.iter().map(
-                |p| PlayerInfo{ name: p.name.clone() }
+            players: self.game.get_player_names().into_iter().map(
+                |p| PlayerInfo{ name: p }
             ).collect(),
             state: Some(match self.state {
-                RoomState::NotFull => State::NotFull(self.players.len() as u32),
+                RoomState::NotFull => State::NotFull(self.game.get_player_num() as u32),
                 RoomState::WaitReady => State::WaitReady(self.get_ready_list()),
-                RoomState::Gaming => State::Gaming(self.next as u32),
+                RoomState::Gaming => State::Gaming(self.game.get_next() as u32),
                 RoomState::EndGame => State::EndGame(0),
             })
         })
@@ -232,13 +213,10 @@ impl Room {
 
         let (tx, rx) = mpsc::channel(DEFAULT_CHANNEL_SIZE);
 
-        self.players.push(Player {
-            name: p.name.clone(),
-            game: Default::default(),
-            gamemsg_tx: tx,
-        });
+        self.gamemsg_tx.push(tx);
+        self.game.add_player(p.name.clone());
 
-        if self.players.len() == 4 {
+        if self.game.get_player_num() == 4 {
             self.state = RoomState::WaitReady;
         }
 
@@ -246,16 +224,15 @@ impl Room {
     }
 
     pub async fn send_gamemsg(&self, msg: Msg) {
-        for (i, p) in self.players.iter().enumerate() {
-            if let Err(e) = p.gamemsg_tx.send(
-                Ok(
-                    GameMsg {
-                        msg: Some(msg.clone()),
-                        your_id: i as u32,
-                    }
-                )).await {
-                error!("Cannot send gamemsg: {:?}", e);
-            }
+        for (i, gtx) in self.gamemsg_tx.iter().enumerate() {
+            gtx.send(Ok(
+                GameMsg {
+                    msg: Some(msg.clone()),
+                    your_id: i as u32,
+                }
+            )).await.unwrap_or_else(
+                |e| error!("Cannot send gamemsg: {:?}", e)
+            );
         }
     }
 
@@ -267,17 +244,11 @@ impl Room {
             ))
         }
 
-        if let Some(p) = self.players.get_mut(pid) {
-            p.game.ready()?;
-            self.ready_cnt += 1;
-            self.player_alive = true;
-            Ok(4 - self.ready_cnt)
-        } else {
-            Err(Status::new(
-                Code::NotFound,
-                format!("Player {} not exist!", pid),
-            ))
-        }
+        let not_ready_cnt = self.game.player_ready(pid)?;
+
+        self.player_alive = true;
+
+        Ok(not_ready_cnt)
     }
 
     // pub fn get_gamemsg_rx(&self) -> RPCResult<MsgRX> {
@@ -294,35 +265,15 @@ impl Room {
     pub async fn start_game(&mut self) {
         if self.state != RoomState::WaitReady {
             error!("Room {} is not full or game has begun!", &self.id);
-        } else if self.ready_cnt != 4 {
-            error!("Room {} not ready!", &self.id);
         }
  
-        self.players.iter_mut().for_each(
-            |p| p.game.new_game()
+        self.game.new_game().unwrap_or_else(
+            |e| error!("Cannot start game: {}", e)
         );
-
-        self.desk = Default::default();
-
-        self.thisround.clear();
-
-        self.play_cnt = 0;
-
-        let mut cards: Vec<u32> = (0..=51).collect();
-        cards.shuffle(&mut thread_rng());
-
-        for pi in 0..=3 {
-            for c in &cards[pi*13 .. (pi+1)*13] {
-                self.players[pi].game.add_card(c);
-                if *c == 19 {
-                    self.next = pi;
-                }
-            }
-        }
 
         self.state = RoomState::Gaming;
 
-        let msg = Msg::Start(self.next as u32);
+        let msg = Msg::Start(self.game.get_next() as u32);
         info!("Sending GameMsg: {:?}", msg);
         self.send_gamemsg(msg).await;
     }
@@ -335,163 +286,87 @@ impl Room {
             ));
         }
 
-        let p = self.players.get(pid as usize).ok_or(
-            Status::new(
-                Code::NotFound,
-                format!("Player {} not found!", pid)
-            )
-        )?;
-
         Ok(GameInfo {
-            cards: p.game.get_cards(),
+            cards: self.game.get_someone_cards(pid as usize)?.into_iter().map(
+                |c| c.into()
+            ).collect(),
             holds: Some(HeldCards {
-                my: p.game.get_holds(),
-                eachone: self.players.iter().map(
-                    |p| p.game.get_holds_num()
+                my: self.game.get_someone_holds(pid as usize)?.into_iter().map(
+                    |c| c.into()
                 ).collect(),
+                eachone: self.game.get_hold_nums(),
             }),
-            desk: Some(self.desk.get_desk_info(&self.thisround)),
+            desk: Some(self.game.get_desk_info()),
         })
     }
 
-    pub fn play_card(&mut self, pid: u32, play: &Play) -> RPCResult<u32> {
+    pub fn play_card(&mut self, p: Play) -> RPCResult<bool> {
         if self.state != RoomState::Gaming {
             return Err(Status::new(
                 Code::PermissionDenied,
                 "Not gaming!"
             ));
-        } else if self.next != pid as usize {
-            return Err(Status::new(
-                Code::PermissionDenied,
-                format!("Not your turn! Waiting for player {}!", self.next)
-            ));
         }
 
-        let p = self.players.get_mut(pid as usize).ok_or(
-            Status::new(
-                Code::NotFound,
-                format!("Player {} not exist!", pid)
-            )
-        )?;
+        let endgame = self.game.play_card(p)?;
 
         self.player_alive = true;
 
-        p.game.is_valid_play(&self.desk, play, self.play_cnt == 0)?;
-
-        p.game.play_card(play)?;
-
-        self.next += 1;
-        self.next %= 4;
-
-        self.play_cnt += 1;
-
-        self.desk.update(play, pid);
-
-        if pid == 0 {
-            self.thisround.clear();
-        }
-        if let Play::Discard(c) = play {
-            self.thisround.push(Card::from_info(c));
-        }
-
-        Ok(self.play_cnt)
+        Ok(endgame)
     }
 
-    pub fn end_game(&mut self) -> RPCResult<GameResult> {
+    pub fn end_game(&mut self) -> RPCResult<GameEnding> {
         if self.state != RoomState::Gaming {
-            Err(Status::new(
+            return Err(Status::new(
                 Code::PermissionDenied,
                 "Room is not gaming!"
             ))
-        } else if self.play_cnt != 52 {
-            Err(Status::new(
-                Code::PermissionDenied,
-                "Game is not end!"
-            ))
-        } else if self.players.iter().any(|p| p.game.has_cards()) {
-            Err(Status::new(
-                Code::PermissionDenied,
-                "Try to get game result but someone still owns cards!"
-            ))
-        } else {
-            self.state = RoomState::EndGame;
-            Ok(self.get_game_result())
         }
-    }
 
-    // this function doesn't check whether game is end !!!
-    fn get_game_result(&self) -> GameResult {
-        let mut hold = Vec::new();
-        self.players.iter().for_each(
-            |p| hold.push(p.game.get_hold_list())
-        );
+        let ge = self.game.end_game()?;
+        self.state = RoomState::EndGame;
 
-        GameResult{
-            desk: Some(self.desk.clone().into()),
-            hold,
-        }
+        Ok(ge)
     }
 
     pub async fn exit_game(&mut self, pid: usize) -> RPCResult<()> {
-        if pid < self.players.len() {
-            match self.state {
-                RoomState::NotFull =>
-                    Err(Status::new(
-                        Code::PermissionDenied,
-                        "Room is not in a game!"
-                    )),
-                RoomState::WaitReady => Ok(()),
-                _ => {
-                    self.ready_cnt = 0;
-                    self.players.iter_mut().for_each(
-                        |p| p.game.unready()
-                    );
-                    self.state = RoomState::WaitReady;
-                    self.send_gamemsg(Msg::ExitGame(pid as u32)).await;
-                    Ok(())
-                }
+        match self.state {
+            RoomState::NotFull =>
+                Err(Status::new(
+                    Code::PermissionDenied,
+                    "Room is not in a game!"
+                )),
+            RoomState::WaitReady => Ok(()),
+            _ => {
+                self.game.player_exit_game(pid)?;
+                self.state = RoomState::WaitReady;
+                self.send_gamemsg(Msg::ExitGame(pid as u32)).await;
+                Ok(())
             }
-        } else {
-            Err(Status::new(
-                Code::NotFound,
-                format!("Player {} not exist!", pid),
-            ))
         }
     }
 
     pub fn exit_room(&mut self, pid: usize) -> RPCResult<usize> {
-        debug!("{:?}", self.players.len());
-        if pid < self.players.len() {
-            self.ready_cnt = 0;
-            self.players.remove(pid);
-            self.players.iter_mut().for_each(
-                |p| p.game.unready()
-            );
-            self.state = RoomState::NotFull;
-            Ok(self.players.len())
-        } else {
-            Err(Status::new(
-                Code::NotFound,
-                format!("Player {} not exist!", pid),
-            ))
-        }
+        let left = self.game.player_exit(pid)?;
+        self.state = RoomState::NotFull;
+        self.gamemsg_tx.remove(pid);
+        Ok(left)
     }
 
     pub fn kill_unready(&mut self) -> RPCResult<usize> {
         assert!(self.state == RoomState::WaitReady);
 
-        info!("Killing unready: {:?}", self.players.iter().filter(
-            |p| !p.game.is_ready()
-        ).map(
-            |p| p.name.clone()
-        ).collect::<String>());
+        let ready_list = self.game.get_ready_list();
 
-        self.players = self.players.iter().filter(
-            |p| p.game.is_ready()
-        ).cloned().collect();
+        let left = self.game.kill_unready()?;
 
-        self.ready_cnt = 0;
+        let mut new_gtx = Vec::new();
+        for i in ready_list {
+            new_gtx.push(self.gamemsg_tx[i].clone());
+        }
+        self.gamemsg_tx = new_gtx;
+
         self.state = RoomState::NotFull;
-        Ok(self.players.len())
+        Ok(left)
     }
 }

@@ -7,7 +7,7 @@ use ratatui::{
     widgets::*,
     Frame
 };
-use crate::game::Card;
+use crate::rule::Card;
 use super::*;
 use super::card::*;
 use super::gaming::*;
@@ -60,7 +60,7 @@ fn render_desk_result<B: Backend>(
 }
 
 fn render_hold_result<B: Backend>(
-    frame: &mut Frame<B>, players: &Vec<(String, usize, Vec<Card>)>
+    frame: &mut Frame<B>, players: &Vec<(String, Vec<Card>)>
 ) {
     // myself
     let mut a = Layout::default()
@@ -85,7 +85,7 @@ fn render_hold_result<B: Backend>(
         )
         .split(a)[1];
     render_one_player(frame, players[0].0.clone(), a, Some(DESK_RESULT_0));
-    render_my_holds(frame, &players[0].2, players[0].2.len() == 0);
+    render_my_holds(frame, &players[0].1, players[0].1.len() == 0);
 
     //right
     let a = Layout::default()
@@ -146,7 +146,7 @@ fn render_hold_result<B: Backend>(
         .split(a[3]);
     let sum_str = Text::from(
         Span::styled(
-            format!("HOLD: {}    POINTS: {}", players[1].2.len(), hold_sum(&players[1].2)),
+            format!("HOLD: {}    POINTS: {}", players[1].1.len(), hold_sum(&players[1].1)),
             Style::default().fg(HOLD_BORDER)
         )
     );
@@ -169,7 +169,7 @@ fn render_hold_result<B: Backend>(
         )
         .split(a[5]);
     let mut holds = holds_rect[3];
-    if players[1].2.len() == 0 {
+    if players[1].1.len() == 0 {
         holds = rect_cut_center(holds, -8, 100);
         holds.x += 3 * (7 - 1);
         holds.width = 11;
@@ -178,14 +178,14 @@ fn render_hold_result<B: Backend>(
             CardStyle::Clear,
             false, Some(CARD_CLEAR_BOREDER)
         );
-    } else if players[1].2.len() <= 7 {
+    } else if players[1].1.len() <= 7 {
         holds = rect_cut_center(holds, -8, 100);
-        holds.x += 3 * (7 - players[1].2.len() as u16);
+        holds.x += 3 * (7 - players[1].1.len() as u16);
         holds.width = 11;
         holds.height = 8;
-        for (i, c) in players[1].2.iter().enumerate() {
+        for (i, c) in players[1].1.iter().enumerate() {
             render_card(frame, c, holds.clone(),
-                if i == players[1].2.len() - 1 {
+                if i == players[1].1.len() - 1 {
                     CardStyle::All
                 } else {
                     CardStyle::Vertical
@@ -199,7 +199,7 @@ fn render_hold_result<B: Backend>(
         holds.width = 11;
         holds.height = 8;
         for i in 0..=6 {
-            render_card(frame, &players[1].2[i], holds.clone(),
+            render_card(frame, &players[1].1[i], holds.clone(),
                 if i == 6 {
                     CardStyle::All
                 } else {
@@ -211,10 +211,10 @@ fn render_hold_result<B: Backend>(
         }
         holds.y += 8;
         holds.x = org_x;
-        holds.x += 3 * (14 - players[1].2.len() as u16);
-        for i in 7..players[1].2.len() {
-            render_card(frame, &players[1].2[i], holds.clone(),
-                if i == players[1].2.len() - 1 {
+        holds.x += 3 * (14 - players[1].1.len() as u16);
+        for i in 7..players[1].1.len() {
+            render_card(frame, &players[1].1[i], holds.clone(),
+                if i == players[1].1.len() - 1 {
                     CardStyle::All
                 } else {
                     CardStyle::Vertical
@@ -243,7 +243,7 @@ fn render_hold_result<B: Backend>(
     );
     let sum_str = Text::from(
         Span::styled(
-            format!("HOLD: {}    POINTS: {}", players[3].2.len(), hold_sum(&players[3].2)),
+            format!("HOLD: {}    POINTS: {}", players[3].1.len(), hold_sum(&players[3].1)),
             Style::default().fg(HOLD_BORDER)
         )
     );
@@ -253,7 +253,7 @@ fn render_hold_result<B: Backend>(
         sum_a[1]
     );
     let mut holds = holds_rect[1];
-    if players[3].2.len() == 0 {
+    if players[3].1.len() == 0 {
         holds = rect_cut_center(holds, -8, 100);
         holds.width = 11;
         holds.height = 8;
@@ -261,13 +261,13 @@ fn render_hold_result<B: Backend>(
             CardStyle::Clear,
             false, Some(CARD_CLEAR_BOREDER)
         );
-    } else if players[3].2.len() <= 7 {
+    } else if players[3].1.len() <= 7 {
         holds = rect_cut_center(holds, -8, 100);
         holds.width = 11;
         holds.height = 8;
-        for (i, c) in players[3].2.iter().enumerate() {
+        for (i, c) in players[3].1.iter().enumerate() {
             render_card(frame, c, holds.clone(),
-                if i == players[3].2.len() - 1 {
+                if i == players[3].1.len() - 1 {
                     CardStyle::All
                 } else {
                     CardStyle::Vertical
@@ -281,7 +281,7 @@ fn render_hold_result<B: Backend>(
         holds.width = 11;
         holds.height = 8;
         for i in 0..=6 {
-            render_card(frame, &players[3].2[i], holds.clone(),
+            render_card(frame, &players[3].1[i], holds.clone(),
                 if i == 6 {
                     CardStyle::All
                 } else {
@@ -293,9 +293,9 @@ fn render_hold_result<B: Backend>(
         }
         holds.y += 8;
         holds.x = org_x;
-        for i in 7..players[3].2.len() {
-            render_card(frame, &players[3].2[i], holds.clone(),
-                if i == players[3].2.len() - 1 {
+        for i in 7..players[3].1.len() {
+            render_card(frame, &players[3].1[i], holds.clone(),
+                if i == players[3].1.len() - 1 {
                     CardStyle::All
                 } else {
                     CardStyle::Vertical
@@ -367,7 +367,7 @@ fn render_hold_result<B: Backend>(
     );
     let sum_str = Text::from(
         Span::styled(
-            format!("HOLD: {}    POINTS: {}", players[2].2.len(), hold_sum(&players[2].2)),
+            format!("HOLD: {}    POINTS: {}", players[2].1.len(), hold_sum(&players[2].1)),
             Style::default().fg(HOLD_BORDER)
         )
     );
@@ -379,15 +379,15 @@ fn render_hold_result<B: Backend>(
     holds_rect.width = 11;
     holds_rect.height = 5;
 
-    if players[2].2.len() == 0 {
+    if players[2].1.len() == 0 {
         render_card(frame, &NULL_CARD, holds_rect.clone(),
             CardStyle::ClearHalf,
             false, Some(CARD_CLEAR_BOREDER)
         );
     } else {
-        for (i, c) in players[2].2.iter().enumerate() {
+        for (i, c) in players[2].1.iter().enumerate() {
             render_card(frame, c, holds_rect.clone(),
-                if i == players[2].2.len() - 1 {
+                if i == players[2].1.len() - 1 {
                     CardStyle::Half
                 } else {
                     CardStyle::Vertical
@@ -480,7 +480,7 @@ fn name_shorten(name: &String) -> String {
 
 pub fn ui_game_result<B: Backend>(
     frame: &mut Frame<B>, ds: &Vec<Vec<(Card, usize)>>,
-    players: &Vec<(String, usize, Vec<Card>)>, roomid: &String
+    players: &Vec<(String, Vec<Card>)>, roomid: &String
 ) {
     render_game_info(frame, roomid.clone());
 
@@ -489,7 +489,7 @@ pub fn ui_game_result<B: Backend>(
     render_hold_result(frame, players);
 
     let mut hold_sums: Vec<(usize, u32)> = players.iter().map(
-        |p| hold_sum(&p.2)
+        |p| hold_sum(&p.1)
     ).enumerate().collect();
     hold_sums.sort_by_key(|p| p.1);
     let mut num = 0;

@@ -68,10 +68,66 @@ pub fn render<B: Backend>(frame: &mut Frame<B>, cs: &ClientState, exit: (bool, u
             ClientState::WaitReady {players, msg, roomid, ..}
                 => ui_wait_ready(frame, players, msg, roomid),
             ClientState::Gaming {
-                players, next, choose, last, cards, holds,
-                has_last, desk, roomid, button, play_cnt, msg, ..
-            } => ui_gaming(frame, players, *next, roomid, *choose, last.as_ref(), cards,
-                    holds, *has_last, desk, *button, *play_cnt, msg.as_ref()),
+                choose, game, roomid, button, msg, ..
+            } => {
+                let names = game.get_player_names();
+                let hold_nums = game.get_hold_nums();
+                let next = game.get_next();
+                let last = game.get_last();
+                let my_cards = game.get_my_cards();
+                let my_holds = game.get_my_holds();
+                let hints = game.get_my_hint();
+                let has_done = game.has_done();
+                let thisround = game.get_thisround();
+                let thisround_my = game.get_thisround_my();
+                let mut chains_small = vec![];
+                let mut chains_big = vec![];
+                game.export_desk().into_iter().for_each(
+                    |l| {
+                        let mut small = vec![];
+                        let mut big = vec![];
+                        for c in l {
+                            if c.num <= 7 {
+                                small.push(c);
+                            } else {
+                                big.push(c);
+                            }
+                        }
+                        big.reverse();
+                        for (v, chain) in [(small, &mut chains_small), (big, &mut chains_big)] {
+                            chain.push(if v.len() == 0 || !thisround.contains(&v[0]) {
+                                v.into_iter().map(
+                                    |c| (c, CardStyleOnDesk::Normal)
+                                ).collect()
+                            } else {
+                                let mut viter = v.into_iter();
+                                let mut ret = vec![];
+                                while let Some(c) = viter.next() {
+                                    if !thisround.contains(&c) {
+                                        break;
+                                    }
+                                    ret.push(
+                                        (c.clone(),
+                                         if thisround_my.is_some()
+                                            && thisround_my.as_ref().unwrap().clone() == c {
+                                            CardStyleOnDesk::ThisRoundMy
+                                         } else {
+                                            CardStyleOnDesk::ThisRound
+                                        })
+                                    );
+                                }
+                                ret
+                            });
+                        }
+
+                    }
+                );
+
+                ui_gaming(frame, names, hold_nums, next, roomid, *choose, last,
+                    my_cards, my_holds, hints, chains_small,
+                    chains_big, *button, has_done, msg.as_ref()
+                );
+            }
             ClientState::GameResult {ds, players, roomid, ..}
                 => ui_game_result(frame, ds, players, roomid),
         }

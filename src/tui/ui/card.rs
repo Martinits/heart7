@@ -8,7 +8,7 @@ use ratatui::{
     text::*,
     Frame
 };
-use crate::game::Card;
+use crate::rule::Card;
 
 pub const NULL_CARD: Card = Card { suit: CardSuit::Spade, num: 1};
 

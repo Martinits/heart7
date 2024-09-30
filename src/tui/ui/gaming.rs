@@ -6,8 +6,7 @@ use ratatui::{
     widgets::*,
     Frame
 };
-use crate::game::Card;
-use crate::client::desk::*;
+use crate::rule::Card;
 use super::*;
 use super::card::*;
 use super::players::*;
@@ -193,7 +192,7 @@ fn render_next<B: Backend>(frame: &mut Frame<B>, next: usize) {
     );
 }
 
-fn render_last<B: Backend>(frame: &mut Frame<B>, last: Option<&Card>, who: usize) {
+fn render_last<B: Backend>(frame: &mut Frame<B>, last: Option<Card>, who: usize) {
     let a = match who {
         // myself
         0 => {return}
@@ -283,7 +282,7 @@ fn render_last<B: Backend>(frame: &mut Frame<B>, last: Option<&Card>, who: usize
 
     if let Some(c) = last {
         // discard
-        render_card(frame, c, a, CardStyle::All, false, Some(NEXT_TURN));
+        render_card(frame, &c, a, CardStyle::All, false, Some(NEXT_TURN));
     } else {
         // hold
         render_card(frame, &NULL_CARD, a, CardStyle::Hold, false, Some(NEXT_TURN));
@@ -454,22 +453,21 @@ fn render_msg<B: Backend>(frame: &mut Frame<B>, msg: String) {
 }
 
 pub fn ui_gaming<B: Backend>(
-    frame: &mut Frame<B>, players: &Vec<(String, usize, u32)>, next: usize, roomid: &String,
-    choose: usize, last: Option<&Card>, cards: &Vec<Card>, holds: &Vec<Card>,
-    has_last: bool, desk: &Desk, button: u32, play_cnt: u32, msg: Option<&String>
+    frame: &mut Frame<B>, names: Vec<String>, hold_nums: Vec<u32>, next: usize,
+    roomid: &String, choose: usize, last: Option<(usize, Option<Card>)>,
+    my_cards: Vec<Card>, my_holds: Vec<Card>, hints: Vec<bool>,
+    chains_small: Vec<Vec<(Card, CardStyleOnDesk)>>,
+    chains_big: Vec<Vec<(Card, CardStyleOnDesk)>>,
+    button: u32, has_done: bool, msg: Option<&String>
 ) {
-    render_players(frame,
-        players.iter().map(|p| p.0.clone()).collect::<Vec<String>>().as_ref(),
-        vec![false; 4], Some(players.iter().map(|p| p.2).collect())
-    );
+    render_players(frame, &names, vec![false; 4], Some(hold_nums));
 
     render_game_info(frame, roomid.clone());
 
-    render_desk(frame, desk);
+    render_desk(frame, chains_small, chains_big);
 
-    let hints = desk.get_play_hint(cards);
     let is_no_discard = !hints.iter().any(|b| *b);
-    render_my_cards(frame, cards, choose, hints);
+    render_my_cards(frame, &my_cards, choose, hints);
 
     if let Some(m) = msg {
         render_msg(frame, m.clone());
@@ -477,15 +475,16 @@ pub fn ui_gaming<B: Backend>(
         render_msg(frame, "No Card to Play!".into());
     }
 
-    if play_cnt < 54 {
+    if !has_done {
         render_next(frame, next);
     }
 
-    if has_last {
-        render_last(frame, last, (next+3)%4);
+    if let Some((who, opc)) = last {
+        assert_eq!((next+3)%4, who);
+        render_last(frame, opc, who);
     }
 
-    render_my_holds(frame, holds, false);
+    render_my_holds(frame, &my_holds, false);
 
     render_game_button(frame,
         if next == 0 {

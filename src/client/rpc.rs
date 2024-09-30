@@ -8,14 +8,14 @@ use tokio_util::sync::CancellationToken;
 use anyhow::Result;
 
 #[derive(Clone)]
-pub struct Client {
+pub struct RpcClient {
     pub c: Heart7Client<Channel>,
     pub addr: String,
 }
 
 pub type GameStream = Streaming<GameMsg>;
 
-impl Client {
+impl RpcClient {
     pub fn connect_spawn(addr: &str, tx: &mpsc::Sender<ClientEvent>) {
         let txc = tx.clone();
         let addr = addr.to_string();
@@ -32,7 +32,7 @@ impl Client {
                 } else {
                     let url =format!("http://{}", &addr);
                     match Heart7Client::connect(url).await {
-                        Ok(c) => Ok(Client{ c, addr }),
+                        Ok(c) => Ok(RpcClient{ c, addr }),
                         Err(e) => Err(e.to_string()),
                     }
                 }
@@ -108,34 +108,32 @@ impl Client {
         Ok(self.c.room_status(request).await?.into_inner())
     }
 
-    pub async fn game_ready(&mut self, pid: u32, roomid: String) -> Result<GameReadyReply> {
+    pub async fn game_ready(&mut self, pid: usize, roomid: String) -> Result<GameReadyReply> {
         let request = Request::new(RoomReq{
-            playerid: pid,
+            playerid: pid as u32,
             roomid
         });
 
         Ok(self.c.game_ready(request).await?.into_inner())
     }
 
-    pub async fn game_status(&mut self, pid: u32, roomid: String) -> Result<GameInfo> {
+    pub async fn game_status(&mut self, pid: usize, roomid: String) -> Result<GameInfo> {
         let request = Request::new(RoomReq{
-            playerid: pid,
+            playerid: pid as u32,
             roomid
         });
 
         Ok(self.c.game_status(request).await?.into_inner())
     }
 
-    pub async fn play_card(&mut self, pid: u32, roomid: String, play: Play) -> Result<()> {
+    pub async fn play_card(&mut self, pid: usize, roomid: String, playone: PlayOne) -> Result<()> {
         let roomreq = RoomReq{
-            playerid: pid,
+            playerid: pid as u32,
             roomid
         };
         let request = Request::new(PlayReq{
             roomreq: Some(roomreq),
-            playone: Some(PlayOne{
-                play: Some(play)
-            })
+            playone: Some(playone),
         });
 
         let r = self.c.play_card(request).await?.into_inner();
@@ -150,9 +148,9 @@ impl Client {
         }
     }
 
-    pub async fn exit_game(&mut self, pid: u32, roomid: String) -> Result<()> {
+    pub async fn exit_game(&mut self, pid: usize, roomid: String) -> Result<()> {
         let request = Request::new(RoomReq{
-            playerid: pid,
+            playerid: pid as u32,
             roomid
         });
 
@@ -168,9 +166,9 @@ impl Client {
         }
     }
 
-    pub async fn exit_room(&mut self, pid: u32, roomid: String) -> Result<()> {
+    pub async fn exit_room(&mut self, pid: usize, roomid: String) -> Result<()> {
         let request = Request::new(RoomReq{
-            playerid: pid,
+            playerid: pid as u32,
             roomid
         });
 
@@ -187,7 +185,7 @@ impl Client {
     }
 }
 
-pub fn room_info_to_players(myidx: usize, ri: &RoomInfo) -> Vec<(String, usize, bool)> {
+pub fn room_info_to_players(my_remote_idx: usize, ri: &RoomInfo) -> Vec<(String, usize, bool)> {
     let mut players = vec![("".into(), 0, false); 4];
     for i in 0..ri.players.len() {
         players[i].0 = ri.players[i].name.clone();
@@ -198,6 +196,6 @@ pub fn room_info_to_players(myidx: usize, ri: &RoomInfo) -> Vec<(String, usize, 
             players[*i as usize].2 = true;
         }
     }
-    players.rotate_left(myidx);
+    players.rotate_left(my_remote_idx);
     players
 }
