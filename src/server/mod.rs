@@ -189,14 +189,23 @@ impl Heart7 for Heart7D {
             player: roomreq.playerid,
             playone: Some(playone.clone()),
         };
+        let who = roomreq.playerid as usize;
         let endgame = room.play_card(pi.clone().into())?;
 
-        if !playone.is_discard {
-            pi.playone.as_mut().unwrap().card = Some(DUMMY_CARD.clone().into())
+        if playone.is_discard {
+            let msg = Msg::Play(pi);
+            info!("Sending GameMsg: {:?}", msg);
+            room.send_gamemsg(msg).await;
+        } else {
+            let msg = Msg::Play(pi.clone());
+            info!("Sending GameMsg to {} only: {:?}", who, msg);
+            room.send_gamemsg_to(msg, who).await;
+
+            pi.playone.as_mut().unwrap().card = Some(DUMMY_CARD.clone().into());
+            let msg = Msg::Play(pi);
+            info!("Sending GameMsg except {}: {:?}", who, msg);
+            room.send_gamemsg_except(msg, who).await;
         }
-        let msg = Msg::Play(pi);
-        info!("Sending GameMsg: {:?}", msg);
-        room.send_gamemsg(msg).await;
 
         if endgame {
             let res = room.end_game()?;

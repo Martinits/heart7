@@ -247,7 +247,7 @@ impl Client {
             self.tui.draw(|frame| ui::resize(frame, self.sz))?;
         } else {
             self.block_event = false;
-            self.tui.draw(|frame| ui::render(frame, &self.state, self.exitmenu))?;
+            self.tui.draw(|frame| ui::render(frame, &mut self.state, self.exitmenu))?;
         }
         Ok(())
     }

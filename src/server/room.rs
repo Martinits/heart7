@@ -224,15 +224,27 @@ impl Room {
     }
 
     pub async fn send_gamemsg(&self, msg: Msg) {
-        for (i, gtx) in self.gamemsg_tx.iter().enumerate() {
-            gtx.send(Ok(
-                GameMsg {
-                    msg: Some(msg.clone()),
-                    your_id: i as u32,
-                }
-            )).await.unwrap_or_else(
-                |e| error!("Cannot send gamemsg: {:?}", e)
-            );
+        for i in 0..self.gamemsg_tx.len() {
+            self.send_gamemsg_to(msg.clone(), i).await;
+        }
+    }
+
+    pub async fn send_gamemsg_to(&self, msg: Msg, to: usize) {
+        self.gamemsg_tx.get(to).unwrap().send(Ok(
+            GameMsg {
+                msg: Some(msg),
+                your_id: to as u32,
+            }
+        )).await.unwrap_or_else(
+            |e| error!("Cannot send gamemsg: {:?}", e)
+        );
+    }
+
+    pub async fn send_gamemsg_except(&self, msg: Msg, except: usize) {
+        for i in 0..self.gamemsg_tx.len() {
+            if i != except {
+                self.send_gamemsg_to(msg.clone(), i).await;
+            }
         }
     }
 

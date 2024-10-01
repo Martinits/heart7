@@ -10,6 +10,7 @@ pub struct Desk {
     heart:   ChainType,
     club:    ChainType,
     diamond: ChainType,
+    cand: Option<HashSet<Card>>,
 }
 
 impl Default for Desk {
@@ -19,6 +20,7 @@ impl Default for Desk {
             heart:   VecDeque::with_capacity(13),
             club:    VecDeque::with_capacity(13),
             diamond: VecDeque::with_capacity(13),
+            cand: None,
         }
     }
 }
@@ -56,6 +58,7 @@ impl Desk {
         self.heart.clear();
         self.club.clear();
         self.diamond.clear();
+        self.cand = None;
     }
 
     pub fn is_empty(&self) -> bool {
@@ -88,34 +91,33 @@ impl Desk {
             } else {
                 chain.push_back((c, pid));
             }
+            self.cand = None;
         }
     }
 
-    fn discard_candidates(&self) -> HashSet<Card> {
-        let mut ret = HashSet::new();
-        if self.is_empty() {
-            ret.insert(Card{ suit: CardSuit::Heart, num: 7});
-        } else {
-            get_candidates_for_one_suit!(ret, self.spade,   CardSuit::Spade);
-            get_candidates_for_one_suit!(ret, self.heart,   CardSuit::Heart);
-            get_candidates_for_one_suit!(ret, self.club,    CardSuit::Club);
-            get_candidates_for_one_suit!(ret, self.diamond, CardSuit::Diamond);
+    fn discard_candidates(&mut self) -> &HashSet<Card> {
+        if self.cand.is_none() {
+            let mut cand = HashSet::new();
+            if self.is_empty() {
+                cand.insert(Card{ suit: CardSuit::Heart, num: 7});
+            } else {
+                get_candidates_for_one_suit!(cand, self.spade,   CardSuit::Spade);
+                get_candidates_for_one_suit!(cand, self.heart,   CardSuit::Heart);
+                get_candidates_for_one_suit!(cand, self.club,    CardSuit::Club);
+                get_candidates_for_one_suit!(cand, self.diamond, CardSuit::Diamond);
+            }
+            self.cand = Some(cand);
         }
-        ret
+
+        self.cand.as_ref().unwrap()
     }
 
-    pub fn is_discard_candidates(&self, c: &Card) -> bool {
-        let cand = self.discard_candidates();
-        cand.iter().find(|&cc| cc == c).is_some()
+    pub fn is_discard_candidates(&mut self, c: &Card) -> bool {
+        self.discard_candidates().iter().find(|&cc| cc == c).is_some()
     }
 
-    pub fn someone_has_discard_candidates<'a>(
-        &'a self, mut iter: impl Iterator<Item = &'a Card>
-    ) -> bool {
-        let cand = self.discard_candidates();
-        iter.any(
-            |c| cand.contains(c)
-        )
+    pub fn someone_has_discard_candidates(&mut self, cards: HashSet<Card>) -> bool {
+        self.discard_candidates().intersection(&cards).any(|_| true)
     }
 
     pub fn get_desk_result(&self) -> DeskResult {

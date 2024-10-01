@@ -4,7 +4,7 @@ use super::*;
 #[derive(Debug, Default, Clone)]
 pub struct Player {
     name: String,
-    cards: HashSet<Card>,
+    cards: Vec<Card>,
     holds: Vec<Card>,
     ready: bool,
 }
@@ -35,9 +35,10 @@ impl Player {
     }
 
     pub fn add_card(&mut self, c: Card) -> GameResult<()> {
-        if !self.cards.insert(c) {
+        if self.cards.contains(&c) {
             return Err(GameError::Internal("Add same card multiple times!".into()))
         }
+        self.cards.push(c);
         Ok(())
     }
 
@@ -64,8 +65,8 @@ impl Player {
         ).collect()
     }
 
-    pub fn get_cards_iter(&self) -> impl Iterator<Item = &Card> {
-        self.cards.iter()
+    pub fn get_cards_set(&self) -> HashSet<Card> {
+        self.cards.clone().into_iter().collect()
     }
 
     pub fn get_card_num(&self) -> usize {
@@ -81,7 +82,7 @@ impl Player {
     }
 
     pub fn has_card(&self, c: &Card) -> bool {
-        self.cards.iter().find(|&cc| cc == c).is_some()
+        self.cards.contains(c)
     }
 
     pub fn has_card_left(&self) -> bool {
@@ -94,14 +95,19 @@ impl Player {
 
     // this function doesn't check whether is valid !!!
     pub fn play_card(&mut self, play: Play) {
-        match play {
-            Play::Discard(c, _) => {
-                self.cards.remove(&c);
-            },
-            Play::Hold(c, _) => {
-                self.cards.remove(&c);
-                self.holds.push(c);
-            }
+        assert!(self.has_card_left());
+
+        let (is_discard, c, _) = play.split();
+
+        if self.cards.first().unwrap().is_dummy_card() {
+            self.cards.pop();
+        } else {
+            let idx = self.cards.iter().position(|cc| cc == &c).unwrap();
+            self.cards.remove(idx);
+        }
+
+        if !is_discard {
+            self.holds.push(c);
         }
     }
 }

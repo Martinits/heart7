@@ -35,7 +35,7 @@ use ratatui::{
     Frame
 };
 
-pub fn render<B: Backend>(frame: &mut Frame<B>, cs: &ClientState, exit: (bool, u32)) {
+pub fn render<B: Backend>(frame: &mut Frame<B>, cs: &mut ClientState, exit: (bool, u32)) {
     // outer border
     frame.render_widget(
         Block::default()
@@ -95,10 +95,10 @@ pub fn render<B: Backend>(frame: &mut Frame<B>, cs: &ClientState, exit: (bool, u
                         }
                         big.reverse();
                         for (v, chain) in [(small, &mut chains_small), (big, &mut chains_big)] {
-                            chain.push(if v.len() == 0 || !thisround.contains(&v[0]) {
-                                v.into_iter().map(
-                                    |c| (c, CardStyleOnDesk::Normal)
-                                ).collect()
+                            chain.push(if v.len() == 0 {
+                                Vec::new()
+                            } else if !thisround.contains(&v[0]) {
+                                vec![(v[0].clone(), CardStyleOnDesk::Normal)]
                             } else {
                                 let mut viter = v.into_iter();
                                 let mut ret = vec![];

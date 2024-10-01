@@ -235,13 +235,13 @@ impl Game {
         )
     }
 
-    pub fn get_my_hint(&self) -> Vec<bool> {
+    pub fn get_my_hint(&mut self) -> Vec<bool> {
         self.get_my_cards().iter().map(
             |c| self.desk.is_discard_candidates(c)
         ).collect()
     }
 
-    pub fn check_play(&self, play: &Play) -> GameResult<()> {
+    pub fn check_play(&mut self, play: &Play) -> GameResult<()> {
         let (is_discard, c, pid) = play.clone().split();
 
         self.check_pid(pid)?;
@@ -273,7 +273,7 @@ impl Game {
             ))
         }
 
-        if !is_discard && self.desk.someone_has_discard_candidates(p.get_cards_iter()) {
+        if !is_discard && self.desk.someone_has_discard_candidates(p.get_cards_set()) {
             return Err(GameError::PermissionDenied(
                 "You can't hold, since you have cards to play!".into()
             ))
@@ -288,14 +288,14 @@ impl Game {
         let pid = play.get_pid();
         self.players.get_mut(pid).unwrap().play_card(play.clone());
 
-        self.next += 1;
-        self.next %= 4;
-
-        self.play_cnt += 1;
-
         if self.play_cnt % 4 == 0 {
             self.thisround.clear();
         }
+        self.play_cnt += 1;
+
+        self.next += 1;
+        self.next %= 4;
+
         if let Play::Discard(c, _) = &play {
             self.thisround.push((c.clone(), pid));
         }
