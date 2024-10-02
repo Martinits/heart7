@@ -16,7 +16,7 @@ impl Client {
         match self.state {
             ClientState::GetServer {
                 ref mut input, ref mut msg, ref mut connecting
-            } if !*connecting => {
+            } if !*connecting && input.value().len() > 0 => {
                 // connect to server
                 RpcClient::connect_spawn(input.value(), &self.tx);
                 *connecting = true;
@@ -25,7 +25,7 @@ impl Client {
             }
             ClientState::AskName {
                 ref input, button, client: ref mut c, is_input, ..
-            } if !is_input => {
+            } if !is_input && input.value().len() > 0 => {
                 if button == 0{
                     // new room
                     info!("Player {} chooses to new room", input.value());
@@ -53,7 +53,9 @@ impl Client {
                 }
                 true
             }
-            ClientState::NewRoom { client: ref mut c, ref input, ref name, ref mut msg} => {
+            ClientState::NewRoom {
+                client: ref mut c, ref input, ref name, ref mut msg
+            } if input.value().len() > 0 => {
                 match c.new_room(input.value().into()).await {
                     Ok(()) => {
                         info!("Get NewRoom result from server, enter JoinRoom state");
@@ -81,7 +83,7 @@ impl Client {
             ClientState::JoinRoom {
                 ref input, ref mut msg, client: ref mut c, ref name,
                 stream_listener_cancel: ref cancel
-            } => {
+            } if input.value().len() > 0 => {
                 info!("Joining room {}", input.value());
                 match c.join_room(name.clone(), input.value().into()).await {
                     Ok(stream) => {
