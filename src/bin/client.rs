@@ -28,7 +28,7 @@ async fn main() -> Result<()> {
 
     let logfile = match env::var("LOGFILE") {
         Ok(f) => f,
-        Err(_) => "heart7.log".into()
+        Err(_) => "/dev/null".into()
     };
 
     let logfile = FileAppender::builder().build(logfile)?;
