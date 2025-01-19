@@ -1,11 +1,7 @@
 use heart7::*;
 use heart7::client::Client;
-use ui::term_event::TermEventHandler;
-use ui::ClientUI;
-use std::io;
+use tui::term_event::TermEventHandler;
 use std::env;
-use ratatui::backend::CrosstermBackend;
-use ratatui::Terminal;
 use tokio_util::sync::CancellationToken;
 use tokio::sync::mpsc;
 use log::LevelFilter;
@@ -43,14 +39,8 @@ async fn main() -> Result<()> {
 
     let cancel = CancellationToken::new();
 
-    let backend = CrosstermBackend::new(io::stdout());
-    let terminal = Terminal::new(backend)?;
-    let sz = terminal.size()?;
-    let tui = ClientUI::new(terminal);
-
     let (tx, rx) = mpsc::channel(DEFAULT_CHANNEL_SIZE);
-    let mut client = Client::new(tui, &cancel, tx.clone(), rx, sz, args.addr).await;
-    client.init()?;
+    let mut client = Client::new(cancel.clone(), tx.clone(), rx, args.addr).await?;
 
     let te = TermEventHandler::new();
     info!("Starting terminal event handler...");

@@ -7,21 +7,12 @@ use crate::*;
 use crate::client::rpc::RpcClient;
 use tokio::sync::mpsc;
 use tokio_util::sync::CancellationToken;
-use ratatui::layout::Rect;
-use ui::ClientUI;
+use tui::Tui;
 use tui_input::Input;
 use crate::rule::*;
 use std::panic;
 use exit_handler::ExitMenuEvent;
 use anyhow::Result;
-
-fn add_cancel_to_panic(cancel: CancellationToken) {
-    let panic_hook = panic::take_hook();
-    panic::set_hook(Box::new(move |panic| {
-        cancel.cancel();
-        panic_hook(panic);
-    }));
-}
 
 pub enum ClientState {
     GetServer {
@@ -101,32 +92,26 @@ pub enum ClientEvent {
 }
 
 pub struct Client {
-    cui: ClientUI,
+    tui: Tui,
     cancel: CancellationToken,
     state: ClientState,
     tx: mpsc::Sender<ClientEvent>,
     rx: mpsc::Receiver<ClientEvent>,
-    block_event: bool,
-    sz: (u16, u16),
     exitmenu: (bool, u32),
     default_addr: String,
 }
 
 impl Client {
     pub async fn new(
-        cui: ClientUI,
-        cancel: &CancellationToken,
+        cancel: CancellationToken,
         tx: mpsc::Sender<ClientEvent>,
         rx: mpsc::Receiver<ClientEvent>,
-        sz: Rect,
         default_addr: String,
-    ) -> Self {
-        Self {
-            cui,
-            block_event: false,
+    ) -> Result<Self> {
+        Ok(Self {
+            tui: Tui::new(cancel.clone())?,
             exitmenu: (false, 0),
-            sz: (sz.width, sz.height),
-            cancel: cancel.clone(),
+            cancel,
             state: ClientState::GetServer {
                 input: Input::new(default_addr.clone()).with_cursor(0),
                 msg: "Welcome to Seven-of-Heart !!!\n\
@@ -136,29 +121,26 @@ impl Client {
             tx,
             rx,
             default_addr,
-        }
-    }
-
-    pub fn init(&mut self) -> Result<()> {
-        self.cui.init(&self.cancel)?;
-        Ok(())
+        })
     }
 
     async fn event_dispatcher(&mut self, a: ClientEvent) -> bool {
+        let blocked = self.tui.should_block().unwrap();
+
         if self.exitmenu.0 {
             match a {
-                ClientEvent::Esc if !self.block_event
+                ClientEvent::Esc if !blocked
                     => self.handle_esc(),
-                ClientEvent::Enter if !self.block_event
+                ClientEvent::Enter if !blocked
                     => self.handle_exitmenu_event(ExitMenuEvent::Enter).await,
-                ClientEvent::UpArrow if !self.block_event
+                ClientEvent::UpArrow if !blocked
                     => self.handle_exitmenu_event(ExitMenuEvent::MoveUp).await,
-                ClientEvent::DownArrow if !self.block_event
+                ClientEvent::DownArrow if !blocked
                     => self.handle_exitmenu_event(ExitMenuEvent::MoveDown).await,
                 ClientEvent::CtrlC
                     => panic!("Got Ctrl-C!"),
                 ClientEvent::Resize(x, y) => {
-                    self.sz = (x, y);
+                    self.tui.resize((x, y)).unwrap();
                     true
                 },
                 ClientEvent::Refresh => true,
@@ -170,30 +152,30 @@ impl Client {
             }
         } else {
             match a {
-                ClientEvent::Esc if !self.block_event
+                ClientEvent::Esc if !blocked
                     => self.handle_esc(),
-                ClientEvent::Enter if !self.block_event
+                ClientEvent::Enter if !blocked
                     => self.handle_enter().await,
-                ClientEvent::LeftArrow if !self.block_event
+                ClientEvent::LeftArrow if !blocked
                     => self.handle_lr_arrow(true),
-                ClientEvent::RightArrow if !self.block_event
+                ClientEvent::RightArrow if !blocked
                     => self.handle_lr_arrow(false),
-                ClientEvent::UpArrow if !self.block_event
+                ClientEvent::UpArrow if !blocked
                     => self.handle_ud_arrow(true),
-                ClientEvent::DownArrow if !self.block_event
+                ClientEvent::DownArrow if !blocked
                     => self.handle_ud_arrow(false),
-                ClientEvent::Type(c) if !self.block_event
+                ClientEvent::Type(c) if !blocked
                     => self.handle_typing(c),
                 ClientEvent::CtrlC
                     => panic!("Got Ctrl-C!"),
                 ClientEvent::Resize(x, y) => {
-                    self.sz = (x, y);
+                    self.tui.resize((x, y)).unwrap();
                     true
                 },
                 ClientEvent::Refresh => true,
-                ClientEvent::Backspace if !self.block_event
+                ClientEvent::Backspace if !blocked
                     => self.handle_del(true),
-                ClientEvent::Delete if !self.block_event
+                ClientEvent::Delete if !blocked
                     => self.handle_del(false),
                 ClientEvent::ServerConnectResult(r)
                     => self.handle_server_connect_result(r),
@@ -241,19 +223,17 @@ impl Client {
     }
 
     fn draw(&mut self) -> Result<()> {
-        if self.sz.0 < 160 || self.sz.1 < 48 {
-            self.block_event = true;
-            self.cui.draw_blocked(self.sz)?;
+        if self.tui.should_block()? {
+            self.tui.draw_blocked()?;
         } else {
-            self.block_event = false;
-            self.cui.draw(&mut self.state, self.exitmenu)?;
+            self.tui.draw(&mut self.state, self.exitmenu)?;
         }
         Ok(())
     }
 
     pub fn exit(&mut self) -> Result<()> {
         // self.cancel.cancel();
-        self.cui.exit()?;
+        self.tui.exit()?;
         Ok(())
     }
 }
