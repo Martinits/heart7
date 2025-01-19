@@ -1,14 +1,13 @@
 pub mod home_page;
 pub mod ask_name;
 pub mod join_room;
-pub mod common;
 pub mod card;
 pub mod desk;
 pub mod gaming;
 pub mod wait;
 pub mod players;
 pub mod game_result;
-pub mod resize;
+pub mod blocked;
 pub mod exit_menu;
 pub mod new_room;
 
@@ -21,7 +20,7 @@ pub use gaming::*;
 pub use wait::*;
 pub use players::*;
 pub use game_result::*;
-pub use resize::*;
+pub use blocked::*;
 pub use exit_menu::*;
 pub use new_room::*;
 

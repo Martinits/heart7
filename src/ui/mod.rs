@@ -1,20 +1,24 @@
+pub mod term_event;
+pub mod render;
+pub mod color;
+
 use crossterm::event::{DisableMouseCapture, EnableMouseCapture};
 use crossterm::terminal::{self, EnterAlternateScreen, LeaveAlternateScreen};
 use std::io;
 use std::panic;
 use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
-use ratatui::Frame;
 use tokio_util::sync::CancellationToken;
 use anyhow::Result;
+use crate::client::ClientState;
 
 type TuiBackend = CrosstermBackend<std::io::Stdout>;
 
-pub struct Tui {
+pub struct ClientUI {
     terminal: Terminal<TuiBackend>,
 }
 
-impl Tui {
+impl ClientUI {
     pub fn new(terminal: Terminal<TuiBackend>) -> Self {
         Self { terminal }
     }
@@ -36,12 +40,14 @@ impl Tui {
         Ok(())
     }
 
-    pub fn draw<F>(&mut self, f: F) -> Result<()>
-    where
-        F: FnOnce(&mut Frame<TuiBackend>),
+    pub fn draw(&mut self, cs: &mut ClientState, exitmenu: (bool, u32)) -> Result<()>
     {
-        self.terminal.draw(f)?;
-        // self.terminal.draw(|frame| UI::render(frame))?;
+        self.terminal.draw(|frame| render::render(frame, cs, exitmenu))?;
+        Ok(())
+    }
+
+    pub fn draw_blocked(&mut self, sz: (u16, u16)) -> Result<()> {
+        self.terminal.draw(|frame| render::blocked(frame, sz))?;
         Ok(())
     }
 

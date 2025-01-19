@@ -1,7 +1,7 @@
 use heart7::*;
 use heart7::client::Client;
-use tui::term_event::TermEventHandler;
-use tui::tui::Tui;
+use ui::term_event::TermEventHandler;
+use ui::ClientUI;
 use std::io;
 use std::env;
 use ratatui::backend::CrosstermBackend;
@@ -46,7 +46,7 @@ async fn main() -> Result<()> {
     let backend = CrosstermBackend::new(io::stdout());
     let terminal = Terminal::new(backend)?;
     let sz = terminal.size()?;
-    let tui = Tui::new(terminal);
+    let tui = ClientUI::new(terminal);
 
     let (tx, rx) = mpsc::channel(DEFAULT_CHANNEL_SIZE);
     let mut client = Client::new(tui, &cancel, tx.clone(), rx, sz, args.addr).await;

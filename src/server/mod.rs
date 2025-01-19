@@ -15,6 +15,8 @@ impl Heart7D {
     }
 }
 
+type RPCResult<T> = Result<T, tonic::Status>;
+
 #[tonic::async_trait]
 impl Heart7 for Heart7D {
     async fn new_room(

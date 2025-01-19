@@ -6,6 +6,7 @@ use crate::*;
 use crate::rule::*;
 use tokio::time;
 use tokio_util::sync::CancellationToken;
+use super::RPCResult;
 
 type ARoom = Arc<RwLock<Room>>;
 type MsgTX = Sender<Result<GameMsg, Status>>;

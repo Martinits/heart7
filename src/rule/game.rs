@@ -17,6 +17,17 @@ pub enum GameError {
     Internal(String),
 }
 
+impl From<GameError> for tonic::Status {
+    fn from(value: GameError) -> Self {
+        match value {
+            GameError::PermissionDenied(s) => Self::permission_denied(s),
+            GameError::NotFound(s) => Self::not_found(s),
+            GameError::AlreadyDone(s) => Self::already_exists(s),
+            GameError::Internal(s) => Self::internal(s),
+        }
+    }
+}
+
 pub type GameResult<T> = Result<T, GameError>;
 
 #[derive(Debug, Default, Clone)]

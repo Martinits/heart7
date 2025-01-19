@@ -8,7 +8,7 @@ use ratatui::{
 };
 use super::*;
 
-pub fn resize<B: Backend>(frame: &mut Frame<B>, sz: (u16, u16)) {
+pub fn blocked<B: Backend>(frame: &mut Frame<B>, sz: (u16, u16)) {
     let a = rect_cut_center(frame.size(), -5, -30);
 
     let style = Style::default().bold().fg(Color::White);

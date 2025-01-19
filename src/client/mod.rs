@@ -5,11 +5,10 @@ mod exit_handler;
 
 use crate::*;
 use crate::client::rpc::RpcClient;
-use crate::tui::ui;
 use tokio::sync::mpsc;
 use tokio_util::sync::CancellationToken;
 use ratatui::layout::Rect;
-use tui::tui::Tui;
+use ui::ClientUI;
 use tui_input::Input;
 use crate::rule::*;
 use std::panic;
@@ -102,7 +101,7 @@ pub enum ClientEvent {
 }
 
 pub struct Client {
-    tui: Tui,
+    cui: ClientUI,
     cancel: CancellationToken,
     state: ClientState,
     tx: mpsc::Sender<ClientEvent>,
@@ -115,7 +114,7 @@ pub struct Client {
 
 impl Client {
     pub async fn new(
-        tui: Tui,
+        cui: ClientUI,
         cancel: &CancellationToken,
         tx: mpsc::Sender<ClientEvent>,
         rx: mpsc::Receiver<ClientEvent>,
@@ -123,7 +122,7 @@ impl Client {
         default_addr: String,
     ) -> Self {
         Self {
-            tui,
+            cui,
             block_event: false,
             exitmenu: (false, 0),
             sz: (sz.width, sz.height),
@@ -141,7 +140,7 @@ impl Client {
     }
 
     pub fn init(&mut self) -> Result<()> {
-        self.tui.init(&self.cancel)?;
+        self.cui.init(&self.cancel)?;
         Ok(())
     }
 
@@ -244,17 +243,17 @@ impl Client {
     fn draw(&mut self) -> Result<()> {
         if self.sz.0 < 160 || self.sz.1 < 48 {
             self.block_event = true;
-            self.tui.draw(|frame| ui::resize(frame, self.sz))?;
+            self.cui.draw_blocked(self.sz)?;
         } else {
             self.block_event = false;
-            self.tui.draw(|frame| ui::render(frame, &mut self.state, self.exitmenu))?;
+            self.cui.draw(&mut self.state, self.exitmenu)?;
         }
         Ok(())
     }
 
     pub fn exit(&mut self) -> Result<()> {
         // self.cancel.cancel();
-        self.tui.exit()?;
+        self.cui.exit()?;
         Ok(())
     }
 }
