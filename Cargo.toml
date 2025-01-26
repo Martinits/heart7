@@ -1,6 +1,9 @@
 [workspace]
 members = [
-        "heart7_tui",
+        "client",
+        "server",
+        "client_tui",
         "client_wasm",
+        "rule",
 ]
 resolver = "2"
