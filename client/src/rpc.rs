@@ -1,21 +1,31 @@
 use crate::*;
-use tonic::transport::Channel;
 use tonic::codec::Streaming;
+
+#[cfg(not(target_arch = "wasm32"))]
+use tonic::transport::Channel;
+#[cfg(target_arch = "wasm32")]
+use tonic_web_wasm_client::Client;
 
 #[derive(Clone)]
 pub struct RpcClient {
+    #[cfg(not(target_arch = "wasm32"))]
     pub c: Heart7Client<Channel>,
+    #[cfg(target_arch = "wasm32")]
+    pub c: Heart7Client<Client>,
     pub addr: String,
 }
 
 pub type GameStream = Streaming<GameMsg>;
 
 impl RpcClient {
+    #[cfg(not(target_arch = "wasm32"))]
     pub fn new(c: Heart7Client<Channel>, addr: String) -> Self {
-        Self {
-            c,
-            addr,
-        }
+        Self { c, addr }
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    pub fn new(c: Heart7Client<Client>, addr: String) -> Self {
+        Self { c, addr }
     }
 
     pub fn get_addr(&self) -> String {
