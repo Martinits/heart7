@@ -1,6 +1,5 @@
 use crate::*;
 use rpc::{self, RpcClient};
-use tui_input::Input;
 
 impl ClientStateManager {
     pub fn handle_server_connect_result(&mut self, r: Result<RpcClient, String>) -> bool {

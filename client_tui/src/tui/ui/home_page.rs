@@ -6,7 +6,6 @@ use ratatui::{
     widgets::*,
     Frame
 };
-use tui_input::Input;
 use super::*;
 
 pub fn ui_home_page<B: Backend>(frame: &mut Frame<B>, input: Input, msg: String, connecting: bool) {

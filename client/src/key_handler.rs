@@ -1,5 +1,4 @@
 use crate::*;
-use tui_input::{Input, InputRequest};
 
 impl ClientStateManager {
     // return (redraw, spawn_rpc_client, spawn_stream_listener)
