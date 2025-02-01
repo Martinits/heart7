@@ -1,7 +1,6 @@
 use crate::*;
 use super::desk::*;
 use super::player::Player;
-use rand::{thread_rng, seq::SliceRandom};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -47,7 +46,7 @@ impl Game {
         self.players.push(Player::new(name));
     }
 
-    pub fn new_game(&mut self) -> GameResult<()> {
+    pub fn new_game(&mut self, cards: Vec<u32>) -> GameResult<()> {
         if self.players.len() != 4 {
             return Err(GameError::PermissionDenied("Player not enough!".into()))
         }
@@ -57,9 +56,6 @@ impl Game {
         }
 
         self.clear();
-
-        let mut cards: Vec<u32> = (0..=51).collect();
-        cards.shuffle(&mut thread_rng());
 
         for pi in 0..=3 {
             for c in &cards[pi*13 .. (pi+1)*13] {

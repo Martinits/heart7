@@ -5,6 +5,7 @@ use tokio::sync::mpsc::{self, Sender, Receiver};
 use crate::*;
 use tokio::time;
 use tokio_util::sync::CancellationToken;
+use rand::{rng, seq::SliceRandom};
 
 type ARoom = Arc<RwLock<Room>>;
 type MsgTX = Sender<Result<GameMsg, Status>>;
@@ -278,7 +279,10 @@ impl Room {
             error!("Room {} is not full or game has begun!", &self.id);
         }
  
-        self.game.new_game().unwrap_or_else(
+        let mut cards: Vec<u32> = (0..=51).collect();
+        cards.shuffle(&mut rng());
+
+        self.game.new_game(cards).unwrap_or_else(
             |e| error!("Cannot start game: {}", e)
         );
 
