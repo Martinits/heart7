@@ -6,7 +6,6 @@ use ratatui::{
     widgets::*,
     Frame
 };
-use tui_input::Input;
 use super::*;
 
 pub fn ui_ask_name<B: Backend>(frame: &mut Frame<B>, input: Input,

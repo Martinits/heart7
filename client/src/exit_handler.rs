@@ -1,5 +1,4 @@
 use crate::*;
-use tui_input::Input;
 
 pub enum ExitMenuEvent {
     Enter,

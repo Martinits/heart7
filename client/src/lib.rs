@@ -2,14 +2,14 @@ mod rpc;
 mod msg_handler;
 mod key_handler;
 mod exit_handler;
+mod input;
 
 pub use rpc::{RpcClient, GameStream};
-use tui_input::Input;
 use std::panic;
 pub use log::*;
-
-pub use tonic::{Code, transport::Server, Request, Response, Status};
+pub use tonic::{Code, Request, Response, Status};
 pub use heart7_rule::*;
+pub use input::*;
 
 pub type RPCResult<T> = Result<T, tonic::Status>;
 

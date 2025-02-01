@@ -857,7 +857,6 @@ dependencies = [
  "ratatui",
  "tokio",
  "tokio-util",
- "tui-input",
 ]
 
 [[package]]
@@ -866,10 +865,9 @@ version = "0.1.0"
 dependencies = [
  "heart7_rule",
  "log",
- "log4rs",
  "tonic",
  "tonic-web-wasm-client",
- "tui-input",
+ "unicode-width",
 ]
 
 [[package]]
@@ -1185,6 +1183,10 @@ dependencies = [
  "typemap-ors",
  "winapi",
 ]
+
+[[package]]
+name = "logging"
+version = "0.1.0"
 
 [[package]]
 name = "matchit"
@@ -2150,7 +2152,6 @@ version = "0.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b3e785f863a3af4c800a2a669d0b64c879b538738e352607e2624d03f868dc01"
 dependencies = [
- "crossterm 0.27.0",
  "unicode-width",
 ]
 

@@ -6,7 +6,6 @@ use ratatui::{
     widgets::*,
     Frame
 };
-use tui_input::Input;
 use super::*;
 
 pub fn ui_join_room<B: Backend>(frame: &mut Frame<B>, input: Input, msg: String) {
