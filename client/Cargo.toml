@@ -12,8 +12,11 @@ tonic = { version = "0.12", default-features = false, features = [
     "codegen",
 ] }
 heart7_rule = { path = "../rule" }
-log = "0.4.19"
 unicode-width = "0.1.10"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+log = "0.4.19"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 tonic-web-wasm-client = "0.6.0"
+gloo-console = "0.3.0"

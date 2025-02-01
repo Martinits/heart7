@@ -5,7 +5,6 @@ edition = "2021"
 
 [dependencies]
 tokio = { version = "1.0", features = ["full"] }
-log = "0.4.19"
 crossterm = { version = "0.27.0", features = ["event-stream"] }
 ratatui = { version = "0.22.0", features = ["all-widgets"]}
 tokio-util = "0.7.8"

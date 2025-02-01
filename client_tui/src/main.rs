@@ -7,7 +7,6 @@ use log4rs::append::file::FileAppender;
 use log4rs::config::{Appender, Config, Root};
 use clap::Parser;
 use anyhow::Result;
-pub use log::*;
 pub use ::heart7_client::*;
 use std::net::Ipv4Addr;
 

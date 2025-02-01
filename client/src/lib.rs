@@ -3,13 +3,16 @@ mod msg_handler;
 mod key_handler;
 mod exit_handler;
 mod input;
+mod logging;
 
 pub use rpc::{RpcClient, GameStream};
 use std::panic;
-pub use log::*;
 pub use tonic::{Code, Request, Response, Status};
 pub use heart7_rule::*;
 pub use input::*;
+
+#[cfg(not(target_arch = "wasm32"))]
+pub use logging::*;
 
 pub type RPCResult<T> = Result<T, tonic::Status>;
 
