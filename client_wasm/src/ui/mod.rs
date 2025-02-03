@@ -21,7 +21,7 @@ fn draw_rounded_rect(
     Ok(())
 }
 
-pub fn draw() -> JsResult<()> {
+fn draw_normal(cs: ClientState) -> JsResult<()> {
     let window = web_sys::window().unwrap();
     let canvas: HtmlCanvasElement = window
         .document()
@@ -40,11 +40,20 @@ pub fn draw() -> JsResult<()> {
     Ok(())
 }
 
-pub fn draw_blocked() -> JsResult<()> {
+fn draw_blocked(cs: ClientState) -> JsResult<()> {
     Ok(())
 }
 
 pub fn should_block() -> bool {
     // TODO: should_block
     false
+}
+
+pub fn draw(cs: ClientState) -> JsResult<()> {
+    if should_block() {
+        draw_blocked(cs)?;
+    } else {
+        draw_normal(cs)?;
+    }
+    Ok(())
 }

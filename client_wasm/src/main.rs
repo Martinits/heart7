@@ -135,12 +135,7 @@ impl ClientWasm {
     }
 
     fn draw(&mut self) -> JsResult<()> {
-        if should_block() {
-            draw_blocked()?;
-        } else {
-            draw()?;
-        }
-        Ok(())
+        Ok(draw(self.c.get_client_state())?)
     }
 
     fn cancel_stream_listener(&self) {
@@ -153,8 +148,6 @@ impl ClientWasm {
     }
 }
 
-
-#[wasm_bindgen(start)]
 fn main() {
     spawn_local(async move {
         let mut client = ClientWasm::new(format!("{}:{}", DEFAULT_IP, DEFAULT_PORT));

@@ -16,7 +16,5 @@ target/
 
 *.log
 
-.cargo
-
 client_wasm/pkg
 client_wasm/dist
