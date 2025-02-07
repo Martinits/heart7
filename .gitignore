@@ -18,3 +18,5 @@ target/
 
 client_wasm/pkg
 client_wasm/dist
+
+rule/Cargo.toml
