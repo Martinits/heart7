@@ -262,10 +262,20 @@ impl ClientStateManager {
                 input.handle(keycode);
                 true
             }
-            _ => {
-                false
-            }
+            _ => false,
         }
     }
 
+    pub fn handle_reset_input(&mut self, new_input: String) -> bool {
+        match self.state {
+            ClientStateInternal::GetServer { ref mut input, .. }
+            | ClientStateInternal::AskName { ref mut input, .. }
+            | ClientStateInternal::NewRoom { ref mut input, .. }
+            | ClientStateInternal::JoinRoom { ref mut input, .. } => {
+                *input = Input::new(new_input);
+                true
+            }
+            _ => false,
+        }
+    }
 }

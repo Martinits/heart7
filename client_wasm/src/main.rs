@@ -10,6 +10,8 @@ use tonic_web_wasm_client::Client;
 pub use ::heart7_client::*;
 use std::net::Ipv4Addr;
 use async_channel::{bounded, Sender, Receiver};
+use std::rc::Rc;
+use std::cell::RefCell;
 
 pub(crate) type JsResult<T> = Result<T, JsValue>;
 
@@ -35,15 +37,55 @@ fn build_client(addr: String) -> Result<RpcClient, String> {
     }
 }
 
-fn spawn_event_handler(tx: Sender<ClientEvent>) {
-    info!("Starting event handler...");
-    unimplemented!();
+fn spawn_event_handler(tx: Sender<ClientEvent>, csm: CSMType) -> JsResult<()> {
+    // canvas click event
+    info!("Starting canvas click handler...");
+    let txc = tx.clone();
+    let listener = gloo::events::EventListener::new(&get_canvas(), "click", move |e| {
+        let event = e.dyn_ref::<web_sys::MouseEvent>().unwrap_throw();
+        let rect = get_canvas().get_bounding_client_rect();
+        handle_click(
+            event.client_x() as f64 - rect.left(),
+            event.client_y() as f64 - rect.top(),
+            txc.clone(),
+            csm.borrow().get_client_state_brief(),
+        ).unwrap_throw();
+    });
+    listener.forget();
+
+    // hidden input input event
+    info!("Starting hidden input input handler...");
+    let txc = tx.clone();
+    let listener = gloo::events::EventListener::new(&get_hidden_input(), "input", move |_| {
+        let value = get_hidden_input().value();
+        let txcc = txc.clone();
+        spawn_local(async move {
+            txcc.send(ClientEvent::ResetInput(value)).await.unwrap();
+        });
+    });
+    listener.forget();
+
+    // hidden input blur event
+    info!("Starting hidden input blur handler...");
+    let txc = tx.clone();
+    let listener = gloo::events::EventListener::new(&get_hidden_input(), "blur", move |_| {
+        let value = get_hidden_input().value();
+        let txcc = txc.clone();
+        spawn_local(async move {
+            txcc.send(ClientEvent::ResetInput(value)).await.unwrap();
+        });
+    });
+    listener.forget();
+
+    Ok(())
 }
 
 struct StreamCancelToken;
 
+type CSMType = Rc<RefCell<ClientStateManager>>;
+
 struct ClientWasm {
-    c: ClientStateManager,
+    csm: CSMType,
     tx: Sender<ClientEvent>,
     rx: Receiver<ClientEvent>,
     stream_tx: Sender<StreamCancelToken>,
@@ -56,7 +98,7 @@ impl ClientWasm {
         let (stream_tx, stream_rx) = bounded(2);
 
         Self {
-            c: ClientStateManager::new(default_addr),
+            csm: Rc::new(RefCell::new(ClientStateManager::new(default_addr))),
             tx,
             rx,
             stream_tx,
@@ -98,7 +140,7 @@ impl ClientWasm {
     }
 
     pub async fn run(&mut self) -> JsResult<()> {
-        spawn_event_handler(self.tx.clone());
+        spawn_event_handler(self.tx.clone(), self.csm.clone())?;
 
         // draw first anyway
         self.draw()?;
@@ -109,7 +151,7 @@ impl ClientWasm {
                     break;
                 }
                 Ok(e) => {
-                    let reply = self.c.advance(e, should_block()).await;
+                    let reply = self.csm.borrow_mut().advance(e, should_block()).await;
                     if reply.full_exit {
                         // exit the "run" function only,
                         // the "exit" function will do the cancelling later.
@@ -135,7 +177,7 @@ impl ClientWasm {
     }
 
     fn draw(&mut self) -> JsResult<()> {
-        Ok(draw(self.c.get_client_state())?)
+        Ok(draw(self.csm.borrow().get_client_state())?)
     }
 
     fn cancel_stream_listener(&self) {

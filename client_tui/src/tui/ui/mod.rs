@@ -135,7 +135,6 @@ pub fn render<B: Backend>(frame: &mut Frame<B>, cs: ClientState) {
 
 // cut out the center of `org` with v and h
 // v and h: negative for fixed value, positive for percentage
-// num: how many aeras to cut, negative for vertical
 fn rect_cut_center(mut org: Rect, v: i16, h: i16) -> Rect {
     if v < 0 {
         let v = (-v) as u16;

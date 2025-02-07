@@ -10,8 +10,6 @@ use std::panic;
 pub use tonic::{Code, Request, Response, Status};
 pub use heart7_rule::*;
 pub use input::*;
-
-#[cfg(not(target_arch = "wasm32"))]
 pub use logging::*;
 
 pub type RPCResult<T> = Result<T, tonic::Status>;
@@ -19,6 +17,17 @@ pub type RPCResult<T> = Result<T, tonic::Status>;
 pub struct ClientState {
     pub exitmenu: (bool, u32),
     pub fsm: ClientStateMachine,
+}
+
+pub enum ClientStateMachineBrief {
+    GetServer,
+    AskName,
+    NewRoom,
+    JoinRoom,
+    WaitPlayer,
+    WaitReady,
+    Gaming,
+    GameResult,
 }
 
 pub enum ClientStateMachine {
@@ -188,6 +197,7 @@ pub enum ClientEvent {
     ServerConnectResult(Result<RpcClient, String>),
     StreamListenerSpawned,
     StreamMsg(GameMsg),
+    ResetInput(String),
 }
 
 #[derive(Default)]
@@ -274,6 +284,8 @@ impl ClientStateManager {
                     => self.handle_stream_msg(msg).await,
                 ClientEvent::StreamListenerSpawned
                     => self.handle_stream_listener_spawned(),
+                ClientEvent::ResetInput(new_input)
+                    => self.handle_reset_input(new_input),
                 _ => false,
             }
         } else {
@@ -310,6 +322,8 @@ impl ClientStateManager {
                     => self.handle_stream_msg(msg).await,
                 ClientEvent::StreamListenerSpawned
                     => self.handle_stream_listener_spawned(),
+                ClientEvent::ResetInput(new_input)
+                    => self.handle_reset_input(new_input),
                 _ => false,
             }
         };
@@ -323,6 +337,19 @@ impl ClientStateManager {
         ClientState {
             exitmenu: self.exitmenu.clone(),
             fsm: self.state.clone().into(),
+        }
+    }
+
+    pub fn get_client_state_brief(&self) -> ClientStateMachineBrief {
+        match self.state {
+            ClientStateInternal::GetServer{..} => ClientStateMachineBrief::GetServer,
+            ClientStateInternal::AskName{..} => ClientStateMachineBrief::AskName,
+            ClientStateInternal::NewRoom{..} => ClientStateMachineBrief::NewRoom,
+            ClientStateInternal::JoinRoom{..} => ClientStateMachineBrief::JoinRoom,
+            ClientStateInternal::WaitPlayer{..} => ClientStateMachineBrief::WaitPlayer,
+            ClientStateInternal::WaitReady{..} => ClientStateMachineBrief::WaitReady,
+            ClientStateInternal::Gaming{..} => ClientStateMachineBrief::Gaming,
+            ClientStateInternal::GameResult{..} => ClientStateMachineBrief::GameResult,
         }
     }
 }

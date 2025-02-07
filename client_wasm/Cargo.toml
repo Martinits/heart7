@@ -19,6 +19,9 @@ web-sys = { version = "0.3", features = [
         "MessageChannel",
         "MessagePort",
         "MouseEvent",
+        "DomRect",
+        "InputEvent",
+        "TextMetrics",
 ] }
 wee_alloc = "0.4.5"
 prost = "0.13"
