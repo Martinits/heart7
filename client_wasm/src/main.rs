@@ -20,6 +20,12 @@ pub const DEFAULT_PORT: u16 = 20007;
 
 pub const DEFAULT_CHANNEL_SIZE: usize = 64;
 
+pub fn spawn_tx_send(tx: Sender<ClientEvent>, payload: ClientEvent) {
+    spawn_local(async move {
+        tx.send(payload).await.unwrap();
+    });
+}
+
 fn build_client(addr: String) -> Result<RpcClient, String> {
     let (ip, port): (String, String) = match addr.find(':') {
         Some(i) => (addr[0..i].into(), addr[i+1..].into()),
@@ -43,10 +49,10 @@ fn spawn_event_handler(tx: Sender<ClientEvent>, csm: CSMType) -> JsResult<()> {
     let txc = tx.clone();
     let listener = gloo::events::EventListener::new(&get_canvas(), "click", move |e| {
         let event = e.dyn_ref::<web_sys::MouseEvent>().unwrap_throw();
-        let rect = get_canvas().get_bounding_client_rect();
+        let (left, top) = get_canvas_position();
         handle_click(
-            event.client_x() as f64 - rect.left(),
-            event.client_y() as f64 - rect.top(),
+            event.client_x() as f64 - left,
+            event.client_y() as f64 - top,
             txc.clone(),
             csm.borrow().get_client_state_brief(),
         ).unwrap_throw();
@@ -59,9 +65,7 @@ fn spawn_event_handler(tx: Sender<ClientEvent>, csm: CSMType) -> JsResult<()> {
     let listener = gloo::events::EventListener::new(&get_hidden_input(), "input", move |_| {
         let value = get_hidden_input().value();
         let txcc = txc.clone();
-        spawn_local(async move {
-            txcc.send(ClientEvent::ResetInput(value)).await.unwrap();
-        });
+        spawn_tx_send(txcc, ClientEvent::ResetInput(value));
     });
     listener.forget();
 
@@ -71,9 +75,7 @@ fn spawn_event_handler(tx: Sender<ClientEvent>, csm: CSMType) -> JsResult<()> {
     let listener = gloo::events::EventListener::new(&get_hidden_input(), "blur", move |_| {
         let value = get_hidden_input().value();
         let txcc = txc.clone();
-        spawn_local(async move {
-            txcc.send(ClientEvent::ResetInput(value)).await.unwrap();
-        });
+        spawn_tx_send(txcc, ClientEvent::ResetInput(value));
     });
     listener.forget();
 
@@ -90,6 +92,7 @@ struct ClientWasm {
     rx: Receiver<ClientEvent>,
     stream_tx: Sender<StreamCancelToken>,
     stream_rx: Receiver<StreamCancelToken>,
+    default_addr: String, // It's also the init value of the hidden_input
 }
 
 impl ClientWasm {
@@ -98,11 +101,12 @@ impl ClientWasm {
         let (stream_tx, stream_rx) = bounded(2);
 
         Self {
-            csm: Rc::new(RefCell::new(ClientStateManager::new(default_addr))),
+            csm: Rc::new(RefCell::new(ClientStateManager::new(default_addr.clone()))),
             tx,
             rx,
             stream_tx,
             stream_rx,
+            default_addr,
         }
     }
 
@@ -141,6 +145,7 @@ impl ClientWasm {
 
     pub async fn run(&mut self) -> JsResult<()> {
         spawn_event_handler(self.tx.clone(), self.csm.clone())?;
+        ui_init(self.default_addr.clone())?;
 
         // draw first anyway
         self.draw()?;

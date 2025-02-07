@@ -19,6 +19,11 @@ pub struct ClientState {
     pub fsm: ClientStateMachine,
 }
 
+pub struct ClientStateBrief {
+    pub exitmenu: (bool, u32),
+    pub fsm: ClientStateMachineBrief,
+}
+
 pub enum ClientStateMachineBrief {
     GetServer,
     AskName,
@@ -340,8 +345,8 @@ impl ClientStateManager {
         }
     }
 
-    pub fn get_client_state_brief(&self) -> ClientStateMachineBrief {
-        match self.state {
+    pub fn get_client_state_brief(&self) -> ClientStateBrief {
+        let fsm = match self.state {
             ClientStateInternal::GetServer{..} => ClientStateMachineBrief::GetServer,
             ClientStateInternal::AskName{..} => ClientStateMachineBrief::AskName,
             ClientStateInternal::NewRoom{..} => ClientStateMachineBrief::NewRoom,
@@ -350,6 +355,10 @@ impl ClientStateManager {
             ClientStateInternal::WaitReady{..} => ClientStateMachineBrief::WaitReady,
             ClientStateInternal::Gaming{..} => ClientStateMachineBrief::Gaming,
             ClientStateInternal::GameResult{..} => ClientStateMachineBrief::GameResult,
+        };
+        ClientStateBrief {
+            exitmenu: self.exitmenu.clone(),
+            fsm,
         }
     }
 }

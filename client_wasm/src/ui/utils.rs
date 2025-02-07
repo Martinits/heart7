@@ -15,6 +15,11 @@ pub fn get_canvas_dimension() -> (f64, f64) {
     (canvas.width() as f64, canvas.height() as f64)
 }
 
+pub fn get_canvas_position() -> (f64, f64) {
+    let canvas = get_canvas().get_bounding_client_rect();
+    (canvas.left(), canvas.top())
+}
+
 pub fn get_canvas_rect() -> Rect {
     let (w, h) = get_canvas_dimension();
     Rect {
@@ -228,6 +233,12 @@ impl Rect {
     pub fn cut_border_fixed_equal<T: Copy + Into<f64>>(&self, b: T) -> Rect {
         self.cut_border_fixed(b, b)
     }
+
+    pub fn is_clicked_in<T: Copy + Into<f64>>(&self, x: T, y:T) -> bool {
+        let x = x.into();
+        let y = y.into();
+        self.x <= x && x <= self.x + self.w && self.y <= y && y <= self.y + self.h
+    }
 }
 
 pub fn draw_outer_border() {
@@ -235,7 +246,7 @@ pub fn draw_outer_border() {
 }
 
 pub fn draw_button(rect: &Rect, msg: &str, selected: bool) {
-    warn!("draw button at {:?}", rect);
+    // warn!("draw button {} at {:?}", msg, rect);
     let color = if selected {
         BUTTON
     } else {
@@ -291,8 +302,12 @@ pub fn get_text_metric(t: &str) -> (f64, f64) {
     (metrics.width(), h)
 }
 
-pub fn get_text_yoff(t: &str) -> f64 {
+pub fn get_text_ascent(t: &str) -> f64 {
     get_canvas_ctx().measure_text(t).unwrap_throw().actual_bounding_box_ascent()
+}
+
+pub fn get_text_descent(t: &str) -> f64 {
+    get_canvas_ctx().measure_text(t).unwrap_throw().actual_bounding_box_descent()
 }
 
 // draw multiline text in center, with respect to the top line
@@ -313,7 +328,7 @@ pub fn draw_paragraph(rect: &Rect, t: &str) {
 
     let h = tm.iter().map(|(_, h)| *h).collect::<Vec<_>>();
 
-    let mut yoff = get_text_yoff(t.lines().next().unwrap_throw());
+    let mut yoff = get_text_ascent(t.lines().next().unwrap_throw());
     for (line, h) in t.lines().zip(h) {
         if rect.h < yoff {
             warn!("Try to draw text with height {} inside rect with height {}", yoff, rect.h);
@@ -339,16 +354,28 @@ pub fn draw_text_oneline_center(rect: &Rect, t: &str) {
 
 // draw text oneline with respect to the bottom line
 pub fn draw_text_oneline(rect: &Rect, t: &str) {
+    let metrics = get_canvas_ctx().measure_text(t).unwrap_throw();
+    let descent = metrics.actual_bounding_box_descent();
+
+    draw_text_oneline_with_descent(rect, t, descent);
+}
+
+fn draw_text_oneline_with_descent(rect: &Rect, t: &str, descent: f64) {
     let ctx = get_canvas_ctx();
     ctx.set_font(&get_font());
 
     let metrics = ctx.measure_text(t).unwrap_throw();
-    let yoff = metrics.actual_bounding_box_descent();
-
     let w = metrics.width();
     if w > rect.w {
         warn!("Try to draw text with width {} inside rect with width {}", w, rect.w);
     }
+    ctx.fill_text(t, rect.x, rect.y + rect.h - descent).unwrap_throw();
+}
 
-    ctx.fill_text(t, rect.x, rect.y + rect.h - yoff).unwrap_throw();
+pub fn get_ascii_max_descent() -> f64 {
+    get_text_descent("1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+}
+
+pub fn draw_input_text(rect: &Rect, t: &str) {
+    draw_text_oneline_with_descent(rect, t, get_ascii_max_descent());
 }

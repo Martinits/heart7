@@ -7,60 +7,67 @@ pub fn ui_prompt_window(
     input_selected: bool,
     buttons: Vec<(String, bool)>, // msg, selected
 ) {
-    let win_rect = get_canvas_rect().center_cut(Percent(80), Percent(70));
-    draw_rounded_rect(&win_rect, BORDER_NORMAL);
+    // let win_rect = get_canvas_rect().center_cut(Percent(80), Percent(70));
+    draw_rounded_rect(&PROMPT_WINDOW, BORDER_NORMAL);
 
-    let slices = win_rect.cut_height([
-        Percent(20),
-        Percent(15),
-        Percent(20),
-        Percent(10),
-        Percent(10),
-    ]);
+    // let slices = win_rect.cut_height([
+    //     Percent(20),
+    //     Percent(15),
+    //     Percent(20),
+    //     Percent(10),
+    //     Percent(10),
+    // ]);
 
-    draw_paragraph(&slices[1], &msg);
+    draw_paragraph(&PROMPT_MSG, &msg);
 
     let input_color = if input_selected {
         INPUT_BORDER
     } else {
         INPUT_BORDER_BLOCK
     };
-    draw_input(&slices[2].center_cut_width(Percent(60)), input, input_title, input_color);
+    // draw_input(&slices[2].center_cut_width(Percent(60)), input, input_title, input_color);
+    draw_input(input, input_title, input_color);
 
     if buttons.len() == 1 {
-        draw_button(&slices[4].center_cut_width(Percent(20)), &buttons[0].0, buttons[0].1);
+        // draw_button(&slices[4].center_cut_width(Percent(20)), &buttons[0].0, buttons[0].1);
+        draw_button(&HOME_PAGE_BUTTON_GO, &buttons[0].0, buttons[0].1);
     } else if buttons.len() == 2 {
-        let slices = &slices[4].cut_width([
-            Percent(25),
-            Percent(20),
-            Percent(15),
-            Percent(20),
-            Percent(25),
-        ]);
-        draw_button(&slices[1], &buttons[0].0, buttons[0].1);
-        draw_button(&slices[3], &buttons[1].0, buttons[1].1);
+        unimplemented!();
+        // let slices = &slices[4].cut_width([
+        //     Percent(25),
+        //     Percent(20),
+        //     Percent(15),
+        //     Percent(20),
+        //     Percent(25),
+        // ]);
+        // draw_button(&slices[1], &buttons[0].0, buttons[0].1);
+        // draw_button(&slices[3], &buttons[1].0, buttons[1].1);
     }
 }
 
-fn draw_input(rect: &Rect, input: String, input_title: String, input_color: &str) {
-    let (_, input_text_h) = get_text_metric(&input);
-    let input_h = input_text_h * 3.2;
+// fn draw_input(rect: &Rect, input: String, input_title: String, input_color: &str) {
+fn draw_input(input: String, input_title: String, input_color: &str) {
+    // PROMPT_INPUT
+    // let (_, input_text_h) = get_text_metric(input);
+    // let input_h = input_text_h * 2.8;
+    // let input_rect = rect.center_cut_height(Fixed(input_h));
+    // warn!("input_rect {:?}", input_rect);
 
-    let input_rect = rect.center_cut_height(Fixed(input_h));
-    draw_rect(&input_rect, input_color);
+    draw_rect(&PROMPT_INPUT, input_color);
 
-    let input_text_rect = input_rect.cut_border(Percent(2.0), Fixed(input_text_h * 1.0));
-    draw_text_oneline(&input_text_rect, &input);
+    // border height = input_text_h * 0.8
+    let input_text_rect = PROMPT_INPUT.cut_border(Percent(2.0), Percent(0.9/2.8 * 100f64));
+    draw_input_text(&input_text_rect, &input);
 
     let (title_w, title_h) = get_text_metric(&input_title);
-    let h = input_h + title_h / 2f64;
-    if rect.h < h {
-        warn!("Try to draw_input of height {} inside rect of height {}", rect.h, h);
-    }
+    // let h = PROMPT_INPUT.h + title_h / 2f64;
+    // if rect.h < h {
+    //     warn!("Try to draw_input of height {} inside rect of height {}", rect.h, h);
+    // }
 
     let title_rect = Rect {
-        x: input_rect.x + input_rect.width_slice(Percent(3)),
-        y: input_rect.y - title_h * 0.5,
+        x: PROMPT_INPUT.x + PROMPT_INPUT.width_slice(Percent(3)),
+        y: PROMPT_INPUT.y - title_h * 0.5,
         w: title_w,
         h: title_h,
     };

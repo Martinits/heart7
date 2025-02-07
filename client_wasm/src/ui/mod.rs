@@ -10,6 +10,7 @@ mod game_result;
 mod card;
 mod desk;
 mod exit_menu;
+mod layout;
 
 use crate::*;
 pub(crate) use color::*;
@@ -25,6 +26,7 @@ pub(crate) use wait::*;
 pub(crate) use gaming::*;
 pub(crate) use game_result::*;
 pub(crate) use exit_menu::*;
+pub(crate) use layout::*;
 
 fn draw_normal(cs: ClientState) -> JsResult<()> {
     draw_esc_button()?;
@@ -140,5 +142,12 @@ pub fn draw(cs: ClientState) -> JsResult<()> {
         draw_normal(cs)?;
     }
 
+    Ok(())
+}
+
+pub fn ui_init(init_input_value: String) -> JsResult<()> {
+    let hidden_input = get_hidden_input();
+    hidden_input.set_value(&init_input_value);
+    hidden_input.blur()?;
     Ok(())
 }
