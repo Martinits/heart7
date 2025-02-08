@@ -19,17 +19,34 @@ pub type GameStream = Streaming<GameMsg>;
 
 impl RpcClient {
     #[cfg(not(target_arch = "wasm32"))]
-    pub fn new(c: Heart7Client<Channel>, addr: String) -> Self {
-        Self { c, addr }
+    pub async fn new(c: Heart7Client<Channel>, addr: String) -> RPCResult<Self> {
+        let mut rpcclient = Self { c, addr };
+        rpcclient.hello().await?;
+        Ok(rpcclient)
     }
 
     #[cfg(target_arch = "wasm32")]
-    pub fn new(c: Heart7Client<Client>, addr: String) -> Self {
-        Self { c, addr }
+    pub async fn new(c: Heart7Client<Client>, addr: String) -> RPCResult<Self> {
+        let mut rpcclient = Self { c, addr };
+        rpcclient.hello().await?;
+        Ok(rpcclient)
     }
 
     pub fn get_addr(&self) -> String {
         self.addr.clone()
+    }
+
+    pub async fn hello(&mut self) -> RPCResult<()> {
+        let r = self.c.hello(EmptyRequest{}).await?.into_inner();
+        if r.success {
+            assert!(r.msg == "Hello!");
+            Ok(())
+        } else {
+            Err(Status::new(
+                Code::Internal,
+                format!("Server response false when hello, {}", r.msg)
+            ).into())
+        }
     }
 
     pub async fn new_room(&mut self, name: String) -> RPCResult<()> {

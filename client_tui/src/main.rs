@@ -106,7 +106,7 @@ impl ClientTui {
                 } else {
                     let url = format!("http://{}", &addr);
                     match Heart7Client::connect(url).await {
-                        Ok(c) => Ok(RpcClient::new(c, addr)),
+                        Ok(c) => RpcClient::new(c, addr).await.map_err(|e| format!("{}", e)),
                         Err(e) => Err(e.to_string()),
                     }
                 }

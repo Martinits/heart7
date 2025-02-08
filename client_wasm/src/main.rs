@@ -26,7 +26,7 @@ pub fn spawn_tx_send(tx: Sender<ClientEvent>, payload: ClientEvent) {
     });
 }
 
-fn build_client(addr: String) -> Result<RpcClient, String> {
+async fn build_client(addr: String) -> Result<RpcClient, String> {
     let (ip, port): (String, String) = match addr.find(':') {
         Some(i) => (addr[0..i].into(), addr[i+1..].into()),
         None => ("".into(), "".into())
@@ -39,7 +39,9 @@ fn build_client(addr: String) -> Result<RpcClient, String> {
     } else {
         let url = format!("http://{}", &addr);
         let web_client = Client::new(url);
-        Ok(RpcClient::new(Heart7Client::new(web_client), addr))
+        RpcClient::new(Heart7Client::new(web_client), addr).await.map_err(
+            |e| format!("{}", e)
+        )
     }
 }
 
@@ -137,7 +139,7 @@ impl ClientWasm {
     fn spawn_rpc_client(&mut self, addr: String) {
         let txc = self.tx.clone();
         spawn_local(async move {
-            let c = build_client(addr);
+            let c = build_client(addr).await;
             txc.send(ClientEvent::ServerConnectResult(c))
                 .await.expect("Send Action::ServerConnectResult to client");
         });

@@ -18,6 +18,18 @@ impl Heart7D {
 
 #[tonic::async_trait]
 impl Heart7 for Heart7D {
+    async fn hello(
+        &self,
+        request: Request<EmptyRequest>,
+    ) -> Result<Response<CommonReply>, Status> {
+        info!("Got Hello request: {:?}", request);
+
+        Ok(Response::new(CommonReply{
+            success: true,
+            msg: "Hello!".into(),
+        }))
+    }
+
     async fn new_room(
         &self,
         request: Request<NewRoomReq>,
