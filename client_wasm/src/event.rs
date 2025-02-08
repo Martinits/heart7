@@ -106,7 +106,7 @@ fn handle_click_new_room(x: f64, y: f64, tx: Sender<ClientEvent>) -> JsResult<()
 }
 
 fn handle_click_join_room(x: f64, y: f64, tx: Sender<ClientEvent>) -> JsResult<()> {
-    Ok(())
+    handle_click_prompt_single_button(x, y, tx)
 }
 
 fn handle_click_wait_player(x: f64, y: f64, tx: Sender<ClientEvent>) -> JsResult<()> {

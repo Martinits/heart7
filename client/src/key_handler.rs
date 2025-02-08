@@ -53,7 +53,7 @@ impl ClientStateManager {
                             input: Input::new(input.value().into()),
                             msg: format!("Hello, {}!\n\
                                     Successfully created a room, ID is shown below.\n\
-                                    Please press ENTER to join room:", name),
+                                    Please press the button to join room:", name),
                             name: name.clone(),
                         };
                         self.exitmenu.1 = 0;
