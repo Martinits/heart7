@@ -1,6 +1,6 @@
 use super::*;
 
-pub fn ui_prompt_window(
+fn ui_prompt_window(
     input: String,
     input_title: String,
     msg: String,
@@ -89,5 +89,35 @@ pub fn ui_home_page(input: Input, msg: String, connecting: bool) {
         msg,
         !connecting,
         [("GO!".into(), !connecting)].to_vec(),
+    );
+}
+
+pub fn ui_ask_name(input: Input, msg: String, is_input: bool) {
+    ui_prompt_window(
+        input.into(),
+        "Nickname".into(),
+        msg,
+        is_input,
+        vec![("New Room".into(), true), ("Join Room".into(), true)],
+    );
+}
+
+pub fn ui_new_room(input: Input, msg: String) {
+    ui_prompt_window(
+        input.into(),
+        "Room ID".into(),
+        msg,
+        true,
+        [("Create Room!".into(), true)].to_vec(),
+    );
+}
+
+pub fn ui_join_room(input: Input, msg: String) {
+    ui_prompt_window(
+        input.into(),
+        "Room ID".into(),
+        msg,
+        true,
+        [("Join Room!".into(), true)].to_vec(),
     );
 }
