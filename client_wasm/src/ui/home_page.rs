@@ -29,7 +29,9 @@ pub fn ui_prompt_window(
     draw_input(input, input_title, input_color);
 
     if buttons.len() == 1 {
-        // draw_button(&slices[4].center_cut_width(Percent(20)), &buttons[0].0, buttons[0].1);
+        // let r = &slices[4].center_cut_width(Percent(23));
+        // warn!("Rect {:?}", r);
+        // draw_button(r, &buttons[0].0, buttons[0].1);
         draw_button(&PROMPT_BUTTON_1, &buttons[0].0, buttons[0].1);
     } else if buttons.len() == 2 {
         // let slices = &slices[4].cut_width([

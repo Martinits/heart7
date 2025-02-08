@@ -102,7 +102,7 @@ fn handle_click_ask_name(x: f64, y: f64, tx: Sender<ClientEvent>, button: u16, i
 }
 
 fn handle_click_new_room(x: f64, y: f64, tx: Sender<ClientEvent>) -> JsResult<()> {
-    Ok(())
+    handle_click_prompt_single_button(x, y, tx)
 }
 
 fn handle_click_join_room(x: f64, y: f64, tx: Sender<ClientEvent>) -> JsResult<()> {
