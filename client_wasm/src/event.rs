@@ -8,10 +8,12 @@ pub fn handle_click(
     tx: Sender<ClientEvent>,
     csbrief: ClientStateBrief,
 ) -> JsResult<()> {
-    // log!("Clicked! {}, {}", x, y);
-    if csbrief.exitmenu.0 {
-        handle_click_exit_menu(csbrief.fsm, x, y, tx)?;
-    } else if !handle_click_esc_button(x, y, tx.clone())? {
+    // warn!("Clicked! {}, {}", x, y);
+    if handle_click_esc_button(x, y, tx.clone())? {
+        // pass
+    } else if csbrief.exitmenu.0 {
+        handle_click_exit_menu(get_button_num_from_brief(&csbrief), csbrief.exitmenu.1, x, y, tx)?;
+    } else {
         match csbrief.fsm {
             ClientStateMachineBrief::GetServer => handle_click_get_server(x, y, tx)?,
             ClientStateMachineBrief::AskName => handle_click_ask_name(x, y, tx)?,
@@ -28,15 +30,38 @@ pub fn handle_click(
 }
 
 fn handle_click_exit_menu(
-    fsm: ClientStateMachineBrief,
+    button_num: u32, which: u32,
     x: f64, y: f64, tx: Sender<ClientEvent>,
 ) -> JsResult<()> {
+    let mut buttons = match button_num {
+        2 => EM_BUTTON_2.iter(),
+        3 => EM_BUTTON_3.iter(),
+        4 => EM_BUTTON_4.iter(),
+        _ => panic!("Invalid buttom nums!"),
+    };
+    if let Some(clicked) = buttons.position(|b| b.is_clicked_in(x, y)) {
+        let dis = clicked as i32 - which as i32;
+        let e = if dis > 0 {
+            ClientEvent::DownArrow
+        } else {
+            ClientEvent::UpArrow
+        };
+        let mut payload = vec![e; dis.abs() as usize];
+        payload.push(ClientEvent::Enter);
+        spawn_tx_send_multiple(tx, payload);
+    }
     Ok(())
 }
 
 // return true if handled as esc button
 fn handle_click_esc_button(x: f64, y: f64, tx: Sender<ClientEvent>) -> JsResult<bool> {
-    Ok(false)
+    let ret = if ESC_BUTTON.is_clicked_in(x, y) {
+        spawn_tx_send(tx, ClientEvent::Esc);
+        true
+    } else {
+        false
+    };
+    Ok(ret)
 }
 
 fn handle_click_get_server(x: f64, y: f64, tx: Sender<ClientEvent>) -> JsResult<()> {

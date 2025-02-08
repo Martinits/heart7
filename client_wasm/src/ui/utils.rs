@@ -257,8 +257,8 @@ pub fn draw_button(rect: &Rect, msg: &str, selected: bool) {
     draw_text_oneline_center(&rect, msg);
 }
 
-pub fn draw_esc_button() -> JsResult<()> {
-    Ok(())
+pub fn draw_esc_button() {
+    draw_button(&ESC_BUTTON, "ESC", true);
 }
 
 pub fn draw_rect(rect: &Rect, color: &str) {
@@ -354,22 +354,15 @@ pub fn draw_text_oneline_center(rect: &Rect, t: &str) {
 
 // draw text oneline with respect to the bottom line
 pub fn draw_text_oneline(rect: &Rect, t: &str) {
-    let metrics = get_canvas_ctx().measure_text(t).unwrap_throw();
-    let descent = metrics.actual_bounding_box_descent();
-
-    draw_text_oneline_with_descent(rect, t, descent);
+    draw_text_oneline_with_descent(rect, t, get_text_descent(t));
 }
 
 fn draw_text_oneline_with_descent(rect: &Rect, t: &str, descent: f64) {
-    let ctx = get_canvas_ctx();
-    ctx.set_font(&get_font());
-
-    let metrics = ctx.measure_text(t).unwrap_throw();
-    let w = metrics.width();
+    let w = get_text_metric(t).0;
     if w > rect.w {
         warn!("Try to draw text with width {} inside rect with width {}", w, rect.w);
     }
-    ctx.fill_text(t, rect.x, rect.y + rect.h - descent).unwrap_throw();
+    get_canvas_ctx().fill_text(t, rect.x, rect.y + rect.h - descent).unwrap_throw();
 }
 
 pub fn get_ascii_max_descent() -> f64 {

@@ -21,8 +21,14 @@ pub const DEFAULT_PORT: u16 = 20007;
 pub const DEFAULT_CHANNEL_SIZE: usize = 64;
 
 pub fn spawn_tx_send(tx: Sender<ClientEvent>, payload: ClientEvent) {
+    spawn_tx_send_multiple(tx, vec![payload]);
+}
+
+pub fn spawn_tx_send_multiple(tx: Sender<ClientEvent>, payload: Vec<ClientEvent>) {
     spawn_local(async move {
-        tx.send(payload).await.unwrap();
+        for p in payload {
+            tx.send(p).await.unwrap();
+        }
     });
 }
 

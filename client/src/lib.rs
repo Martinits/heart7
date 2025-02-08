@@ -186,6 +186,7 @@ impl Into<ClientStateMachine> for ClientStateInternal {
     }
 }
 
+#[derive(Clone)]
 pub enum ClientEvent {
     Enter,
     LeftArrow,
@@ -360,5 +361,23 @@ impl ClientStateManager {
             exitmenu: self.exitmenu.clone(),
             fsm,
         }
+    }
+}
+
+pub fn get_button_num(cs: &ClientState) -> u32 {
+    match cs.fsm {
+        ClientStateMachine::GetServer {..} | ClientStateMachine::AskName {..}
+        | ClientStateMachine::JoinRoom {..} | ClientStateMachine::NewRoom { .. } => 2,
+        ClientStateMachine::WaitPlayer {..} | ClientStateMachine::WaitReady {..} => 3,
+        ClientStateMachine::Gaming {..} | ClientStateMachine::GameResult {..} => 4,
+    }
+}
+
+pub fn get_button_num_from_brief(cs: &ClientStateBrief) -> u32 {
+    match cs.fsm {
+        ClientStateMachineBrief::GetServer {..} | ClientStateMachineBrief::AskName {..}
+        | ClientStateMachineBrief::JoinRoom {..} | ClientStateMachineBrief::NewRoom { .. } => 2,
+        ClientStateMachineBrief::WaitPlayer {..} | ClientStateMachineBrief::WaitReady {..} => 3,
+        ClientStateMachineBrief::Gaming {..} | ClientStateMachineBrief::GameResult {..} => 4,
     }
 }

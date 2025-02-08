@@ -29,16 +29,10 @@ pub(crate) use exit_menu::*;
 pub(crate) use layout::*;
 
 fn draw_normal(cs: ClientState) -> JsResult<()> {
-    draw_esc_button()?;
+    draw_esc_button();
 
     if cs.exitmenu.0 {
-        let button_num = match cs.fsm {
-            ClientStateMachine::GetServer {..} | ClientStateMachine::AskName {..}
-            | ClientStateMachine::JoinRoom {..} | ClientStateMachine::NewRoom { .. } => 2,
-            ClientStateMachine::WaitPlayer {..} | ClientStateMachine::WaitReady {..} => 3,
-            ClientStateMachine::Gaming {..} | ClientStateMachine::GameResult {..} => 4,
-        };
-        ui_exit_menu(button_num, cs.exitmenu.1);
+        ui_exit_menu(get_button_num(&cs));
     } else {
         match cs.fsm {
             ClientStateMachine::GetServer {connecting, input, msg}
@@ -146,8 +140,13 @@ pub fn draw(cs: ClientState) -> JsResult<()> {
 }
 
 pub fn ui_init(init_input_value: String) -> JsResult<()> {
+    // hiddent input init
     let hidden_input = get_hidden_input();
     hidden_input.set_value(&init_input_value);
     hidden_input.blur()?;
+
+    // font init
+    get_canvas_ctx().set_font(&get_font());
+
     Ok(())
 }

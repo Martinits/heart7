@@ -33,8 +33,6 @@ use ratatui::{
 };
 
 pub fn render<B: Backend>(frame: &mut Frame<B>, cs: ClientState) {
-    let ClientState { fsm, exitmenu: exit } = cs;
-
     // outer border
     frame.render_widget(
         Block::default()
@@ -44,16 +42,10 @@ pub fn render<B: Backend>(frame: &mut Frame<B>, cs: ClientState) {
         frame.size(),
     );
 
-    if exit.0 {
-        let button_num = match fsm {
-            ClientStateMachine::GetServer {..} | ClientStateMachine::AskName {..}
-            | ClientStateMachine::JoinRoom {..} | ClientStateMachine::NewRoom { .. } => 2,
-            ClientStateMachine::WaitPlayer {..} | ClientStateMachine::WaitReady {..} => 3,
-            ClientStateMachine::Gaming {..} | ClientStateMachine::GameResult {..} => 4,
-        };
-        render_exit_menu(frame, button_num, exit.1);
+    if cs.exitmenu.0 {
+        render_exit_menu(frame, get_button_num(&cs), cs.exitmenu.1);
     } else {
-        match fsm {
+        match cs.fsm {
             ClientStateMachine::GetServer {connecting, input, msg}
                 => ui_home_page(frame, input, msg, connecting),
             ClientStateMachine::AskName {input, msg, button, is_input, ..}
