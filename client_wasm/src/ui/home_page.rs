@@ -30,18 +30,22 @@ pub fn ui_prompt_window(
 
     if buttons.len() == 1 {
         // draw_button(&slices[4].center_cut_width(Percent(20)), &buttons[0].0, buttons[0].1);
-        draw_button(&HOME_PAGE_BUTTON_GO, &buttons[0].0, buttons[0].1);
+        draw_button(&PROMPT_BUTTON_1, &buttons[0].0, buttons[0].1);
     } else if buttons.len() == 2 {
-        unimplemented!();
         // let slices = &slices[4].cut_width([
         //     Percent(25),
         //     Percent(20),
-        //     Percent(15),
+        //     Percent(10),
         //     Percent(20),
         //     Percent(25),
         // ]);
-        // draw_button(&slices[1], &buttons[0].0, buttons[0].1);
-        // draw_button(&slices[3], &buttons[1].0, buttons[1].1);
+        // warn!("Rect {:?}", &slices[1]);
+        // warn!("Rect {:?}", &slices[3]);
+
+        draw_button(&PROMPT_BUTTON_2[0], &buttons[0].0, buttons[0].1);
+        draw_button(&PROMPT_BUTTON_2[1], &buttons[1].0, buttons[1].1);
+    } else {
+        panic!("Invalid button number!");
     }
 }
 

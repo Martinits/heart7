@@ -6,7 +6,7 @@ use tonic::transport::Channel;
 #[cfg(target_arch = "wasm32")]
 use tonic_web_wasm_client::Client;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct RpcClient {
     #[cfg(not(target_arch = "wasm32"))]
     pub c: Heart7Client<Channel>,

@@ -35,14 +35,22 @@ fn draw_normal(cs: ClientState) -> JsResult<()> {
         ui_exit_menu(get_button_num(&cs));
     } else {
         match cs.fsm {
-            ClientStateMachine::GetServer {connecting, input, msg}
-                => ui_home_page(input, msg, connecting),
-            ClientStateMachine::AskName {input, msg, button, is_input, ..}
-                => ui_ask_name(input, msg, button, is_input),
-            ClientStateMachine::NewRoom { input, msg, ..}
-                => ui_new_room(input, msg),
-            ClientStateMachine::JoinRoom {input, msg, ..}
-                => ui_join_room(input, msg),
+            ClientStateMachine::GetServer {connecting, input, msg} => {
+                reset_hidden_input(input.value());
+                ui_home_page(input, msg, connecting);
+            }
+            ClientStateMachine::AskName {input, msg, is_input, ..} => {
+                reset_hidden_input(input.value());
+                ui_ask_name(input, msg, is_input);
+            }
+            ClientStateMachine::NewRoom { input, msg, ..} => {
+                reset_hidden_input(input.value());
+                ui_new_room(input, msg);
+            }
+            ClientStateMachine::JoinRoom {input, msg, ..} => {
+                reset_hidden_input(input.value());
+                ui_join_room(input, msg);
+            }
             ClientStateMachine::WaitPlayer {players, msg, roomid, ..}
                 => ui_wait_player(players, msg, roomid),
             ClientStateMachine::WaitReady {players, msg, roomid, ..}
@@ -141,12 +149,16 @@ pub fn draw(cs: ClientState) -> JsResult<()> {
 
 pub fn ui_init(init_input_value: String) -> JsResult<()> {
     // hiddent input init
-    let hidden_input = get_hidden_input();
-    hidden_input.set_value(&init_input_value);
-    hidden_input.blur()?;
+    // let hidden_input = get_hidden_input();
+    // hidden_input.set_value(&init_input_value);
+    get_hidden_input().blur()?;
 
     // font init
     get_canvas_ctx().set_font(&get_font());
 
     Ok(())
+}
+
+pub fn reset_hidden_input(new_value: &str) {
+    get_hidden_input().set_value(&new_value);
 }

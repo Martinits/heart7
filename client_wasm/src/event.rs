@@ -16,7 +16,8 @@ pub fn handle_click(
     } else {
         match csbrief.fsm {
             ClientStateMachineBrief::GetServer => handle_click_get_server(x, y, tx)?,
-            ClientStateMachineBrief::AskName => handle_click_ask_name(x, y, tx)?,
+            ClientStateMachineBrief::AskName{button, is_input}
+                => handle_click_ask_name(x, y, tx, button, is_input)?,
             ClientStateMachineBrief::NewRoom => handle_click_new_room(x, y, tx)?,
             ClientStateMachineBrief::JoinRoom => handle_click_join_room(x, y, tx)?,
             ClientStateMachineBrief::WaitPlayer => handle_click_wait_player(x, y, tx)?,
@@ -64,19 +65,39 @@ fn handle_click_esc_button(x: f64, y: f64, tx: Sender<ClientEvent>) -> JsResult<
     Ok(ret)
 }
 
-fn handle_click_get_server(x: f64, y: f64, tx: Sender<ClientEvent>) -> JsResult<()> {
+fn handle_click_prompt_single_button(x: f64, y: f64, tx: Sender<ClientEvent>) -> JsResult<()> {
     if PROMPT_INPUT.is_clicked_in(x, y) {
         get_hidden_input().focus()?;
     } else {
         get_hidden_input().blur()?;
-        if HOME_PAGE_BUTTON_GO.is_clicked_in(x, y) {
+        if PROMPT_BUTTON_1.is_clicked_in(x, y) {
             spawn_tx_send(tx, ClientEvent::Enter);
         }
     }
     Ok(())
 }
 
-fn handle_click_ask_name(x: f64, y: f64, tx: Sender<ClientEvent>) -> JsResult<()> {
+fn handle_click_get_server(x: f64, y: f64, tx: Sender<ClientEvent>) -> JsResult<()> {
+    handle_click_prompt_single_button(x, y, tx)
+}
+
+fn handle_click_ask_name(x: f64, y: f64, tx: Sender<ClientEvent>, button: u16, is_input: bool) -> JsResult<()> {
+    if PROMPT_INPUT.is_clicked_in(x, y) {
+        get_hidden_input().focus()?;
+    } else {
+        get_hidden_input().blur()?;
+        if let Some(clicked) = PROMPT_BUTTON_2.iter().position(|b| b.is_clicked_in(x, y)) {
+            let mut payload = vec![];
+            if is_input {
+                payload.push(ClientEvent::DownArrow);
+            }
+            if clicked != button as usize {
+                payload.push(ClientEvent::LeftArrow);
+            }
+            payload.push(ClientEvent::Enter);
+            spawn_tx_send_multiple(tx, payload);
+        }
+    }
     Ok(())
 }
 

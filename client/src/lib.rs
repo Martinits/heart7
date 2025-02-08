@@ -26,7 +26,10 @@ pub struct ClientStateBrief {
 
 pub enum ClientStateMachineBrief {
     GetServer,
-    AskName,
+    AskName {
+        button: u16,
+        is_input: bool,
+    },
     NewRoom,
     JoinRoom,
     WaitPlayer,
@@ -186,7 +189,7 @@ impl Into<ClientStateMachine> for ClientStateInternal {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum ClientEvent {
     Enter,
     LeftArrow,
@@ -349,7 +352,8 @@ impl ClientStateManager {
     pub fn get_client_state_brief(&self) -> ClientStateBrief {
         let fsm = match self.state {
             ClientStateInternal::GetServer{..} => ClientStateMachineBrief::GetServer,
-            ClientStateInternal::AskName{..} => ClientStateMachineBrief::AskName,
+            ClientStateInternal::AskName{button, is_input, ..}
+                => ClientStateMachineBrief::AskName{button, is_input},
             ClientStateInternal::NewRoom{..} => ClientStateMachineBrief::NewRoom,
             ClientStateInternal::JoinRoom{..} => ClientStateMachineBrief::JoinRoom,
             ClientStateInternal::WaitPlayer{..} => ClientStateMachineBrief::WaitPlayer,
