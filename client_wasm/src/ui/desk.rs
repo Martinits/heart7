@@ -16,3 +16,6 @@ impl Into<Option<&str>> for CardStyleOnDesk {
         }
     }
 }
+
+pub fn ui_holds(holds: Option<Vec<u32>>) {
+}

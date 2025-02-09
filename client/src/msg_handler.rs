@@ -68,7 +68,7 @@ impl ClientStateManager {
                             self.state = ClientStateInternal::WaitReady{
                                 client: client.clone(),
                                 players: players.clone(),
-                                msg: vec!["Please press ENTER to get ready!".into()],
+                                msg: vec!["Please press the button to get ready!".into()],
                                 roomid: roomid.clone(),
                             };
                             self.exitmenu.1 = 0;
@@ -183,7 +183,7 @@ impl ClientStateManager {
                             ).collect(),
                             roomid: roomid.clone(),
                             msg: vec![format!("Player {} exits game.", exit_name),
-                                "Please press ENTER to get ready!".into()],
+                                "Please press the button to get ready!".into()],
                         };
                         self.exitmenu.1 = 0;
                     }

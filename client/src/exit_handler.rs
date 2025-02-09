@@ -99,7 +99,7 @@ impl ClientStateManager {
                                 |(i, name)| (name, Self::get_remote_idx(my_remote_idx, i), false)
                             ).collect(),
                             roomid: roomid.clone(),
-                            msg: vec!["Please press ENTER to get ready!".into()],
+                            msg: vec!["Please press the button to get ready!".into()],
                         };
                         self.exitmenu.1 = 0;
                     }
@@ -137,7 +137,7 @@ impl ClientStateManager {
                             players: ps,
                             client: c.clone(),
                             roomid: roomid.clone(),
-                            msg: vec!["Please press ENTER to get ready!".into()],
+                            msg: vec!["Please press the button to get ready!".into()],
                         };
                         self.exitmenu.1 = 0;
                     }

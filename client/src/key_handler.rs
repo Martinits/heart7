@@ -132,7 +132,7 @@ impl ClientStateManager {
                     players: ps,
                     client: client.clone(),
                     roomid: roomid.clone(),
-                    msg: vec!["Please press ENTER to get ready!".into()],
+                    msg: vec!["Please press the button to get ready!".into()],
                 };
                 self.exitmenu.1 = 0;
                 true

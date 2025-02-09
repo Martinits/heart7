@@ -8,6 +8,8 @@ mod card;
 mod desk;
 mod exit_menu;
 mod layout;
+mod players;
+mod common;
 
 use crate::*;
 pub(crate) use color::*;
@@ -21,6 +23,8 @@ pub(crate) use gaming::*;
 pub(crate) use game_result::*;
 pub(crate) use exit_menu::*;
 pub(crate) use layout::*;
+pub(crate) use players::*;
+pub(crate) use common::*;
 
 fn draw_normal(cs: ClientState) -> JsResult<()> {
     draw_esc_button();
@@ -148,7 +152,7 @@ pub fn ui_init(init_input_value: String) -> JsResult<()> {
     get_hidden_input().blur()?;
 
     // font init
-    get_canvas_ctx().set_font(&get_font());
+    set_font_normal();
 
     Ok(())
 }

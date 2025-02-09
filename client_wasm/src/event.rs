@@ -109,11 +109,14 @@ fn handle_click_join_room(x: f64, y: f64, tx: Sender<ClientEvent>) -> JsResult<(
     handle_click_prompt_single_button(x, y, tx)
 }
 
-fn handle_click_wait_player(x: f64, y: f64, tx: Sender<ClientEvent>) -> JsResult<()> {
+fn handle_click_wait_player(_x: f64, _y: f64, _tx: Sender<ClientEvent>) -> JsResult<()> {
     Ok(())
 }
 
 fn handle_click_wait_ready(x: f64, y: f64, tx: Sender<ClientEvent>) -> JsResult<()> {
+    if WAIT_READY_BUTTON.is_clicked_in(x, y) {
+        spawn_tx_send(tx, ClientEvent::Enter);
+    }
     Ok(())
 }
 

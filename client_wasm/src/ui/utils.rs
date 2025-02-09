@@ -239,26 +239,19 @@ impl Rect {
         let y = y.into();
         self.x <= x && x <= self.x + self.w && self.y <= y && y <= self.y + self.h
     }
-}
 
-pub fn draw_outer_border() {
-    draw_rounded_rect(&get_canvas_rect(), BORDER_DARK);
-}
-
-pub fn draw_button(rect: &Rect, msg: &str, selected: bool) {
-    // warn!("draw button {} at {:?}", msg, rect);
-    let color = if selected {
-        BUTTON
-    } else {
-        BUTTON_DIM
-    };
-    draw_rounded_rect(&rect, color);
-
-    draw_text_oneline_center(&rect, msg);
-}
-
-pub fn draw_esc_button() {
-    draw_button(&ESC_BUTTON, "ESC", true);
+    pub fn shift<T: Copy + Into<f64>>(&mut self, dx: T, dy: T) {
+        let x = self.x + dx.into();
+        if x < 0f64 {
+            warn!("Move rect results a negative x {}", x);
+        }
+        let y = self.y + dy.into();
+        if y < 0f64 {
+            warn!("Move rect results a negative y {}", y);
+        }
+        self.x = x;
+        self.y = y;
+    }
 }
 
 pub fn draw_rect(rect: &Rect, color: &str) {
@@ -295,6 +288,18 @@ pub fn get_font() -> String {
     format!("{}px Arial", 16)
 }
 
+pub fn get_font_small() -> String {
+    format!("{}px Arial", 13)
+}
+
+pub fn set_font_normal() {
+    get_canvas_ctx().set_font(&get_font());
+}
+
+pub fn set_font_small() {
+    get_canvas_ctx().set_font(&get_font_small());
+}
+
 pub fn get_text_metric(t: &str) -> (f64, f64) {
     let ctx = get_canvas_ctx();
     let metrics = ctx.measure_text(t).unwrap_throw();
@@ -311,6 +316,10 @@ pub fn get_text_descent(t: &str) -> f64 {
 }
 
 // draw multiline text in center, with respect to the top line
+pub fn draw_paragraph_vec(rect: &Rect, p: Vec<String>) {
+    draw_paragraph(rect, &p.join("\n"));
+}
+
 pub fn draw_paragraph(rect: &Rect, t: &str) {
     let ctx = get_canvas_ctx();
     ctx.set_font(&get_font());
@@ -357,7 +366,17 @@ pub fn draw_text_oneline(rect: &Rect, t: &str) {
     draw_text_oneline_with_descent(rect, t, get_text_descent(t));
 }
 
+pub fn draw_text_oneline_center_color(rect: &Rect, t: &str, color: &str) {
+    let ctx = get_canvas_ctx();
+    let old = ctx.fill_style();
+    ctx.set_fill_style_str(color);
+    draw_text_oneline_center(rect, t);
+    #[allow(deprecated)]
+    ctx.set_fill_style(&old);
+}
+
 fn draw_text_oneline_with_descent(rect: &Rect, t: &str, descent: f64) {
+    // draw_rect(rect, BORDER_NORMAL);
     let w = get_text_metric(t).0;
     if w > rect.w {
         warn!("Try to draw text with width {} inside rect with width {}", w, rect.w);
