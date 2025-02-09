@@ -46,3 +46,12 @@ pub const PLAYER_MYSELF: Rect = Rect { x: 36.0,  y: 285.0, w: 72.0, h: 57.0 };
 pub const PLAYER_RIGHT:  Rect = Rect { x: 626.4, y: 95.0,  w: 72.0, h: 45.6 };
 pub const PLAYER_TOP:    Rect = Rect { x: 216.0, y: 11.4,  w: 72.0, h: 45.6 };
 pub const PLAYER_LEFT:   Rect = Rect { x: 21.6,  y: 114.0, w: 72.0, h: 45.6 };
+
+// gaming
+pub const MY_CARD_WIDTH: f64 = 60.0;
+pub const MY_CARD_HEIGHT: f64 = 80.0;
+pub const MY_CARD_OVERLAP_WIDTH: f64 = 20.0;
+pub const MY_CARD_UP_HEIGHT: f64 = 15.0;
+pub const MY_CARD_LEFT_START: Rect = Rect { x: 237.6, y: 285.0, w: 300.0, h: 95.0 };
+pub const GAMING_BUTTON_PLAY: Rect = Rect { x: 136.8, y: 285.0, w: 72.0,  h: 34.2 };
+pub const GAMING_BUTTON_HOLD: Rect = Rect { x: 136.8, y: 330.6, w: 72.0,  h: 34.2 };

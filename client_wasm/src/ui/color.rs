@@ -26,15 +26,15 @@ pub const CARD_BORDER:           &str = "#AAAAAA";
 pub const CARD_HIGHLIGHT:        &str = "#FFC26F";
 pub const CARD_HIGHLIGHT_MY:     &str = "#95CD41";
 pub const CARD_CLEAR_BOREDER:    &str = "#2CD3E1";
-pub const MYCARD_BORDER:         &str = "#D5D3B3";
-pub const MYCARD_BORDER_DIM:     &str = "#7E8A97";
+pub const MYCARD_BORDER:         &str = "#A7D129";
+pub const MYCARD_BORDER_DIM:     &str = "#D0D0C2";
 #[allow(unused)]
 pub const CARD_HOLD:             &str = "#F6FA70";
 pub const CARD_CLEAR:            &str = "#B3FFAE";
 
-pub const SPADE:                 &str = "#0x6C5D";
+pub const SPADE:                 &str = "#2C2C2C";
 pub const HEART:                 &str = "#FA1E0E";
-pub const CLUB:                  &str = "#999999";
+pub const CLUB:                  &str = "#707070";
 pub const DIAMOND:               &str = "#FF7B54";
 
 pub const HOLD_BORDER:           &str = "#FF7777";

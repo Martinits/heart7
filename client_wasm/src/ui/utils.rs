@@ -4,6 +4,7 @@ use web_sys::{
     CanvasRenderingContext2d,
     HtmlCanvasElement,
     HtmlInputElement,
+    HtmlImageElement,
 };
 use crate::*;
 
@@ -40,8 +41,15 @@ pub fn get_canvas() -> HtmlCanvasElement {
 pub fn get_hidden_input() -> HtmlInputElement {
     gloo::utils::body()
         .query_selector("#hidden-input").unwrap_throw()
-        .ok_or("cannot find hiden input element").unwrap_throw()
+        .ok_or("cannot find hidden input element").unwrap_throw()
         .dyn_into::<HtmlInputElement>().unwrap_throw()
+}
+
+pub fn get_image(img: &str) -> HtmlImageElement {
+    gloo::utils::body()
+        .query_selector(&format!("#img-{}", img)).unwrap_throw()
+        .ok_or("cannot find image element").unwrap_throw()
+        .dyn_into::<HtmlImageElement>().unwrap_throw()
 }
 
 pub fn get_canvas_ctx() -> CanvasRenderingContext2d {
@@ -75,11 +83,15 @@ pub enum Slice1D<T> where T: Into<f64> {
 
 impl Rect {
     // cut out the center of `org` with v and h
-    pub fn center_cut<T: Into<f64>>(&self, w: Slice1D<T>, h: Slice1D<T>) -> Rect {
+    pub fn center_cut<W, H>(&self, w: Slice1D<W>, h: Slice1D<H>) -> Rect
+    where
+        W: Copy + Into<f64>,
+        H: Copy + Into<f64>,
+    {
         self.center_cut_width(w).center_cut_height(h)
     }
 
-    pub fn center_cut_width<T: Into<f64>>(&self, w: Slice1D<T>) -> Rect {
+    pub fn center_cut_width<T: Copy + Into<f64>>(&self, w: Slice1D<T>) -> Rect {
         let (xoff, w) = match w {
             Percent(p) => Self::center_cut_1d(self.w, p.into()),
             Fixed(f) => Self::center_cut_1d_fixed(self.w, f.into()),
@@ -92,7 +104,7 @@ impl Rect {
         }
     }
 
-    pub fn center_cut_height<T: Into<f64>>(&self, h: Slice1D<T>) -> Rect {
+    pub fn center_cut_height<T: Copy + Into<f64>>(&self, h: Slice1D<T>) -> Rect {
         let (yoff, h) = match h {
             Percent(p) => Self::center_cut_1d(self.h, p.into()),
             Fixed(f) => Self::center_cut_1d_fixed(self.h, f.into()),
@@ -197,7 +209,11 @@ impl Rect {
         }
     }
 
-    pub fn cut_border<T: Copy + Into<f64>>(&self, w: Slice1D<T>, h: Slice1D<T>) -> Rect {
+    pub fn cut_border<W, H>(&self, w: Slice1D<W>, h: Slice1D<H>) -> Rect
+    where
+        W: Copy + Into<f64>,
+        H: Copy + Into<f64>,
+    {
         self.cut_border_fixed(self.width_slice(w), self.height_slice(h))
     }
 
@@ -234,13 +250,21 @@ impl Rect {
         self.cut_border_fixed(b, b)
     }
 
-    pub fn is_clicked_in<T: Copy + Into<f64>>(&self, x: T, y:T) -> bool {
+    pub fn is_clicked_in<W, H>(&self, x: W, y: H) -> bool
+    where
+        W: Copy + Into<f64>,
+        H: Copy + Into<f64>,
+    {
         let x = x.into();
         let y = y.into();
         self.x <= x && x <= self.x + self.w && self.y <= y && y <= self.y + self.h
     }
 
-    pub fn shift<T: Copy + Into<f64>>(&mut self, dx: T, dy: T) {
+    pub fn shift<X, Y>(&mut self, dx: X, dy: Y)
+    where
+        X: Copy + Into<f64>,
+        Y: Copy + Into<f64>,
+    {
         let x = self.x + dx.into();
         if x < 0f64 {
             warn!("Move rect results a negative x {}", x);
@@ -262,10 +286,10 @@ pub fn draw_rect(rect: &Rect, color: &str) {
 }
 
 pub fn draw_rounded_rect(rect: &Rect, color: &str) {
-    draw_rounded_rect_with_r(rect, ROUNDED_RECT_RADIUS, color).unwrap_throw();
+    draw_rounded_rect_with_r(rect, ROUNDED_RECT_RADIUS, color);
 }
 
-pub fn draw_rounded_rect_with_r(rect: &Rect, r: f64, color: &str) -> JsResult<()> {
+pub fn draw_rounded_rect_with_r(rect: &Rect, r: f64, color: &str) {
     let ctx = get_canvas_ctx();
     let x = rect.x;
     let y = rect.y;
@@ -275,13 +299,17 @@ pub fn draw_rounded_rect_with_r(rect: &Rect, r: f64, color: &str) -> JsResult<()
     ctx.set_line_width(DEFAULT_STROKE_WIDTH);
     ctx.begin_path();
     ctx.move_to(x + r, y);
-    ctx.arc_to(x + w, y, x + w, y + r, r)?;
-    ctx.arc_to(x + w, y + h, x + w - r, y + h, r)?;
-    ctx.arc_to(x, y + h, x, y + h - r, r)?;
-    ctx.arc_to(x, y, x + r, y, r)?;
+    ctx.arc_to(x + w, y, x + w, y + r, r).unwrap_throw();
+    ctx.arc_to(x + w, y + h, x + w - r, y + h, r).unwrap_throw();
+    ctx.arc_to(x, y + h, x, y + h - r, r).unwrap_throw();
+    ctx.arc_to(x, y, x + r, y, r).unwrap_throw();
     ctx.close_path();
     ctx.stroke();
-    Ok(())
+}
+
+pub fn draw_rounded_rect_with_title(rect: &Rect, msg: &str, color: &str) {
+    draw_rounded_rect(&rect, color);
+    draw_text_oneline_center(&rect, msg);
 }
 
 pub fn get_font() -> String {
@@ -390,4 +418,14 @@ pub fn get_ascii_max_descent() -> f64 {
 
 pub fn draw_input_text(rect: &Rect, t: &str) {
     draw_text_oneline_with_descent(rect, t, get_ascii_max_descent());
+}
+
+pub fn draw_image(rect: &Rect, img: &str) {
+    get_canvas_ctx().draw_image_with_html_image_element_and_dw_and_dh(
+        &get_image(img),
+        rect.x,
+        rect.y,
+        rect.w,
+        rect.h,
+    ).unwrap_throw();
 }

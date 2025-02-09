@@ -10,4 +10,4 @@ rule_cargo_toml:
 	cp $(RULE_DIR)/Cargo.toml.wasm32 $(RULE_DIR)/Cargo.toml
 
 serve: rule_cargo_toml
-	trunk serve --disable-csp true -a 0.0.0.0
+	trunk serve --disable-csp true -a 0.0.0.0 --release

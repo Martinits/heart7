@@ -27,7 +27,7 @@ pub(crate) use players::*;
 pub(crate) use common::*;
 
 fn draw_normal(cs: ClientState) -> JsResult<()> {
-    draw_esc_button();
+    ui_esc_button();
 
     if cs.exitmenu.0 {
         ui_exit_menu(get_button_num(&cs));
@@ -127,7 +127,7 @@ pub fn should_block() -> bool {
     false
 }
 
-fn draw_blocked(cs: ClientState) -> JsResult<()> {
+fn draw_blocked(_cs: ClientState) -> JsResult<()> {
     Ok(())
 }
 
@@ -145,7 +145,7 @@ pub fn draw(cs: ClientState) -> JsResult<()> {
     Ok(())
 }
 
-pub fn ui_init(init_input_value: String) -> JsResult<()> {
+pub fn ui_init() -> JsResult<()> {
     // hiddent input init
     // let hidden_input = get_hidden_input();
     // hidden_input.set_value(&init_input_value);

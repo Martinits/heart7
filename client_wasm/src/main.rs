@@ -100,7 +100,6 @@ struct ClientWasm {
     rx: Receiver<ClientEvent>,
     stream_tx: Sender<StreamCancelToken>,
     stream_rx: Receiver<StreamCancelToken>,
-    default_addr: String, // It's also the init value of the hidden_input
 }
 
 impl ClientWasm {
@@ -114,7 +113,6 @@ impl ClientWasm {
             rx,
             stream_tx,
             stream_rx,
-            default_addr,
         }
     }
 
@@ -153,7 +151,7 @@ impl ClientWasm {
 
     pub async fn run(&mut self) -> JsResult<()> {
         spawn_event_handler(self.tx.clone(), self.csm.clone())?;
-        ui_init(self.default_addr.clone())?;
+        ui_init()?;
 
         // draw first anyway
         self.draw()?;
