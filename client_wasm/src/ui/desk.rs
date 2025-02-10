@@ -58,5 +58,6 @@ pub fn ui_desk_hold_num(hold_nums: Vec<u32>) {
     }
 }
 
-pub fn ui_holds(holds: Option<Vec<u32>>) {
+pub fn ui_desk_my_holds(my_holds: Vec<Card>, clear: bool) {
+
 }

@@ -46,9 +46,10 @@ pub fn get_hidden_input() -> HtmlInputElement {
 }
 
 pub fn get_image(img: &str) -> HtmlImageElement {
+    let img = format!("#img-{}", img);
     gloo::utils::body()
-        .query_selector(&format!("#img-{}", img)).unwrap_throw()
-        .ok_or("cannot find image element").unwrap_throw()
+        .query_selector(&img).unwrap_throw()
+        .ok_or(&format!("cannot find image element: {}", img)).unwrap_throw()
         .dyn_into::<HtmlImageElement>().unwrap_throw()
 }
 

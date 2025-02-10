@@ -62,6 +62,12 @@ pub const GAMING_NEXT: [Rect; 4] = [
     Rect { x: 410.4, y: 30.4,  w: 93.6, h: 19.0 },
     Rect { x: 7.2,   y: 209.0, w: 93.6, h: 19.0 },
 ];
+pub const GAMING_LAST: [Rect; 4] = [
+    Rect { x:   0.0, y:   0.0, w:  0.0, h:  0.0 },
+    Rect { x: 576.0, y: 133.0, w: 22.0, h: 40.0 },
+    Rect { x: 432.0, y: 19.0,  w: 22.0, h: 40.0 },
+    Rect { x: 122.4, y: 140.6, w: 22.0, h: 40.0 },
+];
 
 // desk
 pub const DESK_HOLD_NUM: [Rect; 4] = [

@@ -24,24 +24,29 @@ fn get_card_image(c: &Card) -> (String, String){
     (s, n)
 }
 
-pub fn ui_card(r: &Rect, c: &Card, border_color: &str) {
+// If c is None, it means a hold
+pub fn ui_card(r: &Rect, c: Option<Card>, border_color: &str) {
     clear_rect(&r);
     draw_rounded_rect_with_r(
         &r,
         8f64,
         border_color
     );
-    let (suit, num) = get_card_image(&c);
-    draw_image(&Rect{
-        x: r.x + 3.0,
-        y: r.y + 5.0,
-        w: 15.0,
-        h: 15.0,
-    }, &num);
-    draw_image(&Rect{
-        x: r.x + 3.0,
-        y: r.y + 23.0,
-        w: 15.0,
-        h: 15.0,
-    }, &suit);
+    if let Some(c) = c {
+        let (suit, num) = get_card_image(&c);
+        draw_image(&Rect{
+            x: r.x + 3.0,
+            y: r.y + 5.0,
+            w: 15.0,
+            h: 15.0,
+        }, &num);
+        draw_image(&Rect{
+            x: r.x + 3.0,
+            y: r.y + 23.0,
+            w: 15.0,
+            h: 15.0,
+        }, &suit);
+    } else {
+        draw_text_oneline_center(r, "!");
+    }
 }

@@ -27,7 +27,7 @@ fn ui_gaming_my_cards(my_cards: Vec<Card>, choose: usize, hints: Vec<bool>) {
 
         ui_card(
             &r,
-            &c,
+            Some(c),
             if h {
                 MYCARD_BORDER
             } else {
@@ -116,11 +116,46 @@ fn ui_gaming_next(next: usize) {
 }
 
 fn ui_gaming_last(last: Option<Card>, who: usize) {
+    if who == 0 {
+        return;
+    }
 
-}
+    // let r = match who {
+    //     // right
+    //     1 => {
+    //         get_canvas_rect().cut_width([
+    //             Percent(80),
+    //             Fixed(22),
+    //         ])[1].cut_height([
+    //             Percent(35),
+    //             Fixed(40),
+    //         ])[1].clone()
+    //     }
+    //     // top
+    //     2 => {
+    //         get_canvas_rect().cut_width([
+    //             Percent(60),
+    //             Fixed(22),
+    //         ])[1].cut_height([
+    //             Percent(5),
+    //             Fixed(40),
+    //         ])[1].clone()
+    //     }
+    //     // left
+    //     3 => {
+    //         get_canvas_rect().cut_width([
+    //             Percent(17),
+    //             Fixed(22),
+    //         ])[1].cut_height([
+    //             Percent(37),
+    //             Fixed(40),
+    //         ])[1].clone()
+    //     }
+    //     _ => unreachable!(),
+    // };
+    // warn!("{:?}", r);
 
-fn ui_gaming_my_holds(my_holds: Vec<Card>, clear: bool) {
-
+    ui_card(&GAMING_LAST[who], last, NEXT_TURN);
 }
 
 fn ui_gaming_button() {
@@ -176,5 +211,5 @@ pub fn ui_gaming(
         ui_gaming_last(last, who);
     }
 
-    ui_gaming_my_holds(my_holds, false);
+    ui_desk_my_holds(my_holds, false);
 }
