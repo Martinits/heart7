@@ -25,9 +25,9 @@ pub const HOLD_NUM:              &str = "#BB371A";
 pub const CARD_BORDER:           &str = "#AAAAAA";
 pub const CARD_HIGHLIGHT:        &str = "#FFC26F";
 pub const CARD_HIGHLIGHT_MY:     &str = "#95CD41";
-pub const CARD_CLEAR_BOREDER:    &str = "#2CD3E1";
-pub const MYCARD_BORDER:         &str = "#A7D129";
-pub const MYCARD_BORDER_DIM:     &str = "#D0D0C2";
+pub const CARD_CLEAR_BORDER:    &str = "#2CD3E1";
+pub const MYCARD_BORDER_LIGHT:         &str = "#A7D129";
+pub const MYCARD_BORDER:     &str = "#D0D0C2";
 #[allow(unused)]
 pub const CARD_HOLD:             &str = "#F6FA70";
 pub const CARD_CLEAR:            &str = "#B3FFAE";
@@ -48,6 +48,6 @@ pub const DESK_RESULT_1:         &str = "#F90716";
 pub const DESK_RESULT_2:         &str = "#FFCE45";
 pub const DESK_RESULT_3:         &str = "#35D0BA";
 
-pub const RESULT_MSG_LOSE:       &str = "#0x0FA2";
+pub const RESULT_MSG_LOSE:       &str = "#00DFA2";
 pub const RESULT_MSG_WIN:        &str = "#FF0060";
 pub const RESULT_MSG_GREY:       &str = "#C1C1C1";

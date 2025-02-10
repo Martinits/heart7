@@ -96,7 +96,7 @@ pub fn ui_desk_my_holds(mut my_holds: Vec<Card>, clear: bool) {
 
     // clear
     if clear {
-        draw_text_oneline_center_color(&DESK_MY_HOLD_BOTTOM, "CLEAR!", CARD_CLEAR_BOREDER);
+        draw_text_oneline_center_color(&DESK_MY_HOLD_BOTTOM, "CLEAR!", CARD_CLEAR_BORDER);
         return;
     }
 
@@ -119,7 +119,8 @@ pub fn ui_desk_my_holds(mut my_holds: Vec<Card>, clear: bool) {
     // warn!("{:?}", line2);
 
     let mut line1 = DESK_MY_HOLD_LINE1_START.clone();
-    let mut line2 = DESK_MY_HOLD_LINE2_START;
+    let mut line2 = line1.clone();
+    line2.y += line1.h + DESK_MY_HOLD_GAP_HEIGHT;
     let (h1, h2) = if hn > 7 {
         let h2 = my_holds.split_off(7);
         (my_holds, h2)
@@ -128,11 +129,11 @@ pub fn ui_desk_my_holds(mut my_holds: Vec<Card>, clear: bool) {
     };
 
     for c in h1 {
-        ui_card_vertical(&line1, Some(c), Some(MYCARD_BORDER_DIM));
+        ui_card_vertical(&line1, Some(c), Some(MYCARD_BORDER));
         line1.x += line1.w + DESK_MY_HOLD_GAP_WIDTH;
     }
     for c in h2 {
-        ui_card_vertical(&line2, Some(c), Some(MYCARD_BORDER_DIM));
+        ui_card_vertical(&line2, Some(c), Some(MYCARD_BORDER));
         line2.x += line2.w + DESK_MY_HOLD_GAP_WIDTH;
     }
 }

@@ -44,7 +44,7 @@ pub const WAIT_PLAYER_READY: [Rect; 4] = [
 // player
 pub const PLAYER_MYSELF: Rect = Rect { x: 36.0,  y: 285.0, w: 72.0, h: 57.0 };
 pub const PLAYER_RIGHT:  Rect = Rect { x: 626.4, y: 95.0,  w: 72.0, h: 45.6 };
-pub const PLAYER_TOP:    Rect = Rect { x: 216.0, y: 11.4,  w: 72.0, h: 45.6 };
+pub const PLAYER_TOP:    Rect = Rect { x: 176.0, y: 11.4,  w: 72.0, h: 45.6 };
 pub const PLAYER_LEFT:   Rect = Rect { x: 21.6,  y: 114.0, w: 72.0, h: 45.6 };
 
 // gaming
@@ -59,7 +59,7 @@ pub const GAMING_MSG:         Rect = Rect { x: 210.4, y: 247.0, w: 309.6, h: 19.
 pub const GAMING_NEXT: [Rect; 4] = [
     Rect { x: 116.6, y: 247.0, w: 93.6, h: 19.0 },
     Rect { x: 612.0, y: 190.0, w: 93.6, h: 19.0 },
-    Rect { x: 410.4, y: 30.4,  w: 93.6, h: 19.0 },
+    Rect { x: 262.4, y: 45.4,  w: 93.6, h: 19.0 },
     Rect { x: 7.2,   y: 209.0, w: 93.6, h: 19.0 },
 ];
 pub const GAMING_LAST: [Rect; 4] = [
@@ -81,14 +81,13 @@ pub const CARD_ICON_HEIGHT: f64 = 15.0;
 pub const DESK_HOLD_NUM: [Rect; 4] = [
     Rect { x:   0.0, y:   0.0, w:  0.0, h:  0.0 },
     Rect { x: 612.0, y: 163.4, w: 93.6, h: 19.0 },
-    Rect { x: 302.4, y: 30.4,  w: 93.6, h: 19.0 },
+    Rect { x: 262.4, y: 18.4,  w: 93.6, h: 19.0 },
     Rect { x: 7.2,   y: 182.4, w: 93.6, h: 19.0 },
 ];
 pub const DESK_MY_HOLD_BORDER: Rect = Rect { x: 532.8, y: 247.0, w: 180.0, h: 125.4 };
 pub const DESK_MY_HOLD_TITLE:  Rect = Rect { x: 532.8, y: 249.5, w: 180.0, h: 23.8 };
 pub const DESK_MY_HOLD_BOTTOM: Rect = Rect { x: 532.8, y: 273.3, w: 180.0, h: 99.1 };
 pub const DESK_MY_HOLD_LINE1_START: Rect = Rect { x: 539.8, y: 277.0, w: 22.0, h: 40.0 };
-pub const DESK_MY_HOLD_LINE2_START: Rect = Rect { x: 539.8, y: 325.0, w: 22.0, h: 40.0 };
 pub const DESK_MY_HOLD_GAP_WIDTH: f64 = 2.0;
 pub const DESK_MY_HOLD_GAP_HEIGHT: f64 = 8.0;
 pub const DESK_CHAIN_GAP: f64 = 15.0;
@@ -100,3 +99,21 @@ pub const DESK_CHAIN: [Rect; 4] = [
     Rect { x: 360.3, y: 83.6, w: 40.0, h: 154.0 },
     Rect { x: 415.3, y: 83.6, w: 40.0, h: 154.0 },
 ];
+
+// game result
+pub const RESULT_HOLD_POINTS: [Rect; 4] = [
+    Rect { x:   0.0, y:   0.0, w:  0.0, h:  0.0 },
+    Rect { x: 610.8, y: 190.0, w: 96.0, h: 19.0 },
+    Rect { x: 261.2, y: 45.4,  w: 96.0, h: 19.0 },
+    Rect { x: 6.0,   y: 209.0, w: 96.0, h: 19.0 },
+];
+pub const RESULT_CONTINUE_BUTTON: Rect = Rect { x: 140.0, y: 301.6, w: 115.2, h: 38.0 };
+pub const RESULT_MSG: Rect = Rect { x: 278.0, y: 311.6, w: 216.0, h: 20.0 };
+pub const RESULT_HOLD_GAP_WIDTH: f64 = 2.0;
+pub const RESULT_HOLD_GAP_HEIGHT: f64 = 8.0;
+pub const RESULT_HOLD_LEFT_START:  Rect = Rect { x: 108.0, y: 114.0, w: 22.0, h: 40.0 };
+pub const RESULT_HOLD_TOP_START:   Rect = Rect { x: 367.2, y: 19.0,  w: 22.0, h: 40.0 };
+pub const RESULT_HOLD_RIGHT_START: Rect = Rect { x: 576.0, y: 95.0,  w: 22.0, h: 40.0 };
+pub const RESULT_HOLD_LEFT_EMPTY:  Rect = Rect { x: 118.0, y: 154.0, w: 85.0, h: 20.0 };
+pub const RESULT_HOLD_TOP_EMPTY:   Rect = Rect { x: 370.2, y: 30.0,  w: 85.0, h: 20.0 };
+pub const RESULT_HOLD_RIGHT_EMPTY: Rect = Rect { x: 496.0, y: 145.0,  w: 85.0, h: 20.0 };

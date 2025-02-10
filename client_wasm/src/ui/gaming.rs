@@ -28,9 +28,9 @@ fn ui_gaming_my_cards(my_cards: Vec<Card>, choose: usize, hints: Vec<bool>) {
             &r,
             Some(c.clone()),
             Some(if h {
-                MYCARD_BORDER
+                MYCARD_BORDER_LIGHT
             } else {
-                MYCARD_BORDER_DIM
+                MYCARD_BORDER
             }),
         );
 
@@ -211,7 +211,7 @@ pub fn ui_gaming(
     }
 
     if let Some((who, last)) = last {
-        assert_eq!((next+3)%4, who);
+        // assert_eq!((next+3)%4, who);
         ui_gaming_last(last, who);
     }
 

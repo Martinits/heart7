@@ -183,5 +183,8 @@ fn handle_click_gaming(
 }
 
 fn handle_click_game_result(x: f64, y: f64, tx: Sender<ClientEvent>) -> JsResult<()> {
+    if RESULT_CONTINUE_BUTTON.is_clicked_in(x, y) {
+        spawn_tx_send(tx, ClientEvent::Enter);
+    }
     Ok(())
 }
