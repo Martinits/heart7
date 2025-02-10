@@ -29,9 +29,9 @@ fn ui_hold_result_right(mut hold: Vec<Card>) {
 
     let mut line1 = RESULT_HOLD_RIGHT_START.clone();
     let mut line2 = line1.clone();
-    line2.y += line1.h + DESK_MY_HOLD_GAP_HEIGHT;
+    line2.y += line1.h + RESULT_HOLD_GAP_HEIGHT;
     let mut line3 = line2.clone();
-    line3.y += line2.h + DESK_MY_HOLD_GAP_HEIGHT;
+    line3.y += line2.h + RESULT_HOLD_GAP_HEIGHT;
 
     for c in h1.into_iter().rev() {
         ui_card_vertical(&line1, Some(c), Some(MYCARD_BORDER));
@@ -65,7 +65,7 @@ fn ui_hold_result_top(hold: Vec<Card>) {
     let mut r = RESULT_HOLD_TOP_START.clone();
     for c in hold {
         ui_card_vertical(&r, Some(c), Some(MYCARD_BORDER));
-        r.x += r.w + DESK_MY_HOLD_GAP_WIDTH;
+        r.x += r.w + RESULT_HOLD_GAP_WIDTH;
     }
 }
 
@@ -98,9 +98,9 @@ fn ui_hold_result_left(mut hold: Vec<Card>) {
 
     let mut line1 = RESULT_HOLD_LEFT_START.clone();
     let mut line2 = line1.clone();
-    line2.y += line1.h + DESK_MY_HOLD_GAP_HEIGHT;
+    line2.y += line1.h + RESULT_HOLD_GAP_HEIGHT;
     let mut line3 = line2.clone();
-    line3.y += line2.h + DESK_MY_HOLD_GAP_HEIGHT;
+    line3.y += line2.h + RESULT_HOLD_GAP_HEIGHT;
 
     for c in h1 {
         ui_card_vertical(&line1, Some(c), Some(MYCARD_BORDER));

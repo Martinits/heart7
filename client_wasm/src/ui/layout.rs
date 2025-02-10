@@ -90,6 +90,7 @@ pub const DESK_MY_HOLD_BOTTOM: Rect = Rect { x: 532.8, y: 273.3, w: 180.0, h: 99
 pub const DESK_MY_HOLD_LINE1_START: Rect = Rect { x: 539.8, y: 277.0, w: 22.0, h: 40.0 };
 pub const DESK_MY_HOLD_GAP_WIDTH: f64 = 2.0;
 pub const DESK_MY_HOLD_GAP_HEIGHT: f64 = 8.0;
+#[allow(unused)]
 pub const DESK_CHAIN_GAP: f64 = 15.0;
 pub const DESK_CHAIN_CARD_GAP: f64 = 10.0;
 pub const DESK: Rect = Rect { x: 237.6, y: 83.6, w: 230.4, h: 154.0 };

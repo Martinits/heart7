@@ -82,6 +82,7 @@ pub enum Slice1D<T> where T: Into<f64> {
     Fixed(T),
 }
 
+#[allow(unused)]
 impl Rect {
     // cut out the center of `org` with v and h
     pub fn center_cut<W, H>(&self, w: Slice1D<W>, h: Slice1D<H>) -> Rect

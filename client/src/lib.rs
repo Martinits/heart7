@@ -10,6 +10,7 @@ use std::panic;
 pub use tonic::{Code, Request, Response, Status};
 pub use heart7_rule::*;
 pub use input::*;
+#[cfg(not(target_arch = "wasm32"))]
 pub use logging::*;
 
 pub type RPCResult<T> = Result<T, tonic::Status>;

@@ -1,3 +1,6 @@
+#[allow(unused)]
+mod color_allow_unused {
+
 pub const BORDER_DARK:           &str = "#884A39";
 pub const BORDER_LIGHT:          &str = "#C38154";
 pub const BORDER_NORMAL:         &str = "#A47E3B";
@@ -51,3 +54,6 @@ pub const DESK_RESULT_3:         &str = "#35D0BA";
 pub const RESULT_MSG_LOSE:       &str = "#00DFA2";
 pub const RESULT_MSG_WIN:        &str = "#FF0060";
 pub const RESULT_MSG_GREY:       &str = "#C1C1C1";
+
+}
+pub(crate) use color_allow_unused::*;

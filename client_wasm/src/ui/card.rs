@@ -1,18 +1,5 @@
 use super::*;
 
-pub const NULL_CARD: Card = Card { suit: CardSuit::Spade, num: 1};
-
-pub enum CardStyle {
-    All,
-    Vertical,
-    Horizontal,
-    Empty,
-    Hold,
-    Half,
-    Clear,
-    ClearHalf,
-}
-
 pub fn get_card_image(c: &Card) -> (String, String){
     let s = match c.suit {
         CardSuit::Spade => "spade".into(),
