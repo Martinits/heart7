@@ -22,7 +22,8 @@ pub fn handle_click(
             ClientStateMachineBrief::JoinRoom => handle_click_join_room(x, y, tx)?,
             ClientStateMachineBrief::WaitPlayer => handle_click_wait_player(x, y, tx)?,
             ClientStateMachineBrief::WaitReady => handle_click_wait_ready(x, y, tx)?,
-            ClientStateMachineBrief::Gaming => handle_click_gaming(x, y, tx)?,
+            ClientStateMachineBrief::Gaming{ choose, card_num, button, my_turn }
+                => handle_click_gaming(x, y, tx, choose, card_num, button, my_turn)?,
             ClientStateMachineBrief::GameResult => handle_click_game_result(x, y, tx)?,
         }
     }
@@ -120,7 +121,64 @@ fn handle_click_wait_ready(x: f64, y: f64, tx: Sender<ClientEvent>) -> JsResult<
     Ok(())
 }
 
-fn handle_click_gaming(x: f64, y: f64, tx: Sender<ClientEvent>) -> JsResult<()> {
+fn handle_click_gaming(
+    x: f64, y: f64,
+    tx: Sender<ClientEvent>,
+    choose: usize,
+    card_num: usize,
+    button: u32,
+    my_turn: bool,
+) -> JsResult<()> {
+    // return Ok(());
+    if GAMING_BUTTON_PLAY.is_clicked_in(x, y) {
+        if my_turn && choose != 0 {
+            let msg = if button == 0 {
+                vec![ClientEvent::Enter]
+            } else {
+                vec![ClientEvent::UpArrow, ClientEvent::Enter]
+            };
+            spawn_tx_send_multiple(tx, msg);
+        }
+        return Ok(());
+    }
+    if GAMING_BUTTON_HOLD.is_clicked_in(x, y) {
+        if my_turn && choose != 0 {
+            let msg = if button == 1 {
+                vec![ClientEvent::Enter]
+            } else {
+                vec![ClientEvent::DownArrow, ClientEvent::Enter]
+            };
+            spawn_tx_send_multiple(tx, msg);
+        }
+        return Ok(());
+    }
+
+    let mut r = MY_CARD_LEFT_START.clone();
+    r.w = MY_CARD_OVERLAP_WIDTH;
+
+    for i in 1..=card_num {
+        if choose == i {
+            r.y -= MY_CARD_UP_HEIGHT;
+        }
+        if i == card_num {
+            r.w = MY_CARD_WIDTH;
+        }
+
+        if r.is_clicked_in(x, y) {
+            if choose == i {
+                spawn_tx_send(tx, ClientEvent::SetChoose(0));
+            } else {
+                spawn_tx_send(tx, ClientEvent::SetChoose(i));
+            }
+            break;
+        }
+
+        if choose == i {
+            r.y += MY_CARD_UP_HEIGHT;
+        }
+        r.x += MY_CARD_OVERLAP_WIDTH;
+    }
+
     Ok(())
 }
 

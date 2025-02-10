@@ -278,4 +278,18 @@ impl ClientStateManager {
             _ => false,
         }
     }
+
+    pub fn handle_set_choose(&mut self, ch: usize) -> bool {
+        match self.state {
+            ClientStateInternal::Gaming { ref mut choose, .. } => {
+                if *choose == ch {
+                    false
+                } else {
+                    *choose = ch;
+                    true
+                }
+            }
+            _ => false,
+        }
+    }
 }

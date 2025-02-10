@@ -1,7 +1,8 @@
 use super::*;
 
 fn ui_gaming_my_cards(my_cards: Vec<Card>, choose: usize, hints: Vec<bool>) {
-    if my_cards.len() == 0 {
+    let cn = my_cards.len();
+    if cn == 0 {
         return;
     }
 
@@ -17,11 +18,9 @@ fn ui_gaming_my_cards(my_cards: Vec<Card>, choose: usize, hints: Vec<bool>) {
     // warn!("{:?}", r);
 
     let mut r = MY_CARD_LEFT_START.clone();
-    r.w = MY_CARD_WIDTH;
-    r.h = MY_CARD_HEIGHT;
 
     for (i, (c, h)) in my_cards.into_iter().zip(hints).into_iter().enumerate() {
-        if choose == i {
+        if choose == i + 1 {
             r.y -= MY_CARD_UP_HEIGHT;
         }
 
@@ -35,12 +34,14 @@ fn ui_gaming_my_cards(my_cards: Vec<Card>, choose: usize, hints: Vec<bool>) {
             }),
         );
 
-        draw_image(
-            &r.center_cut(Fixed(CARD_ICON_WIDTH), Fixed(CARD_ICON_HEIGHT)),
-            &get_card_image(&c).0,
-        );
+        if i == cn {
+            draw_image(
+                &r.center_cut(Fixed(CARD_ICON_WIDTH), Fixed(CARD_ICON_HEIGHT)),
+                &get_card_image(&c).0,
+            );
+        }
 
-        if choose == i {
+        if choose == i + 1 {
             r.y += MY_CARD_UP_HEIGHT;
         }
         r.x += MY_CARD_OVERLAP_WIDTH;
@@ -161,7 +162,6 @@ fn ui_gaming_last(last: Option<Card>, who: usize) {
     // warn!("{:?}", r);
 
     ui_card_vertical(&GAMING_LAST[who], last.clone(), Some(NEXT_TURN));
-    ui_card_vertical(&GAMING_LAST[1], last, Some(NEXT_TURN));
 }
 
 fn ui_gaming_button() {

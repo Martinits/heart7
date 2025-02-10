@@ -34,7 +34,12 @@ pub enum ClientStateMachineBrief {
     JoinRoom,
     WaitPlayer,
     WaitReady,
-    Gaming,
+    Gaming {
+        choose: usize, // 0 for none
+        card_num: usize,
+        button: u32,
+        my_turn: bool,
+    },
     GameResult,
 }
 
@@ -207,6 +212,7 @@ pub enum ClientEvent {
     StreamListenerSpawned,
     StreamMsg(GameMsg),
     ResetInput(String),
+    SetChoose(usize),
 }
 
 #[derive(Default)]
@@ -333,6 +339,8 @@ impl ClientStateManager {
                     => self.handle_stream_listener_spawned(),
                 ClientEvent::ResetInput(new_input)
                     => self.handle_reset_input(new_input),
+                ClientEvent::SetChoose(choose)
+                    => self.handle_set_choose(choose),
                 _ => false,
             }
         };
@@ -358,7 +366,13 @@ impl ClientStateManager {
             ClientStateInternal::JoinRoom{..} => ClientStateMachineBrief::JoinRoom,
             ClientStateInternal::WaitPlayer{..} => ClientStateMachineBrief::WaitPlayer,
             ClientStateInternal::WaitReady{..} => ClientStateMachineBrief::WaitReady,
-            ClientStateInternal::Gaming{..} => ClientStateMachineBrief::Gaming,
+            ClientStateInternal::Gaming { choose, ref game, button, .. }
+                => ClientStateMachineBrief::Gaming{
+                choose,
+                card_num: game.get_my_card_num(),
+                button,
+                my_turn: game.is_my_turn(),
+            },
             ClientStateInternal::GameResult{..} => ClientStateMachineBrief::GameResult,
         };
         ClientStateBrief {
