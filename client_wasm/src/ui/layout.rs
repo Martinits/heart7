@@ -52,22 +52,28 @@ pub const MY_CARD_WIDTH: f64 = 60.0;
 pub const MY_CARD_HEIGHT: f64 = 80.0;
 pub const MY_CARD_OVERLAP_WIDTH: f64 = 20.0;
 pub const MY_CARD_UP_HEIGHT: f64 = 15.0;
-pub const MY_CARD_LEFT_START: Rect = Rect { x: 237.6, y: 285.0, w: 300.0, h: 95.0 };
-pub const GAMING_BUTTON_PLAY: Rect = Rect { x: 136.8, y: 285.0, w: 72.0,  h: 34.2 };
-pub const GAMING_BUTTON_HOLD: Rect = Rect { x: 136.8, y: 330.6, w: 72.0,  h: 34.2 };
-pub const GAMING_MSG:         Rect = Rect { x: 230.4, y: 247.0, w: 309.6, h: 19.0 };
+pub const MY_CARD_LEFT_START: Rect = Rect { x: 217.6, y: 285.0, w: 300.0, h: 95.0 };
+pub const GAMING_BUTTON_PLAY: Rect = Rect { x: 126.8, y: 282.0, w: 72.0,  h: 34.2 };
+pub const GAMING_BUTTON_HOLD: Rect = Rect { x: 126.8, y: 327.6, w: 72.0,  h: 34.2 };
+pub const GAMING_MSG:         Rect = Rect { x: 210.4, y: 247.0, w: 309.6, h: 19.0 };
 pub const GAMING_NEXT: [Rect; 4] = [
-    Rect { x: 129.6, y: 247.0, w: 93.6, h: 19.0 },
+    Rect { x: 116.6, y: 247.0, w: 93.6, h: 19.0 },
     Rect { x: 612.0, y: 190.0, w: 93.6, h: 19.0 },
     Rect { x: 410.4, y: 30.4,  w: 93.6, h: 19.0 },
     Rect { x: 7.2,   y: 209.0, w: 93.6, h: 19.0 },
 ];
 pub const GAMING_LAST: [Rect; 4] = [
     Rect { x:   0.0, y:   0.0, w:  0.0, h:  0.0 },
-    Rect { x: 576.0, y: 133.0, w: 22.0, h: 40.0 },
-    Rect { x: 432.0, y: 19.0,  w: 22.0, h: 40.0 },
-    Rect { x: 122.4, y: 140.6, w: 22.0, h: 40.0 },
+    Rect { x: 576.0, y: 133.0, w: CARD_WIDTH, h: CARD_HEIGHT },
+    Rect { x: 432.0, y: 19.0,  w: CARD_WIDTH, h: CARD_HEIGHT },
+    Rect { x: 122.4, y: 140.6, w: CARD_WIDTH, h: CARD_HEIGHT },
 ];
+
+// card
+pub const CARD_WIDTH: f64 = 22.0;
+pub const CARD_HEIGHT: f64 = 40.0;
+pub const CARD_ICON_WIDTH:  f64 = 15.0;
+pub const CARD_ICON_HEIGHT: f64 = 15.0;
 
 // desk
 pub const DESK_HOLD_NUM: [Rect; 4] = [
@@ -76,3 +82,10 @@ pub const DESK_HOLD_NUM: [Rect; 4] = [
     Rect { x: 302.4, y: 30.4,  w: 93.6, h: 19.0 },
     Rect { x: 7.2,   y: 182.4, w: 93.6, h: 19.0 },
 ];
+pub const DESK_MY_HOLD_BORDER: Rect = Rect { x: 532.8, y: 247.0, w: 180.0, h: 125.4 };
+pub const DESK_MY_HOLD_TITLE:  Rect = Rect { x: 532.8, y: 249.5, w: 180.0, h: 23.8 };
+pub const DESK_MY_HOLD_BOTTOM: Rect = Rect { x: 532.8, y: 273.3, w: 180.0, h: 99.1 };
+pub const DESK_MY_HOLD_LINE1_START: Rect = Rect { x: 539.8, y: 277.0, w: 22.0, h: 40.0 };
+pub const DESK_MY_HOLD_LINE2_START: Rect = Rect { x: 539.8, y: 325.0, w: 22.0, h: 40.0 };
+pub const DESK_MY_HOLD_GAP_WIDTH: f64 = 2.0;
+pub const DESK_MY_HOLD_GAP_HEIGHT: f64 = 8.0;

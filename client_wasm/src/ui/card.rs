@@ -13,7 +13,7 @@ pub enum CardStyle {
     ClearHalf,
 }
 
-fn get_card_image(c: &Card) -> (String, String){
+pub fn get_card_image(c: &Card) -> (String, String){
     let s = match c.suit {
         CardSuit::Spade => "spade".into(),
         CardSuit::Heart => "heart".into(),
@@ -37,14 +37,14 @@ pub fn ui_card(r: &Rect, c: Option<Card>, border_color: &str) {
         draw_image(&Rect{
             x: r.x + 3.0,
             y: r.y + 5.0,
-            w: 15.0,
-            h: 15.0,
+            w: CARD_ICON_WIDTH,
+            h: CARD_ICON_HEIGHT,
         }, &num);
         draw_image(&Rect{
             x: r.x + 3.0,
             y: r.y + 23.0,
-            w: 15.0,
-            h: 15.0,
+            w: CARD_ICON_WIDTH,
+            h: CARD_ICON_HEIGHT,
         }, &suit);
     } else {
         draw_text_oneline_center(r, "!");

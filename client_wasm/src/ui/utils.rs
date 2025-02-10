@@ -313,7 +313,7 @@ pub fn draw_rounded_rect_with_title(rect: &Rect, msg: &str, color: &str) {
     draw_text_oneline_center(&rect, msg);
 }
 
-pub fn get_font() -> String {
+pub fn get_font_normal() -> String {
     format!("{}px Arial", 16)
 }
 
@@ -322,7 +322,7 @@ pub fn get_font_small() -> String {
 }
 
 pub fn set_font_normal() {
-    get_canvas_ctx().set_font(&get_font());
+    get_canvas_ctx().set_font(&get_font_normal());
 }
 
 pub fn set_font_small() {
@@ -351,7 +351,7 @@ pub fn draw_paragraph_vec(rect: &Rect, p: Vec<String>) {
 
 pub fn draw_paragraph(rect: &Rect, t: &str) {
     let ctx = get_canvas_ctx();
-    ctx.set_font(&get_font());
+    ctx.set_font(&get_font_normal());
     let org_text_align = ctx.text_align();
     ctx.set_text_align("center");
 

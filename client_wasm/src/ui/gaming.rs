@@ -27,12 +27,17 @@ fn ui_gaming_my_cards(my_cards: Vec<Card>, choose: usize, hints: Vec<bool>) {
 
         ui_card(
             &r,
-            Some(c),
+            Some(c.clone()),
             if h {
                 MYCARD_BORDER
             } else {
                 MYCARD_BORDER_DIM
             }
+        );
+
+        draw_image(
+            &r.center_cut(Fixed(CARD_ICON_WIDTH), Fixed(CARD_ICON_HEIGHT)),
+            &get_card_image(&c).0,
         );
 
         if choose == i {
