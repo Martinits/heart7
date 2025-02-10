@@ -34,7 +34,7 @@ fn ui_gaming_my_cards(my_cards: Vec<Card>, choose: usize, hints: Vec<bool>) {
             }),
         );
 
-        if i == cn {
+        if i == cn - 1 {
             draw_image(
                 &r.center_cut(Fixed(CARD_ICON_WIDTH), Fixed(CARD_ICON_HEIGHT)),
                 &get_card_image(&c).0,

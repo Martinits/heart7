@@ -236,7 +236,7 @@ impl Room {
                 your_id: to as u32,
             }
         )).await.unwrap_or_else(
-            |e| error!("Cannot send gamemsg: {:?}", e)
+            |e| error!("Cannot send gamemsg: {}", e)
         );
     }
 

@@ -74,7 +74,7 @@ fn draw_normal(cs: ClientState) -> JsResult<()> {
                 let names = players.iter().map(|(n, _)| n.clone()).collect();
                 let holds = players.into_iter().map(|(_, h)| h).collect();
                 let desk = ds.into_iter().map(|c| {
-                    c.into_iter().map(|(c, _)| c).collect()
+                    c.into_iter().rev().map(|(c, _)| c).collect()
                 }).collect();
                 ui_game_result(desk, names, holds, roomid, winner);
             }
