@@ -1,33 +1,34 @@
 # heart7 - 扑克牌游戏 “憋七” 的Rust实现
-- 效果图
+### 效果图
 
-  ![result](assets/result.png)
+![result](assets/result.png)
 
-  ![gaming](assets/gaming.png)
+![gaming](assets/gaming.png)
+
+### WEB端效果图
+
+![client_wasm](assets/client_wasm.png)
+
+### 服务端运行指南
+
+- 编译：`cd server; make`
+- 运行服务端`heart7d --listen <IP:PORT>`，不加参数默认监听`0.0.0.0:20007`
+  - log在stdout
+
+### TUI客户端运行指南
 
 - Requirements
-
-  - protobuf (protoc)
   - Nerd Fonts
   - 一个现代的终端模拟器，比如alacritty、kitty等
   - 不保证Windows上的编译、运行和显示
   - 不要使用任何除ascii可显示字符以外的字符！！！！！
 
-- 实现
-  - C/S架构，通信使用gRPC（tonic + tokio）
-  - 界面显示使用TUI（ratatui + crossterm）
-
 - 编译运行
+  - `cd client_tui; make run`
+  - 默认日志在`/dev/null`，可以通过环境变量LOGFILE来设置
+  - 可通过`-a`选项更改默认服务器地址，如`heart7 -a 1.2.3.4:12345`
 
-  - `cargo build --release`
-  - 运行服务端`heart7d --listen <IP:PORT>`，不加参数默认监听`0.0.0.0:20007`
-    - log在stdout
-  - 运行客户端`heart7`，根据页面提示操作
-    - 默认日志在`heart7.log`，可以通过环境变量LOGFILE来设置
-    - 可通过`-a`选项更改默认服务器地址，如`heart7 -a 1.2.3.4:12345`
-
-- 客户端操作
-
+- 操作方式
   - 全键盘操作，支持动态调整终端大小，最小需要160*48
   - 通过上下左右键移动光标位置（有高亮提示），ENTER键确认
   - 输入框支持左右方向键、DELETE和BACKSPACE
@@ -47,13 +48,30 @@
   - 在任意状态下，按ESC可调出菜单，选择退出游戏、退出房间、退出程序
   - 在任意状态下，按Ctrl-C强制退出程序
 
-- “憋七”的游戏规则
+### WEB客户端操作指南
 
-  - 4位玩家平均发52张牌（不含大小王），每人13张，轮流出牌，在桌面上形成4种花色的A到K的排列
-  - 每种花色的排列从7开始，向两侧延伸
-  - 发到红桃7的玩家先出牌，按逆时针依次出牌（PLAY）
-  - 如果没有牌可以接，需要扣牌（HOLD）
-  - 只要有牌接，就不可以扣牌
-  - 7不可以扣
-  - 最终计算每位玩家的扣牌总点数（A-K对应1-13），总点数最少的玩家获胜
-  - 如果某位玩家没有扣牌，则称“净手”（CLEAR）
+- 部署：
+  - `cargo install trunk`
+  - `cd client_wasm; make serve`
+- 浏览器访问服务地址的8080端口（默认）即可
+- 通过鼠标或者触摸点按即可完成操作
+- 对于电脑，点击输入框才可以输入；对于手机，点按输入框会跳出输入法
+- 建议使用Chrome、Edge、Firefox等主流浏览器
+
+### “憋七”的游戏规则
+
+- 4位玩家平均发52张牌（不含大小王），每人13张，轮流出牌，在桌面上形成4种花色的A到K的排列
+- 每种花色的排列从7开始，向两侧延伸
+- 发到红桃7的玩家先出牌，按逆时针依次出牌（PLAY）
+- 如果没有牌可以接，需要扣牌（HOLD）
+- 只要有牌接，就不可以扣牌
+- 7不可以扣
+- 最终计算每位玩家的扣牌总点数（A-K对应1-13），总点数最少的玩家获胜
+- 如果某位玩家没有扣牌，则称“净手”（CLEAR）
+
+### 实现
+
+- C/S架构，通信使用gRPC/web-gRPC（tonic + tonic-web）
+- 服务端使用tokio进行异步
+- TUI客户端使用tokio进行异步，界面显示使用ratatui + crossterm
+- WEB客户端使用wasm-bindgen对接JavaScript的Promise进行异步，界面显示使用web-sys + gloo，使用原生HTML5 Canvas API
