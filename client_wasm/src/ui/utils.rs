@@ -67,7 +67,7 @@ pub fn clear_canvas() {
     clear_rect(&get_canvas_rect())
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct Rect {
     pub x: f64,
     pub y: f64,
@@ -317,7 +317,7 @@ pub fn get_font() -> String {
 }
 
 pub fn get_font_small() -> String {
-    format!("{}px Arial", 13)
+    format!("{}px Arial", 14)
 }
 
 pub fn set_font_normal() {

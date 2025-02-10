@@ -11,3 +11,6 @@ rule_cargo_toml:
 
 serve: rule_cargo_toml
 	trunk serve --disable-csp true -a 0.0.0.0 --release
+
+serve_debug: rule_cargo_toml
+	trunk serve --disable-csp true -a 0.0.0.0

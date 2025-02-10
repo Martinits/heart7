@@ -55,3 +55,18 @@ pub const MY_CARD_UP_HEIGHT: f64 = 15.0;
 pub const MY_CARD_LEFT_START: Rect = Rect { x: 237.6, y: 285.0, w: 300.0, h: 95.0 };
 pub const GAMING_BUTTON_PLAY: Rect = Rect { x: 136.8, y: 285.0, w: 72.0,  h: 34.2 };
 pub const GAMING_BUTTON_HOLD: Rect = Rect { x: 136.8, y: 330.6, w: 72.0,  h: 34.2 };
+pub const GAMING_MSG:         Rect = Rect { x: 230.4, y: 247.0, w: 309.6, h: 19.0 };
+pub const GAMING_NEXT: [Rect; 4] = [
+    Rect { x: 129.6, y: 247.0, w: 93.6, h: 19.0 },
+    Rect { x: 612.0, y: 190.0, w: 93.6, h: 19.0 },
+    Rect { x: 410.4, y: 30.4,  w: 93.6, h: 19.0 },
+    Rect { x: 7.2,   y: 209.0, w: 93.6, h: 19.0 },
+];
+
+// desk
+pub const DESK_HOLD_NUM: [Rect; 4] = [
+    Rect { x:   0.0, y:   0.0, w:  0.0, h:  0.0 },
+    Rect { x: 612.0, y: 163.4, w: 93.6, h: 19.0 },
+    Rect { x: 302.4, y: 30.4,  w: 93.6, h: 19.0 },
+    Rect { x: 7.2,   y: 182.4, w: 93.6, h: 19.0 },
+];

@@ -1,6 +1,5 @@
 use super::*;
 
-
 fn ui_gaming_my_cards(my_cards: Vec<Card>, choose: usize, hints: Vec<bool>) {
     if my_cards.len() == 0 {
         return;
@@ -44,18 +43,79 @@ fn ui_gaming_my_cards(my_cards: Vec<Card>, choose: usize, hints: Vec<bool>) {
 }
 
 fn ui_gameing_msg(msg: String) {
+    // let r = get_canvas_rect().cut_width([
+    //     Percent(32),
+    //     Percent(43),
+    // ])[1].cut_height([
+    //     Percent(65),
+    //     Percent(5),
+    // ])[1].clone();
+    // warn!("{:?}", r);
 
+    set_font_small();
+    draw_text_oneline_center_color(&GAMING_MSG, &msg, GAME_MSG);
+    set_font_normal();
 }
 
 fn ui_gaming_next(next: usize) {
+    // let r = match next {
+    //     // myself
+    //     0 => {
+    //         get_canvas_rect().cut_width([
+    //             Percent(18),
+    //             Percent(13),
+    //         ])[1].cut_height([
+    //             Percent(65),
+    //             Percent(5),
+    //         ])[1].clone()
+    //     }
+    //     // right
+    //     1 => {
+    //         get_canvas_rect().cut_width([
+    //             Percent(85),
+    //             Percent(13),
+    //         ])[1].cut_height([
+    //             Percent(50),
+    //             Percent(5),
+    //         ])[1].clone()
+    //     }
+    //     // top
+    //     2 => {
+    //         get_canvas_rect().cut_width([
+    //             Percent(57),
+    //             Percent(13),
+    //         ])[1].cut_height([
+    //             Percent(8),
+    //             Percent(5),
+    //         ])[1].clone()
+    //     }
+    //     // left
+    //     3 => {
+    //         get_canvas_rect().cut_width([
+    //             Percent(1),
+    //             Percent(13),
+    //         ])[1].cut_height([
+    //             Percent(55),
+    //             Percent(5),
+    //         ])[1].clone()
+    //     }
+    //     _ => unreachable!(),
+    // };
+    // warn!("{:?}", r);
+    // draw_rect(&r, BORDER_LIGHT);
 
+    draw_text_oneline_center_color(
+        &GAMING_NEXT[next],
+        if next == 0 {
+            "Your Turn!"
+        } else {
+            "Waiting..."
+        },
+        NEXT_TURN,
+    );
 }
 
 fn ui_gaming_last(last: Option<Card>, who: usize) {
-
-}
-
-fn ui_gaming_hold_num(hold_nums: Vec<u32>) {
 
 }
 
@@ -94,7 +154,7 @@ pub fn ui_gaming(
 
     ui_players(names);
 
-    ui_gaming_hold_num(hold_nums);
+    ui_desk_hold_num(hold_nums);
 
     let is_no_discard = !hints.iter().any(|b| *b);
     ui_gaming_my_cards(my_cards, choose, hints);
