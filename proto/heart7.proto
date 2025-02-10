@@ -119,6 +119,7 @@ message HoldList {
 message GameEnding {
         DeskResult desk = 1;
         repeated HoldList hold = 2;
+        uint32 winner = 3;
 }
 
 message GameMsg {

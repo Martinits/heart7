@@ -119,8 +119,8 @@ pub fn render<B: Backend>(frame: &mut Frame<B>, cs: ClientState) {
                     chains_big, button, has_done, msg
                 );
             }
-            ClientStateMachine::GameResult {ds, players, roomid, ..}
-                => ui_game_result(frame, ds, players, roomid),
+            ClientStateMachine::GameResult {ds, players, roomid, winner, ..}
+                => ui_game_result(frame, ds, players, roomid, winner),
         }
     }
 }

@@ -32,6 +32,7 @@ pub type GameResult<T> = Result<T, GameError>;
 pub struct Game {
     desk: Desk,
     players: Vec<Player>,
+    start: usize,
     next: usize,
     ready_cnt: u32,
     thisround: Vec<(Card, usize)>,
@@ -361,6 +362,22 @@ impl Game {
         ).collect()
     }
 
+    fn get_winner(&self) -> GameResult<usize> {
+        if self.play_cnt != END_GAME_CNT {
+            return Err(GameError::PermissionDenied("Game has not ended!".into()))
+        }
+
+        // start_id == 0 means he's the first one to play (Heart7 owner)
+        let mut start_id = vec![0, 1, 2, 3];
+        start_id.rotate_right(self.start);
+        // (pid, (hn, start_id))
+        let mut hn: Vec<_> = self.get_hold_nums().into_iter().zip(start_id).enumerate().collect();
+        hn.sort_by(
+            |a, b| a.1.cmp(&b.1)
+        );
+        Ok(hn[0].0)
+    }
+
     pub fn end_game(&self) -> GameResult<GameEnding> {
         if self.play_cnt != END_GAME_CNT {
             return Err(GameError::PermissionDenied("Game has not ended!".into()))
@@ -375,6 +392,7 @@ impl Game {
         Ok(GameEnding {
             desk: Some(self.desk.get_desk_result()),
             hold: self.get_hold_list(),
+            winner: self.get_winner()? as u32,
         })
     }
 

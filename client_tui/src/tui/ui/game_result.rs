@@ -479,7 +479,7 @@ fn name_shorten(name: &String) -> String {
 
 pub fn ui_game_result<B: Backend>(
     frame: &mut Frame<B>, ds: Vec<Vec<(Card, usize)>>,
-    players: Vec<(String, Vec<Card>)>, roomid: String
+    players: Vec<(String, Vec<Card>)>, roomid: String, winner: usize,
 ) {
     render_game_info(frame, roomid.clone());
 
@@ -487,44 +487,10 @@ pub fn ui_game_result<B: Backend>(
 
     render_hold_result(frame, &players);
 
-    let mut hold_sums: Vec<(usize, u32)> = players.iter().map(
-        |p| hold_sum(&p.1)
-    ).enumerate().collect();
-    hold_sums.sort_by_key(|p| p.1);
-    let mut num = 0;
-    let mut me_win = 4;
-    while num < 4 && hold_sums[num].1 == hold_sums[0].1 {
-        if hold_sums[num].0 == 0 {
-            me_win = num;
-        }
-        num += 1;
-    }
-    if me_win < 4 {
-        hold_sums.swap(me_win, 0);
-    }
-
-    let (msg, color) = if me_win < 4 {
-        (match num {
-            1 => format!("󰱱󰱱󰱱 You win!"),
-            2 => format!("󰱱󰱱󰱱 You and player {} win!", name_shorten(&players[hold_sums[1].0].0)),
-            3 => format!("󰱱󰱱󰱱 You and player {}, {} win!",
-                            name_shorten(&players[hold_sums[1].0].0),
-                            name_shorten(&players[hold_sums[2].0].0),
-                        ),
-            4 => format!("Tie!"),
-            _ => panic!("Invalid num!"),
-        },
-        RESULT_MSG_WIN)
+    let (msg, color) = if winner == 0 {
+        (format!("󰱱󰱱󰱱 You win!"), RESULT_MSG_WIN)
     } else {
-        (match num {
-            1 => format!("󰱶󰱶󰱶 Player {} wins...", name_shorten(&players[hold_sums[0].0].0)),
-            2 => format!("󰱶󰱶󰱶 Player {}, {} win...",
-                            name_shorten(&players[hold_sums[0].0].0),
-                            name_shorten(&players[hold_sums[1].0].0)
-                        ),
-            3 => format!("󰱶󰱶󰱶 The other three players win..."),
-            _ => panic!("Invalid num!"),
-        },
+        (format!("󰱶󰱶󰱶 Player {} wins...", name_shorten(&players[winner].0)),
         RESULT_MSG_LOSE)
     };
 
