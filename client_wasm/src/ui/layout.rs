@@ -64,14 +64,16 @@ pub const GAMING_NEXT: [Rect; 4] = [
 ];
 pub const GAMING_LAST: [Rect; 4] = [
     Rect { x:   0.0, y:   0.0, w:  0.0, h:  0.0 },
-    Rect { x: 576.0, y: 133.0, w: CARD_WIDTH, h: CARD_HEIGHT },
-    Rect { x: 432.0, y: 19.0,  w: CARD_WIDTH, h: CARD_HEIGHT },
-    Rect { x: 122.4, y: 140.6, w: CARD_WIDTH, h: CARD_HEIGHT },
+    Rect { x: 576.0, y: 133.0, w: CARD_V_WIDTH, h: CARD_V_HEIGHT },
+    Rect { x: 432.0, y: 19.0,  w: CARD_V_WIDTH, h: CARD_V_HEIGHT },
+    Rect { x: 107.4, y: 140.6, w: CARD_V_WIDTH, h: CARD_V_HEIGHT },
 ];
 
 // card
-pub const CARD_WIDTH: f64 = 22.0;
-pub const CARD_HEIGHT: f64 = 40.0;
+pub const CARD_V_WIDTH: f64 = 22.0;
+pub const CARD_V_HEIGHT: f64 = 40.0;
+pub const CARD_H_WIDTH: f64 = 40.0;
+pub const CARD_H_HEIGHT: f64 = 22.0;
 pub const CARD_ICON_WIDTH:  f64 = 15.0;
 pub const CARD_ICON_HEIGHT: f64 = 15.0;
 
@@ -89,3 +91,12 @@ pub const DESK_MY_HOLD_LINE1_START: Rect = Rect { x: 539.8, y: 277.0, w: 22.0, h
 pub const DESK_MY_HOLD_LINE2_START: Rect = Rect { x: 539.8, y: 325.0, w: 22.0, h: 40.0 };
 pub const DESK_MY_HOLD_GAP_WIDTH: f64 = 2.0;
 pub const DESK_MY_HOLD_GAP_HEIGHT: f64 = 8.0;
+pub const DESK_CHAIN_GAP: f64 = 15.0;
+pub const DESK_CHAIN_CARD_GAP: f64 = 10.0;
+pub const DESK: Rect = Rect { x: 237.6, y: 83.6, w: 230.4, h: 154.0 };
+pub const DESK_CHAIN: [Rect; 4] = [
+    Rect { x: 250.3, y: 83.6, w: 40.0, h: 154.0 },
+    Rect { x: 305.3, y: 83.6, w: 40.0, h: 154.0 },
+    Rect { x: 360.3, y: 83.6, w: 40.0, h: 154.0 },
+    Rect { x: 415.3, y: 83.6, w: 40.0, h: 154.0 },
+];

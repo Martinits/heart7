@@ -54,7 +54,7 @@ fn draw_normal(cs: ClientState) -> JsResult<()> {
             ClientStateMachine::WaitReady {players, msg, roomid, ..}
                 => ui_wait_ready(players, msg, roomid),
             ClientStateMachine::Gaming {
-                choose, mut game, roomid, button, msg, ..
+                choose, mut game, roomid, msg, ..
             } => {
                 let names = game.get_player_names();
                 let hold_nums = game.get_hold_nums();
@@ -64,54 +64,10 @@ fn draw_normal(cs: ClientState) -> JsResult<()> {
                 let my_holds = game.get_my_holds();
                 let hints = game.get_my_hint();
                 let has_done = game.has_done();
-                let thisround = game.get_thisround();
-                let thisround_my = game.get_thisround_my();
-                let mut chains_small = vec![];
-                let mut chains_big = vec![];
-                game.export_desk().into_iter().for_each(
-                    |l| {
-                        let mut small = vec![];
-                        let mut big = vec![];
-                        for c in l {
-                            if c.num <= 7 {
-                                small.push(c);
-                            } else {
-                                big.push(c);
-                            }
-                        }
-                        big.reverse();
-                        for (v, chain) in [(small, &mut chains_small), (big, &mut chains_big)] {
-                            chain.push(if v.len() == 0 {
-                                Vec::new()
-                            } else if !thisround.contains(&v[0]) {
-                                vec![(v[0].clone(), CardStyleOnDesk::Normal)]
-                            } else {
-                                let mut viter = v.into_iter();
-                                let mut ret = vec![];
-                                while let Some(c) = viter.next() {
-                                    if !thisround.contains(&c) {
-                                        break;
-                                    }
-                                    ret.push(
-                                        (c.clone(),
-                                         if thisround_my.is_some()
-                                            && thisround_my.as_ref().unwrap().clone() == c {
-                                            CardStyleOnDesk::ThisRoundMy
-                                         } else {
-                                            CardStyleOnDesk::ThisRound
-                                        })
-                                    );
-                                }
-                                ret
-                            });
-                        }
-
-                    }
-                );
+                let desk = game.export_desk();
 
                 ui_gaming(names, hold_nums, next, roomid, choose, last,
-                    my_cards, my_holds, hints, chains_small,
-                    chains_big, button, has_done, msg
+                    my_cards, my_holds, hints, desk, has_done, msg
                 );
             }
             ClientStateMachine::GameResult {ds, players, roomid, ..}

@@ -25,14 +25,14 @@ fn ui_gaming_my_cards(my_cards: Vec<Card>, choose: usize, hints: Vec<bool>) {
             r.y -= MY_CARD_UP_HEIGHT;
         }
 
-        ui_card(
+        ui_card_vertical(
             &r,
             Some(c.clone()),
-            if h {
+            Some(if h {
                 MYCARD_BORDER
             } else {
                 MYCARD_BORDER_DIM
-            }
+            }),
         );
 
         draw_image(
@@ -160,7 +160,8 @@ fn ui_gaming_last(last: Option<Card>, who: usize) {
     // };
     // warn!("{:?}", r);
 
-    ui_card(&GAMING_LAST[who], last, NEXT_TURN);
+    ui_card_vertical(&GAMING_LAST[who], last.clone(), Some(NEXT_TURN));
+    ui_card_vertical(&GAMING_LAST[1], last, Some(NEXT_TURN));
 }
 
 fn ui_gaming_button() {
@@ -186,9 +187,7 @@ pub fn ui_gaming(
     names: Vec<String>, hold_nums: Vec<u32>, next: usize,
     roomid: String, choose: usize, last: Option<(usize, Option<Card>)>,
     my_cards: Vec<Card>, my_holds: Vec<Card>, hints: Vec<bool>,
-    chains_small: Vec<Vec<(Card, CardStyleOnDesk)>>,
-    chains_big: Vec<Vec<(Card, CardStyleOnDesk)>>,
-    button: u32, has_done: bool, msg: Option<String>
+    desk: Vec<Vec<Card>>, has_done: bool, msg: Option<String>
 ) {
     ui_room_id(roomid);
 
@@ -217,4 +216,6 @@ pub fn ui_gaming(
     }
 
     ui_desk_my_holds(my_holds, false);
+
+    ui_desk(desk);
 }

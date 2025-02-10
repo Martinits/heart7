@@ -95,7 +95,7 @@ pub fn ui_desk_my_holds(mut my_holds: Vec<Card>, clear: bool) {
     set_font_normal();
 
     // clear
-    if true {
+    if clear {
         draw_text_oneline_center_color(&DESK_MY_HOLD_BOTTOM, "CLEAR!", CARD_CLEAR_BOREDER);
         return;
     }
@@ -128,11 +128,80 @@ pub fn ui_desk_my_holds(mut my_holds: Vec<Card>, clear: bool) {
     };
 
     for c in h1 {
-        ui_card(&line1, Some(c), MYCARD_BORDER_DIM);
+        ui_card_vertical(&line1, Some(c), Some(MYCARD_BORDER_DIM));
         line1.x += line1.w + DESK_MY_HOLD_GAP_WIDTH;
     }
     for c in h2 {
-        ui_card(&line2, Some(c), MYCARD_BORDER_DIM);
+        ui_card_vertical(&line2, Some(c), Some(MYCARD_BORDER_DIM));
         line2.x += line2.w + DESK_MY_HOLD_GAP_WIDTH;
     }
+}
+
+pub fn ui_desk(desk: Vec<Vec<Card>>) {
+    // let h = CARD_H_HEIGHT * 2f64 + DESK_CHAIN_CARD_GAP * 11f64;
+    // let r = get_canvas_rect().cut_width([
+    //     Percent(33),
+    //     Percent(32),
+    // ])[1].cut_height([
+    //     Percent(22.0),
+    //     Fixed(h),
+    // ])[1].clone();
+    // warn!("{:?}", r);
+
+    let mut deskr = DESK.clone();
+    deskr.y -= 3.0;
+    deskr.h += 6.0;
+    draw_rect(&deskr, BORDER_DARK);
+
+    // let w = CARD_H_WIDTH * 4f64 + DESK_CHAIN_GAP * 3f64;
+    // let slices = r.center_cut_width(Fixed(w)).cut_width([
+    //     Fixed(CARD_H_WIDTH),
+    //     Fixed(DESK_CHAIN_GAP),
+    //     Fixed(CARD_H_WIDTH),
+    //     Fixed(DESK_CHAIN_GAP),
+    //     Fixed(CARD_H_WIDTH),
+    //     Fixed(DESK_CHAIN_GAP),
+    //     Fixed(CARD_H_WIDTH),
+    // ]);
+    //
+    // let r = [
+    //     &slices[0],
+    //     &slices[2],
+    //     &slices[4],
+    //     &slices[6],
+    // ];
+
+    for (r, chain) in DESK_CHAIN.into_iter().zip(desk) {
+        if chain.len() <= 1 {
+            let cr = r.center_cut_height(Fixed(CARD_H_HEIGHT));
+            ui_card_horizontal(
+                &cr,
+                if chain.len() == 0 {
+                    None
+                } else {
+                    Some(chain[0].clone())
+                },
+                false,
+            );
+        } else {
+            let h = (chain.len() - 2) as f64 * DESK_CHAIN_CARD_GAP + 2f64 * CARD_H_HEIGHT;
+            let mut r = r.center_cut_height(Fixed(h));
+            r.w = CARD_H_WIDTH;
+            r.h = CARD_H_HEIGHT;
+
+            // top one
+            ui_card_horizontal(&r, Some(chain.last().unwrap().clone()), false);
+            r.y += CARD_H_HEIGHT;
+
+            // middle ones
+            for c in chain[1..chain.len()-1].iter().rev() {
+                ui_card_horizontal(&r, Some(c.clone()), true);
+                r.y += DESK_CHAIN_CARD_GAP;
+            }
+
+            // last one
+            ui_card_horizontal(&r, Some(chain[0].clone()), false);
+        }
+    }
+
 }
