@@ -1,9 +1,9 @@
-use tokio_stream::wrappers::ReceiverStream;
+use tokio_stream::{wrappers::ReceiverStream, Stream};
 use crate::room::RoomManager;
 use tonic::{Code, Request, Response, Status};
 use log::*;
 use crate::*;
-
+use std::pin::Pin;
 
 #[derive(Debug, Default)]
 pub struct Heart7D {
@@ -48,8 +48,6 @@ impl Heart7 for Heart7D {
         Ok(Response::new(reply))
     }
 
-    type GameStreamStream = ReceiverStream<Result<GameMsg, Status>>;
-
     async fn join_room(
         &self,
         request: Request<JoinRoomReq>,
@@ -79,6 +77,8 @@ impl Heart7 for Heart7D {
         Ok(Response::new(PlayerId{ your_id: pid as u32 }))
     }
 
+    type GameStreamStream = Pin<Box<dyn Stream<Item = Result<GameMsg, Status>> + Send>>;
+
     async fn game_stream(
         &self,
         request: Request<RoomReq>,
@@ -91,7 +91,9 @@ impl Heart7 for Heart7D {
         let mut room = aroom.write().await;
         let rx = room.get_game_stream_rx(*pid as usize)?;
 
-        Ok(Response::new(ReceiverStream::new(rx)))
+        Ok(Response::new(
+            Box::pin(ReceiverStream::new(rx)) as Self::GameStreamStream
+        ))
     }
 
     async fn stream_ready(
