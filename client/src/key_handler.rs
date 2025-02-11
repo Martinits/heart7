@@ -37,6 +37,9 @@ impl ClientStateManager {
                         client: c.clone(),
                         msg: format!("Hello, {}!\n\
                                 Please enter room ID:", input.value()),
+                        roomid: None,
+                        pid: None,
+                        spawning_stream_listener: false,
                     };
                     self.exitmenu.1 = 0;
                 }
@@ -55,6 +58,9 @@ impl ClientStateManager {
                                     Successfully created a room, ID is shown below.\n\
                                     Please press the button to join room:", name),
                             name: name.clone(),
+                            roomid: None,
+                            pid: None,
+                            spawning_stream_listener: false,
                         };
                         self.exitmenu.1 = 0;
                     },
@@ -68,17 +74,39 @@ impl ClientStateManager {
             }
             ClientStateInternal::JoinRoom {
                 ref input, ref mut msg, client: ref mut c, ref name,
+                ref mut roomid, pid: ref mut opid, ref mut spawning_stream_listener,
             } if input.value().len() > 0 => {
-                info!("Joining room {}", input.value());
-                match c.join_room(name.clone(), input.value().into()).await {
-                    Ok(stream) => {
-                        // spawn stream listerning task
-                        spawn_stream_listener = Some(stream);
-                    }
-                    Err(s) => {
-                        *msg = format!("Making JoinRoom request to server failed:\n\
-                                        {}\n\
-                                        Please retry:", s);
+                let pid = if opid.is_none() {
+                    let room: String = input.value().into();
+                    info!("Joining room {}", room);
+                    c.join_room(name.clone(), room.clone()).await.unwrap_or_else(
+                        |e| {
+                            *msg = format!("Making JoinRoom request to server failed:\n\
+                                            {}\n\
+                                            Please retry:", e);
+                            4
+                        }
+                    )
+                } else {
+                    opid.unwrap()
+                };
+
+                if pid < 4 {
+                    // if join_room success, set opid, avoiding redundant join_room reqs
+                    *opid = Some(pid);
+                    // if join_room success, set roomid only once
+                    *roomid = roomid.clone().or(Some(input.value().into()));
+                    match c.game_stream(pid, roomid.as_ref().unwrap().clone()).await {
+                        Ok(gs) => {
+                            // spawn stream listener task
+                            spawn_stream_listener = Some(gs);
+                            *spawning_stream_listener = true;
+                        }
+                        Err(e) => {
+                            *msg = format!("Making GameStream request to server failed:\n\
+                                            {}\n\
+                                            Please retry:", e);
+                        }
                     }
                 }
                 true
@@ -154,8 +182,13 @@ impl ClientStateManager {
                 input.handle(InputRequest::InsertChar(c));
                 true
             }
-            ClientStateInternal::NewRoom {ref mut input, ..}
-            | ClientStateInternal::JoinRoom {ref mut input, ..} => {
+            ClientStateInternal::NewRoom {ref mut input, ..} => {
+                input.handle(InputRequest::InsertChar(c));
+                true
+            }
+            ClientStateInternal::JoinRoom {
+                ref mut input, spawning_stream_listener, ..
+            } if !spawning_stream_listener => {
                 input.handle(InputRequest::InsertChar(c));
                 true
             }
@@ -185,8 +218,13 @@ impl ClientStateManager {
                 }
                 true
             }
-            ClientStateInternal::NewRoom {ref mut input, ..}
-            | ClientStateInternal::JoinRoom {ref mut input, ..} => {
+            ClientStateInternal::NewRoom {ref mut input, ..} => {
+                input.handle(req);
+                true
+            }
+            ClientStateInternal::JoinRoom {
+                ref mut input, spawning_stream_listener, ..
+            } if !spawning_stream_listener => {
                 input.handle(req);
                 true
             }
@@ -257,8 +295,13 @@ impl ClientStateManager {
                 input.handle(keycode);
                 true
             }
-            ClientStateInternal::NewRoom {ref mut input, ..}
-            | ClientStateInternal::JoinRoom {ref mut input, ..} => {
+            ClientStateInternal::NewRoom {ref mut input, ..} => {
+                input.handle(keycode);
+                true
+            }
+            ClientStateInternal::JoinRoom {
+                ref mut input, spawning_stream_listener, ..
+            } if !spawning_stream_listener => {
                 input.handle(keycode);
                 true
             }
@@ -270,8 +313,13 @@ impl ClientStateManager {
         match self.state {
             ClientStateInternal::GetServer { ref mut input, .. }
             | ClientStateInternal::AskName { ref mut input, .. }
-            | ClientStateInternal::NewRoom { ref mut input, .. }
-            | ClientStateInternal::JoinRoom { ref mut input, .. } => {
+            | ClientStateInternal::NewRoom { ref mut input, .. } => {
+                *input = Input::new(new_input);
+                true
+            }
+            ClientStateInternal::JoinRoom {
+                ref mut input, spawning_stream_listener, ..
+            } if !spawning_stream_listener => {
                 *input = Input::new(new_input);
                 true
             }

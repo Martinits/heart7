@@ -36,11 +36,14 @@ impl ClientStateManager {
         }
     }
 
-    pub fn handle_stream_listener_spawned(&mut self) -> bool {
+    pub async fn handle_stream_listener_spawned(&mut self) -> bool {
         match self.state {
             ClientStateInternal::JoinRoom {
-                ref input, client: ref mut c, ..
-            } => {
+                ref input, client: ref mut c, spawning_stream_listener,
+                ref pid, ref roomid, ..
+            } if spawning_stream_listener => {
+                let roomid = roomid.clone().unwrap();
+                c.stream_ready(pid.unwrap(), roomid).await.expect("Requesting stream_ready");
                 self.state = ClientStateInternal::WaitPlayer {
                     players: vec![("".into(), 4, false); 4],
                     client: c.clone(),
@@ -50,7 +53,7 @@ impl ClientStateManager {
                 self.exitmenu.1 = 0;
                 true
             }
-            _ => false,
+            _ => panic!("Received stream_listener_spawned msg in unexpected state {:?}", self.state),
         }
     }
 
@@ -102,9 +105,9 @@ impl ClientStateManager {
                         ).collect();
 
                         let mut game = Game::default();
-                        players.iter().for_each(
-                            |p| game.add_player(p.0.clone())
-                        );
+                        players.iter().for_each(|p| {
+                            game.add_player(p.0.clone());
+                        });
                         game.set_next(players.iter().position(|p| p.1 == next as usize).unwrap());
                         game.init_my_cards(cards);
 

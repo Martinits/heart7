@@ -21,7 +21,8 @@ pub struct Room {
     state: RoomState,
     id: String,
     game: Game,
-    gamemsg_tx: Vec<MsgTX>,
+    // (game_tx, stream_ready)
+    gamemsg_tx: Vec<(MsgTX, bool)>,
     alive: bool,
     watch_dog_cancel: CancellationToken,
     player_alive: bool,
@@ -203,7 +204,7 @@ impl Room {
         })
     }
 
-    pub fn add_player(&mut self, p: &PlayerInfo) -> RPCResult<super::room::MsgRX> {
+    pub fn add_player(&mut self, p: &PlayerInfo) -> RPCResult<usize> {
         if self.state != RoomState::NotFull {
             return Err(Status::new(
                 Code::ResourceExhausted,
@@ -211,16 +212,61 @@ impl Room {
             ));
         }
 
+        let pid = self.game.add_player(p.name.clone());
+
+        Ok(pid)
+    }
+
+    pub fn get_game_stream_rx(&mut self, pid: usize) -> RPCResult<super::room::MsgRX> {
+        if self.state != RoomState::NotFull {
+            return Err(Status::new(
+                Code::ResourceExhausted,
+                format!("Room {} is full!", &self.id)
+            ));
+        }
+        if pid < self.gamemsg_tx.len() {
+            return Err(Status::new(
+                Code::AlreadyExists,
+                format!("Room {} Player {} already exists", &self.id, pid),
+            ));
+        }
+
         let (tx, rx) = mpsc::channel(DEFAULT_CHANNEL_SIZE);
+        self.gamemsg_tx.push((tx, false));
 
-        self.gamemsg_tx.push(tx);
-        self.game.add_player(p.name.clone());
+        Ok(rx)
+    }
 
-        if self.game.get_player_num() == 4 {
+    pub fn stream_ready(&mut self, pid: usize) -> RPCResult<()> {
+        if self.state != RoomState::NotFull {
+            return Err(Status::new(
+                Code::ResourceExhausted,
+                format!("Room {} is full!", &self.id)
+            ));
+        }
+        if pid > self.gamemsg_tx.len() {
+            return Err(Status::new(
+                Code::NotFound,
+                format!("Room {} Player {} does not exist", &self.id, pid),
+            ));
+        }
+        let gtx = self.gamemsg_tx.get_mut(pid).unwrap();
+        if gtx.1 {
+            return Err(Status::new(
+                Code::PermissionDenied,
+                format!("Room {} Player {} has already been stream ready", &self.id, pid),
+            ));
+        }
+        gtx.1 = true;
+
+        if self.game.get_player_num() == 4
+            && self.gamemsg_tx.len() == 4
+            && self.gamemsg_tx.iter().all(|(_, rd)| *rd)
+        {
             self.state = RoomState::WaitReady;
         }
 
-        Ok(rx)
+        Ok(())
     }
 
     pub async fn send_gamemsg(&self, msg: Msg) {
@@ -230,14 +276,20 @@ impl Room {
     }
 
     pub async fn send_gamemsg_to(&self, msg: Msg, to: usize) {
-        self.gamemsg_tx.get(to).unwrap().send(Ok(
-            GameMsg {
-                msg: Some(msg),
-                your_id: to as u32,
-            }
-        )).await.unwrap_or_else(
-            |e| error!("Cannot send gamemsg: {}", e)
-        );
+        let (tx, rd) = self.gamemsg_tx.get(to).unwrap();
+
+        if *rd {
+            tx.send(Ok(
+                GameMsg {
+                    msg: Some(msg),
+                    your_id: to as u32,
+                }
+            )).await.unwrap_or_else(
+                |e| error!("Cannot send gamemsg: {}", e)
+            );
+        } else {
+            info!("Player {} not stream ready, skip.", to);
+        }
     }
 
     pub async fn send_gamemsg_except(&self, msg: Msg, except: usize) {

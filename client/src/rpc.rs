@@ -66,13 +66,41 @@ impl RpcClient {
         }
     }
 
-    pub async fn join_room(&mut self, name: String, roomid: String) -> RPCResult<GameStream> {
+    pub async fn join_room(&mut self, name: String, roomid: String) -> RPCResult<usize> {
         let request = Request::new(JoinRoomReq{
             player: Some(PlayerInfo { name }),
             roomid
         });
 
-        Ok(self.c.join_room(request).await?.into_inner())
+        let PlayerId { your_id } = self.c.join_room(request).await?.into_inner();
+        Ok(your_id as usize)
+    }
+
+    pub async fn game_stream(&mut self, pid: usize, roomid: String) -> RPCResult<GameStream> {
+        let request = Request::new(RoomReq{
+            playerid: pid as u32,
+            roomid
+        });
+
+        Ok(self.c.game_stream(request).await?.into_inner())
+    }
+
+    pub async fn stream_ready(&mut self, pid: usize, roomid: String) -> RPCResult<()> {
+        let request = Request::new(RoomReq{
+            playerid: pid as u32,
+            roomid
+        });
+
+        let r = self.c.stream_ready(request).await?.into_inner();
+        if r.success {
+            assert!(r.msg == "Ok");
+            Ok(())
+        } else {
+            Err(Status::new(
+                Code::Internal,
+                format!("Server response false when requesting stream_ready, {}", r.msg)
+            ).into())
+        }
     }
 
     pub async fn room_status(&mut self, roomid: String) -> RPCResult<RoomInfo> {

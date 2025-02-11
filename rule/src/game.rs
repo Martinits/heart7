@@ -43,8 +43,9 @@ pub struct Game {
 static END_GAME_CNT: u32 = 52;
 
 impl Game {
-    pub fn add_player(&mut self, name: String) {
+    pub fn add_player(&mut self, name: String) -> usize {
         self.players.push(Player::new(name));
+        self.players.len() - 1
     }
 
     pub fn new_game(&mut self, cards: Vec<u32>) -> GameResult<()> {

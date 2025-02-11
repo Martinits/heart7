@@ -93,7 +93,7 @@ pub enum ClientStateMachine {
     },
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 enum ClientStateInternal {
     GetServer {
         input: Input,
@@ -118,6 +118,12 @@ enum ClientStateInternal {
         input: Input,
         msg: String,
         name: String,
+        // be Some(pid_remote) only after join_room succes
+        // for avoiding multiple join_room request when game_stream request fails
+        pid: Option<usize>,
+        // be Some(roomid) only after join_room succes
+        roomid: Option<String>,
+        spawning_stream_listener: bool,
     },
     WaitPlayer {
         client: RpcClient,
@@ -301,7 +307,7 @@ impl ClientStateManager {
                 ClientEvent::StreamMsg(msg)
                     => self.handle_stream_msg(msg).await,
                 ClientEvent::StreamListenerSpawned
-                    => self.handle_stream_listener_spawned(),
+                    => self.handle_stream_listener_spawned().await,
                 ClientEvent::ResetInput(new_input)
                     => self.handle_reset_input(new_input),
                 _ => false,
@@ -339,7 +345,7 @@ impl ClientStateManager {
                 ClientEvent::StreamMsg(msg)
                     => self.handle_stream_msg(msg).await,
                 ClientEvent::StreamListenerSpawned
-                    => self.handle_stream_listener_spawned(),
+                    => self.handle_stream_listener_spawned().await,
                 ClientEvent::ResetInput(new_input)
                     => self.handle_reset_input(new_input),
                 ClientEvent::SetChoose(choose)

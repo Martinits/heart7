@@ -5,7 +5,9 @@ package heart7_rpc;
 service Heart7 {
         rpc Hello (EmptyRequest) returns (CommonReply);
         rpc NewRoom (NewRoomReq) returns (CommonReply);
-        rpc JoinRoom (JoinRoomReq) returns (stream GameMsg);
+        rpc JoinRoom (JoinRoomReq) returns (PlayerID);
+        rpc GameStream (RoomReq) returns (stream GameMsg);
+        rpc StreamReady (RoomReq) returns (CommonReply);
         rpc RoomStatus (RoomReq) returns (RoomInfo);
         rpc GameReady (RoomReq) returns (GameReadyReply);
         // rpc GameMessage (RoomReq) returns (stream GameMsg);
@@ -28,6 +30,10 @@ message NewRoomReq {
 message JoinRoomReq {
         PlayerInfo player = 1;
         string roomid = 2;
+}
+
+message PlayerID {
+        uint32 your_id = 1;
 }
 
 message RoomInfo {
