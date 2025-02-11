@@ -65,7 +65,12 @@ impl ClientTui {
 
     fn spawn_stream_listener(&mut self, mut gs: GameStream) {
         let txc = self.tx.clone();
+
+        if self.stream_cancel.is_cancelled() {
+            self.stream_cancel = CancellationToken::new();
+        }
         let scancel = self.stream_cancel.clone();
+
         info!("Spawning GameStream listener...");
         tokio::spawn(async move {
             txc.send(ClientEvent::StreamListenerSpawned).await
@@ -73,6 +78,7 @@ impl ClientTui {
             loop {
                 tokio::select!{
                     _ = scancel.cancelled() => {
+                        info!("stream listener is cancelled");
                         break;
                     }
                     maybe_msg = gs.message() => {
