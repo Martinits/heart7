@@ -1,6 +1,6 @@
 use crate::*;
 use super::desk::*;
-use super::player::Player;
+use super::player::*;
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -38,6 +38,7 @@ pub struct Game {
     thisround: Vec<(Card, usize)>,
     last: Option<Play>,
     play_cnt: u32,
+    someone_has_clear: bool,
 }
 
 static END_GAME_CNT: u32 = 52;
@@ -244,9 +245,23 @@ impl Game {
     }
 
     pub fn get_my_hint(&mut self) -> Vec<bool> {
-        self.get_my_cards().iter().map(
-            |c| self.desk.is_discard_candidates(c)
-        ).collect()
+        let cards = self.get_my_cards();
+        if self.someone_has_clear {
+            vec![false; cards.len()]
+        } else {
+            cards.iter().map(
+                |c| self.desk.is_discard_candidates(c)
+            ).collect()
+        }
+    }
+
+    pub fn someone_has_discard_candidates(&mut self, pid: usize) -> bool {
+        if self.someone_has_clear {
+            return false;
+        }
+
+        let cards = self.players.get(pid).unwrap().get_cards_set();
+        self.desk.someone_has_discard_candidates(cards)
     }
 
     pub fn check_play(&mut self, play: &Play) -> GameResult<()> {
@@ -275,13 +290,19 @@ impl Game {
             ))
         }
 
+        if is_discard && self.someone_has_clear {
+            return Err(GameError::PermissionDenied(
+                "Someone clears! Hold only!".into()
+            ))
+        }
+
         if !is_discard && p.is_holding(&c) {
             return Err(GameError::PermissionDenied(
                 "You are already holding this card!".into()
             ))
         }
 
-        if !is_discard && self.desk.someone_has_discard_candidates(p.get_cards_set()) {
+        if !is_discard && self.someone_has_discard_candidates(pid) {
             return Err(GameError::PermissionDenied(
                 "You can't hold, since you have cards to play!".into()
             ))
@@ -294,7 +315,13 @@ impl Game {
         self.desk.play_card(play.clone());
 
         let pid = play.get_pid();
-        self.players.get_mut(pid).unwrap().play_card(play.clone());
+        match self.players.get_mut(pid).unwrap().play_card(play.clone()) {
+            PlayCardResult::Normal => {},
+            _ => {
+                assert_eq!(self.someone_has_clear, false);
+                self.someone_has_clear = true;
+            }
+        }
 
         if self.play_cnt % 4 == 0 {
             self.thisround.clear();
@@ -314,7 +341,7 @@ impl Game {
 
     pub fn play_card(&mut self, play: Play) -> GameResult<bool> {
         self.check_play(&play)?;
-        self.play_card_no_check(play)?;
+        let _ = self.play_card_no_check(play)?;
         Ok(self.play_cnt == END_GAME_CNT)
     }
 

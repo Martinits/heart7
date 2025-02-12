@@ -92,6 +92,7 @@ impl ClientStateManager {
                 };
 
                 if pid < 4 {
+                    info!("Joining room succeeded");
                     // if join_room success, set opid, avoiding redundant join_room reqs
                     *opid = Some(pid);
                     // if join_room success, set roomid only once

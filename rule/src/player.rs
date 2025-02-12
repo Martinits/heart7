@@ -8,6 +8,12 @@ pub struct Player {
     holds: Vec<Card>,
     ready: bool,
 }
+#[derive(Debug, Default, Clone)]
+pub enum PlayCardResult {
+    #[default] Normal,
+    Clear,
+    TheSeven,
+}
 
 impl Player {
     pub fn new(name: String) -> Self {
@@ -94,7 +100,7 @@ impl Player {
     }
 
     // this function doesn't check whether is valid !!!
-    pub fn play_card(&mut self, play: Play) {
+    pub fn play_card(&mut self, play: Play) -> PlayCardResult {
         assert!(self.has_card_left());
 
         let (is_discard, c, _) = play.split();
@@ -107,7 +113,18 @@ impl Player {
         }
 
         if !is_discard {
-            self.holds.push(c);
+            self.holds.push(c.clone());
         }
+
+        if self.holds.len() == 0 && self.cards.len() == 0 {
+            if c.num == 7 {
+                PlayCardResult::TheSeven
+            } else {
+                PlayCardResult::Clear
+            }
+        } else {
+            PlayCardResult::Normal
+        }
+
     }
 }
