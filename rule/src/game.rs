@@ -39,11 +39,19 @@ pub struct Game {
     last: Option<Play>,
     play_cnt: u32,
     someone_has_clear: bool,
+    first_hold: bool,
 }
 
 static END_GAME_CNT: u32 = 52;
 
 impl Game {
+    pub fn new() -> Self {
+        Self {
+            first_hold: true,
+            ..Default::default()
+        }
+    }
+
     pub fn add_player(&mut self, name: String) -> usize {
         self.players.push(Player::new(name));
         self.players.len() - 1
@@ -308,6 +316,12 @@ impl Game {
             ))
         }
 
+        if !is_discard && self.first_hold && c.num == 1 {
+            return Err(GameError::PermissionDenied(
+                "First hold cannot be an Ace!".into()
+            ))
+        }
+
         Ok(())
     }
 
@@ -333,6 +347,8 @@ impl Game {
 
         if let Play::Discard(c, _) = &play {
             self.thisround.push((c.clone(), pid));
+        } else if self.first_hold {
+            self.first_hold = false;
         }
         self.last = Some(play);
 

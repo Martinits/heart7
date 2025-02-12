@@ -104,7 +104,7 @@ impl ClientStateManager {
                             |c| c.into()
                         ).collect();
 
-                        let mut game = Game::default();
+                        let mut game = Game::new();
                         players.iter().for_each(|p| {
                             game.add_player(p.0.clone());
                         });

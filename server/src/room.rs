@@ -16,7 +16,7 @@ pub struct RoomManager {
     rooms: Arc<RwLock<HashMap<String, ARoom>>>,
 }
 
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct Room {
     state: RoomState,
     id: String,
@@ -80,7 +80,8 @@ impl RoomManager {
             alive: true,
             watch_dog_cancel: CancellationToken::new(),
             player_alive: true,
-            ..Default::default()
+            game: Game::new(),
+            gamemsg_tx: vec![],
         };
 
         let cancel = r.watch_dog_cancel.clone();
