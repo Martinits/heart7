@@ -122,10 +122,17 @@ message HoldList {
         repeated CardInfo holds = 1;
 }
 
+enum GameWinnerState {
+        NORMAL = 0;
+        CLEAR = 1;
+        SEVEN = 2;
+}
+
 message GameEnding {
         DeskResult desk = 1;
         repeated HoldList hold = 2;
         uint32 winner = 3;
+        GameWinnerState winner_state = 4;
 }
 
 message GameMsg {

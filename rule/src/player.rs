@@ -8,6 +8,7 @@ pub struct Player {
     holds: Vec<Card>,
     ready: bool,
 }
+
 #[derive(Debug, Default, Clone)]
 pub enum PlayCardResult {
     #[default] Normal,

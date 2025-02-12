@@ -109,7 +109,7 @@ pub const RESULT_HOLD_POINTS: [Rect; 4] = [
     Rect { x: 6.0,   y: 209.0, w: 96.0, h: 19.0 },
 ];
 pub const RESULT_CONTINUE_BUTTON: Rect = Rect { x: 140.0, y: 301.6, w: 115.2, h: 38.0 };
-pub const RESULT_MSG: Rect = Rect { x: 278.0, y: 311.6, w: 216.0, h: 20.0 };
+pub const RESULT_MSG: Rect = Rect { x: 268.0, y: 311.6, w: 250.0, h: 20.0 };
 pub const RESULT_HOLD_GAP_WIDTH: f64 = 2.0;
 pub const RESULT_HOLD_GAP_HEIGHT: f64 = 8.0;
 pub const RESULT_HOLD_LEFT_START:  Rect = Rect { x: 108.0, y: 114.0, w: 22.0, h: 40.0 };
@@ -118,3 +118,4 @@ pub const RESULT_HOLD_RIGHT_START: Rect = Rect { x: 576.0, y: 95.0,  w: 22.0, h:
 pub const RESULT_HOLD_LEFT_EMPTY:  Rect = Rect { x: 118.0, y: 154.0, w: 85.0, h: 20.0 };
 pub const RESULT_HOLD_TOP_EMPTY:   Rect = Rect { x: 370.2, y: 30.0,  w: 85.0, h: 20.0 };
 pub const RESULT_HOLD_RIGHT_EMPTY: Rect = Rect { x: 496.0, y: 145.0,  w: 85.0, h: 20.0 };
+pub const RESULT_MSG_FMT_STRLEN: [f64; 3] = [90.7, 101.4, 193.0];

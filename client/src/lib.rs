@@ -90,6 +90,7 @@ pub enum ClientStateMachine {
         players: Vec<(String, Vec<Card>)>,
         roomid: String,
         winner: usize,
+        winner_state: GameWinnerState,
     },
 }
 
@@ -153,6 +154,7 @@ enum ClientStateInternal {
         players: Vec<(String, Vec<Card>)>,
         roomid: String,
         winner: usize,
+        winner_state: GameWinnerState,
     },
 }
 
@@ -195,9 +197,9 @@ impl Into<ClientStateMachine> for ClientStateInternal {
                 choose, game, my_remote_idx, roomid, button, msg
             },
             ClientStateInternal::GameResult {
-                ds, my_remote_idx, players, roomid, winner, ..
+                ds, my_remote_idx, players, roomid, winner, winner_state, ..
             } => ClientStateMachine::GameResult {
-                ds, my_remote_idx, players, roomid, winner,
+                ds, my_remote_idx, players, roomid, winner, winner_state,
             },
         }
     }

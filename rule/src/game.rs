@@ -38,7 +38,8 @@ pub struct Game {
     thisround: Vec<(Card, usize)>,
     last: Option<Play>,
     play_cnt: u32,
-    someone_has_clear: bool,
+    // (clear, seven)
+    someone_has_clear: (bool, bool),
     first_hold: bool,
 }
 
@@ -254,7 +255,7 @@ impl Game {
 
     pub fn get_my_hint(&mut self) -> Vec<bool> {
         let cards = self.get_my_cards();
-        if self.someone_has_clear {
+        if self.someone_has_clear.0 {
             vec![false; cards.len()]
         } else {
             cards.iter().map(
@@ -264,7 +265,7 @@ impl Game {
     }
 
     pub fn someone_has_discard_candidates(&mut self, pid: usize) -> bool {
-        if self.someone_has_clear {
+        if self.someone_has_clear.0 {
             return false;
         }
 
@@ -298,7 +299,7 @@ impl Game {
             ))
         }
 
-        if is_discard && self.someone_has_clear {
+        if is_discard && self.someone_has_clear.0 {
             return Err(GameError::PermissionDenied(
                 "Someone clears! Hold only!".into()
             ))
@@ -332,8 +333,8 @@ impl Game {
         match self.players.get_mut(pid).unwrap().play_card(play.clone()) {
             PlayCardResult::Normal => {},
             _ => {
-                assert_eq!(self.someone_has_clear, false);
-                self.someone_has_clear = true;
+                assert_eq!(self.someone_has_clear.0, false);
+                self.someone_has_clear.0 = true;
             }
         }
 
@@ -406,7 +407,7 @@ impl Game {
         ).collect()
     }
 
-    fn get_winner(&self) -> GameResult<usize> {
+    fn get_winner(&self) -> GameResult<(usize, GameWinnerState)> {
         if self.play_cnt != END_GAME_CNT {
             return Err(GameError::PermissionDenied("Game has not ended!".into()))
         }
@@ -419,7 +420,19 @@ impl Game {
         hn.sort_by(
             |a, b| a.1.cmp(&b.1)
         );
-        Ok(hn[0].0)
+        let win_pid = hn[0].0;
+        let winneer_state = if hn[0].1.0 == 0 {
+            assert!(self.someone_has_clear.0);
+            if self.someone_has_clear.1 {
+                GameWinnerState::Seven
+            } else {
+                GameWinnerState::Clear
+            }
+        } else {
+            GameWinnerState::Normal
+        };
+
+        Ok((win_pid, winneer_state))
     }
 
     pub fn end_game(&self) -> GameResult<GameEnding> {
@@ -433,10 +446,13 @@ impl Game {
             ))
         }
 
+        let (winner, winner_state) = self.get_winner()?;
+
         Ok(GameEnding {
             desk: Some(self.desk.get_desk_result()),
             hold: self.get_hold_list(),
-            winner: self.get_winner()? as u32,
+            winner: winner as u32,
+            winner_state: winner_state as i32,
         })
     }
 

@@ -480,6 +480,7 @@ fn name_shorten(name: &String) -> String {
 pub fn ui_game_result<B: Backend>(
     frame: &mut Frame<B>, ds: Vec<Vec<(Card, usize)>>,
     players: Vec<(String, Vec<Card>)>, roomid: String, winner: usize,
+    winner_state: GameWinnerState,
 ) {
     render_game_info(frame, roomid.clone());
 
@@ -488,10 +489,20 @@ pub fn ui_game_result<B: Backend>(
     render_hold_result(frame, &players);
 
     let (msg, color) = if winner == 0 {
-        (format!("󰱱󰱱󰱱 You win!"), RESULT_MSG_WIN)
+        let msg = match winner_state {
+            GameWinnerState::Normal => format!("󰱱󰱱󰱱 You win!"),
+            GameWinnerState::Clear => format!("󰱱󰱱󰱱 You clear!"),
+            GameWinnerState::Seven => format!("󰱱󰱱󰱱 You clear with SEVEN!"),
+        };
+        (msg, RESULT_MSG_WIN)
     } else {
-        (format!("󰱶󰱶󰱶 Player {} wins...", name_shorten(&players[winner].0)),
-        RESULT_MSG_LOSE)
+        let short_name = name_shorten(&players[winner].0);
+        let msg = match winner_state {
+            GameWinnerState::Normal => format!("󰱶󰱶󰱶 Player {} wins.", short_name),
+            GameWinnerState::Clear => format!("󰱶󰱶󰱶 Player {} clears.", short_name),
+            GameWinnerState::Seven => format!("󰱶󰱶󰱶 Player {} clears with SEVEN.", short_name),
+        };
+        (msg, RESULT_MSG_LOSE)
     };
 
     render_result_msg(frame, msg, color);

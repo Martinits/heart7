@@ -132,9 +132,26 @@ fn ui_hold_points(points: Vec<u32>) {
     }
 }
 
+fn fit_in_name(w: f64, mut name: String) -> String {
+    // warn!("{}", get_text_metric("Player  wins.").0);
+    // warn!("{}", get_text_metric("Player  clears.").0);
+    // warn!("{}", get_text_metric("Player  clears with SEVEN.").0);
+    let short_name = if get_text_metric(&name).0 <= w {
+        name
+    } else {
+        name.pop();
+        while get_text_metric(&format!("{}..", name)).0 > w {
+            name.pop();
+        }
+        format!("{}..", name)
+    };
+
+    short_name
+}
+
 pub fn ui_game_result(
-    desk: Vec<Vec<Card>>, names: Vec<String>,
-    holds: Vec<Vec<Card>>, roomid: String, winner: usize,
+    desk: Vec<Vec<Card>>, names: Vec<String>, holds: Vec<Vec<Card>>,
+    roomid: String, winner: usize, winner_state: GameWinnerState,
 ) {
     ui_room_id(roomid);
 
@@ -151,16 +168,34 @@ pub fn ui_game_result(
 
     // result msg
     let (msg, color) = if winner == 0 {
-        (format!("You win!"), RESULT_MSG_WIN)
-    } else {
-        let name = &names[winner];
-        let name = if get_text_metric(name).0 >= 90.0 {
-            &format!("{}..", name.split_at(6).0)
-        } else {
-            name
+        let msg = match winner_state {
+            GameWinnerState::Normal => format!("You win!"),
+            GameWinnerState::Clear => format!("You clear!"),
+            GameWinnerState::Seven => format!("You clear with SEVEN!"),
         };
-        (format!("Player {} wins...", name),
-        RESULT_MSG_LOSE)
+        (msg, RESULT_MSG_WIN)
+    } else {
+        let name = names[winner].clone();
+        let msg = match winner_state {
+            GameWinnerState::Normal => {
+                format!(
+                    "Player {} wins.",
+                    fit_in_name(RESULT_MSG.w - RESULT_MSG_FMT_STRLEN[0], name)
+                )
+            },
+            GameWinnerState::Clear => {
+                format!(
+                    "Player {} clears.",
+                    fit_in_name(RESULT_MSG.w - RESULT_MSG_FMT_STRLEN[1], name)
+                )
+            }
+            GameWinnerState::Seven => {
+                format!("Player {} clears with SEVEN.",
+                    fit_in_name(RESULT_MSG.w - RESULT_MSG_FMT_STRLEN[2], name)
+                )
+            }
+        };
+        (msg, RESULT_MSG_LOSE)
     };
     draw_text_oneline_center_color(&RESULT_MSG, &msg, color);
 

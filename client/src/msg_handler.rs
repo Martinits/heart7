@@ -160,7 +160,7 @@ impl ClientStateManager {
                         pi.player = Self::get_local_idx(my_remote_idx, pi.player as usize) as u32;
                         game.play_card_no_check(pi.into()).unwrap();
                     }
-                    Some(Msg::Endgame(GameEnding { desk, hold, winner })) => {
+                    Some(Msg::Endgame(GameEnding { desk, hold, winner, winner_state })) => {
                         let ds = desk.expect("Empty DeskResult in GameResult from server!");
                         // actually it should be already sorted
                         // holds.sort();
@@ -170,6 +170,7 @@ impl ClientStateManager {
                                 &hold, game.get_player_names(), my_remote_idx
                             ),
                             winner: Self::get_local_idx(my_remote_idx, winner as usize),
+                            winner_state: winner_state.try_into().unwrap(),
                             my_remote_idx,
                             client: client.clone(),
                             roomid: roomid.clone(),
