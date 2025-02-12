@@ -310,18 +310,18 @@ impl ClientStateManager {
         }
     }
 
-    pub fn handle_reset_input(&mut self, new_input: String) -> bool {
+    pub fn handle_reset_input(&mut self, new_input: Input) -> bool {
         match self.state {
             ClientStateInternal::GetServer { ref mut input, .. }
             | ClientStateInternal::AskName { ref mut input, .. }
             | ClientStateInternal::NewRoom { ref mut input, .. } => {
-                *input = Input::new(new_input);
+                *input = new_input;
                 true
             }
             ClientStateInternal::JoinRoom {
                 ref mut input, spawning_stream_listener, ..
             } if !spawning_stream_listener => {
-                *input = Input::new(new_input);
+                *input = new_input;
                 true
             }
             _ => false,

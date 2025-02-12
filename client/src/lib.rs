@@ -222,7 +222,7 @@ pub enum ClientEvent {
     ServerConnectResult(Result<RpcClient, String>),
     StreamListenerSpawned,
     StreamMsg(GameMsg),
-    ResetInput(String),
+    ResetInput(Input),
     SetChoose(usize),
 }
 
@@ -266,7 +266,6 @@ impl ClientStateAdvanceReply {
 pub struct ClientStateManager {
     state: ClientStateInternal,
     exitmenu: (bool, u32), // (inside exitmenu or not, which button is choosed)
-    default_addr: String,
 }
 
 impl ClientStateManager {
@@ -274,12 +273,11 @@ impl ClientStateManager {
         Self {
             exitmenu: (false, 0),
             state: ClientStateInternal::GetServer {
-                input: Input::new(default_addr.clone()).with_cursor(0),
+                input: Input::new(default_addr.clone()),
                 msg: "Welcome to Seven-of-Heart !!!\n\
                     Please enter game server address:".into(),
                 connecting: false,
             },
-            default_addr,
         }
     }
 

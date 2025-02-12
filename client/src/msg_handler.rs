@@ -4,7 +4,7 @@ use rpc::{self, RpcClient};
 impl ClientStateManager {
     pub fn handle_server_connect_result(&mut self, r: Result<RpcClient, String>) -> bool {
         match self.state {
-            ClientStateInternal::GetServer {ref mut input, ref mut msg, ref mut connecting} => {
+            ClientStateInternal::GetServer {ref mut msg, ref mut connecting, ..} => {
                 if !*connecting {
                     warn!("Client is not connecting, drop server connecting result!");
                     return false
@@ -23,7 +23,6 @@ impl ClientStateManager {
                         self.exitmenu.1 = 0;
                     },
                     Err(s) => {
-                        *input = Input::new(self.default_addr.clone()).with_cursor(0);
                         *msg = format!("Connecting to server failed:\n\
                                         {}\n\
                                         Please retry:", s);

@@ -68,9 +68,9 @@ fn handle_click_esc_button(x: f64, y: f64, tx: Sender<ClientEvent>) -> JsResult<
 
 fn handle_click_prompt_single_button(x: f64, y: f64, tx: Sender<ClientEvent>) -> JsResult<()> {
     if PROMPT_INPUT.is_clicked_in(x, y) {
-        get_hidden_input().focus()?;
+        hidden_input_focus();
     } else {
-        get_hidden_input().blur()?;
+        hidden_input_blur();
         if PROMPT_BUTTON_1.is_clicked_in(x, y) {
             spawn_tx_send(tx, ClientEvent::Enter);
         }
@@ -84,9 +84,9 @@ fn handle_click_get_server(x: f64, y: f64, tx: Sender<ClientEvent>) -> JsResult<
 
 fn handle_click_ask_name(x: f64, y: f64, tx: Sender<ClientEvent>, button: u16, is_input: bool) -> JsResult<()> {
     if PROMPT_INPUT.is_clicked_in(x, y) {
-        get_hidden_input().focus()?;
+        hidden_input_focus();
     } else {
-        get_hidden_input().blur()?;
+        hidden_input_blur();
         if let Some(clicked) = PROMPT_BUTTON_2.iter().position(|b| b.is_clicked_in(x, y)) {
             let mut payload = vec![];
             if is_input {

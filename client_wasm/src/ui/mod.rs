@@ -34,19 +34,19 @@ fn draw_normal(cs: ClientState) -> JsResult<()> {
     } else {
         match cs.fsm {
             ClientStateMachine::GetServer {connecting, input, msg} => {
-                reset_hidden_input(input.value());
+                hidden_input_reset(input.value());
                 ui_home_page(input, msg, connecting);
             }
             ClientStateMachine::AskName {input, msg, is_input, ..} => {
-                reset_hidden_input(input.value());
+                hidden_input_reset(input.value());
                 ui_ask_name(input, msg, is_input);
             }
             ClientStateMachine::NewRoom { input, msg, ..} => {
-                reset_hidden_input(input.value());
+                hidden_input_reset(input.value());
                 ui_new_room(input, msg);
             }
             ClientStateMachine::JoinRoom {input, msg, ..} => {
-                reset_hidden_input(input.value());
+                hidden_input_reset(input.value());
                 ui_join_room(input, msg);
             }
             ClientStateMachine::WaitPlayer {players, msg, roomid, ..}
@@ -119,6 +119,22 @@ pub fn ui_init() -> JsResult<()> {
     Ok(())
 }
 
-pub fn reset_hidden_input(new_value: &str) {
+pub fn hidden_input_reset(new_value: &str) {
     get_hidden_input().set_value(&new_value);
+}
+
+pub fn hidden_input_focus() {
+    get_hidden_input().focus().unwrap_throw();
+}
+
+pub fn hidden_input_blur() {
+    get_hidden_input().blur().unwrap_throw();
+}
+
+pub fn hidden_input_is_focused() -> bool {
+    if let Some(e) = gloo::utils::document().active_element() {
+        e.id() == "hidden-input"
+    } else {
+        false
+    }
 }

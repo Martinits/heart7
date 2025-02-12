@@ -56,6 +56,7 @@ fn spawn_event_handler(tx: Sender<ClientEvent>, csm: CSMType) -> JsResult<()> {
     info!("Starting canvas click handler...");
     let txc = tx.clone();
     let listener = gloo::events::EventListener::new(&get_canvas(), "click", move |e| {
+        // warn!("inside click handler");
         let event = e.dyn_ref::<web_sys::MouseEvent>().unwrap_throw();
         let (left, top) = get_canvas_position();
         handle_click(
@@ -67,13 +68,31 @@ fn spawn_event_handler(tx: Sender<ClientEvent>, csm: CSMType) -> JsResult<()> {
     });
     listener.forget();
 
+    fn reset_input(tx: Sender<ClientEvent>) {
+        let hipt = get_hidden_input();
+        let value = hipt.value();
+        let cursor = hipt.selection_start().unwrap_throw().unwrap_throw();
+        // warn!("reset input!");
+        spawn_tx_send(tx, ClientEvent::ResetInput(
+            Input::new(value).with_cursor(cursor as usize)
+        ));
+    }
+
+    // hidden input focus event
+    info!("Starting hidden input focus handler...");
+    let txc = tx.clone();
+    let listener = gloo::events::EventListener::new(&get_hidden_input(), "focus", move |_| {
+        // warn!("inside focus handler");
+        reset_input(txc.clone());
+    });
+    listener.forget();
+
     // hidden input input event
     info!("Starting hidden input input handler...");
     let txc = tx.clone();
     let listener = gloo::events::EventListener::new(&get_hidden_input(), "input", move |_| {
-        let value = get_hidden_input().value();
-        let txcc = txc.clone();
-        spawn_tx_send(txcc, ClientEvent::ResetInput(value));
+        // warn!("inside input handler");
+        reset_input(txc.clone());
     });
     listener.forget();
 
@@ -81,12 +100,22 @@ fn spawn_event_handler(tx: Sender<ClientEvent>, csm: CSMType) -> JsResult<()> {
     info!("Starting hidden input blur handler...");
     let txc = tx.clone();
     let listener = gloo::events::EventListener::new(&get_hidden_input(), "blur", move |_| {
-        let value = get_hidden_input().value();
-        let txcc = txc.clone();
-        spawn_tx_send(txcc, ClientEvent::ResetInput(value));
+        // warn!("inside blur handler");
+        reset_input(txc.clone());
     });
     listener.forget();
 
+    // left and right arrow handler
+    info!("Starting lr arrow handler...");
+    let txc = tx.clone();
+    let listener = gloo::events::EventListener::new(&get_hidden_input(), "keyup", move |e| {
+        let event = e.dyn_ref::<web_sys::KeyboardEvent>().unwrap_throw();
+        if event.key() == "ArrowLeft" || event.key() == "ArrowRight" {
+            // warn!("inside keyup handler");
+            reset_input(txc.clone());
+        }
+    });
+    listener.forget();
     Ok(())
 }
 

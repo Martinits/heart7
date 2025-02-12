@@ -405,7 +405,7 @@ pub fn draw_text_oneline_center_color(rect: &Rect, t: &str, color: &str) {
     ctx.set_fill_style(&old);
 }
 
-fn draw_text_oneline_with_descent(rect: &Rect, t: &str, descent: f64) {
+pub fn draw_text_oneline_with_descent(rect: &Rect, t: &str, descent: f64) {
     // draw_rect(rect, BORDER_NORMAL);
     let w = get_text_metric(t).0;
     if w > rect.w {
@@ -416,10 +416,6 @@ fn draw_text_oneline_with_descent(rect: &Rect, t: &str, descent: f64) {
 
 pub fn get_ascii_max_descent() -> f64 {
     get_text_descent("1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-}
-
-pub fn draw_input_text(rect: &Rect, t: &str) {
-    draw_text_oneline_with_descent(rect, t, get_ascii_max_descent());
 }
 
 pub fn draw_image(rect: &Rect, img: &str) {

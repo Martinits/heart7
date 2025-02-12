@@ -1,7 +1,7 @@
 use super::*;
 
 fn ui_prompt_window(
-    input: String,
+    input: Input,
     input_title: String,
     msg: String,
     input_selected: bool,
@@ -51,8 +51,16 @@ fn ui_prompt_window(
     }
 }
 
+fn draw_input_text(rect: &Rect, t: &str) {
+    draw_text_oneline_with_descent(rect, t, get_ascii_max_descent());
+}
+
+fn draw_cursor(rect: Rect) {
+    get_canvas_ctx().fill_rect(rect.x, rect.y, rect.w, rect.h);
+}
+
 // fn draw_input(rect: &Rect, input: String, input_title: String, input_color: &str) {
-fn draw_input(input: String, input_title: String, input_color: &str) {
+fn draw_input(input: Input, input_title: String, input_color: &str) {
     // PROMPT_INPUT
     // let (_, input_text_h) = get_text_metric(input);
     // let input_h = input_text_h * 2.8;
@@ -63,7 +71,7 @@ fn draw_input(input: String, input_title: String, input_color: &str) {
 
     // border height = input_text_h * 0.8
     let input_text_rect = PROMPT_INPUT.cut_border(Percent(2.0), Percent(0.9/2.8 * 100f64));
-    draw_input_text(&input_text_rect, &input);
+    draw_input_text(&input_text_rect, input.value());
 
     let (title_w, title_h) = get_text_metric(&input_title);
     // let h = PROMPT_INPUT.h + title_h / 2f64;
@@ -80,6 +88,18 @@ fn draw_input(input: String, input_title: String, input_color: &str) {
     clear_rect(&title_rect);
 
     draw_text_oneline(&title_rect, &input_title);
+
+    // cursor
+    if hidden_input_is_focused() {
+        let cursor = input.cursor();
+        let cursor_rect = Rect {
+            x: input_text_rect.x + get_text_metric(input.value().split_at(cursor).0).0,
+            y: input_text_rect.y,
+            w: 1.0,
+            h: input_text_rect.h,
+        };
+        draw_cursor(cursor_rect);
+    }
 }
 
 pub fn ui_home_page(input: Input, msg: String, connecting: bool) {
