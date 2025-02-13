@@ -184,18 +184,16 @@ impl ClientTui {
 async fn main() -> Result<()> {
     let args = Args::parse();
 
-    let logfile = match env::var("LOGFILE") {
-        Ok(f) => f,
-        Err(_) => "/dev/null".into()
-    };
-
-    let logfile = FileAppender::builder().build(logfile)?;
-    let config = Config::builder()
-        .appender(Appender::builder().build("logfile", Box::new(logfile)))
-        .build(Root::builder()
-                   .appender("logfile")
-                   .build(LevelFilter::Debug))?;
-    log4rs::init_config(config)?;
+    if let Ok(f) = env::var("LOGFILE") {
+        let logfile = FileAppender::builder().build(f.clone())?;
+        let config = Config::builder()
+            .appender(Appender::builder().build("logfile", Box::new(logfile)))
+            .build(Root::builder()
+                       .appender("logfile")
+                       .build(LevelFilter::Debug))?;
+        log4rs::init_config(config)?;
+        info!("Logging to {}", f);
+    }
 
     info!("Heart7 Client Starts!");
 
