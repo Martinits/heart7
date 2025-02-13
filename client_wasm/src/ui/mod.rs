@@ -34,19 +34,19 @@ fn draw_normal(cs: ClientState) -> JsResult<()> {
     } else {
         match cs.fsm {
             ClientStateMachine::GetServer {connecting, input, msg} => {
-                hidden_input_reset(input.value());
+                hidden_input_set_value(input.value());
                 ui_home_page(input, msg, connecting);
             }
             ClientStateMachine::AskName {input, msg, is_input, ..} => {
-                hidden_input_reset(input.value());
+                hidden_input_set_value(input.value());
                 ui_ask_name(input, msg, is_input);
             }
             ClientStateMachine::NewRoom { input, msg, ..} => {
-                hidden_input_reset(input.value());
+                hidden_input_set_value(input.value());
                 ui_new_room(input, msg);
             }
             ClientStateMachine::JoinRoom {input, msg, ..} => {
-                hidden_input_reset(input.value());
+                hidden_input_set_value(input.value());
                 ui_join_room(input, msg);
             }
             ClientStateMachine::WaitPlayer {players, msg, roomid, ..}
@@ -119,8 +119,14 @@ pub fn ui_init() -> JsResult<()> {
     Ok(())
 }
 
-pub fn hidden_input_reset(new_value: &str) {
+pub fn hidden_input_set_value(new_value: &str) {
     get_hidden_input().set_value(&new_value);
+}
+
+pub fn hidden_input_set_cursor(new_cursor: usize) {
+    let hipt = get_hidden_input();
+    hipt.set_selection_start(Some(new_cursor as u32)).unwrap_throw();
+    hipt.set_selection_end(Some(new_cursor as u32)).unwrap_throw();
 }
 
 pub fn hidden_input_focus() {

@@ -26,13 +26,20 @@ pub struct ClientStateBrief {
 }
 
 pub enum ClientStateMachineBrief {
-    GetServer,
+    GetServer {
+        input: Input,
+    },
     AskName {
         button: u16,
         is_input: bool,
+        input: Input,
     },
-    NewRoom,
-    JoinRoom,
+    NewRoom {
+        input: Input,
+    },
+    JoinRoom {
+        input: Input,
+    },
     WaitPlayer,
     WaitReady,
     Gaming {
@@ -368,11 +375,14 @@ impl ClientStateManager {
 
     pub fn get_client_state_brief(&self) -> ClientStateBrief {
         let fsm = match self.state {
-            ClientStateInternal::GetServer{..} => ClientStateMachineBrief::GetServer,
-            ClientStateInternal::AskName{button, is_input, ..}
-                => ClientStateMachineBrief::AskName{button, is_input},
-            ClientStateInternal::NewRoom{..} => ClientStateMachineBrief::NewRoom,
-            ClientStateInternal::JoinRoom{..} => ClientStateMachineBrief::JoinRoom,
+            ClientStateInternal::GetServer{ref input, ..}
+                => ClientStateMachineBrief::GetServer{input: input.clone()},
+            ClientStateInternal::AskName{button, is_input, ref input, ..}
+                => ClientStateMachineBrief::AskName{button, is_input, input: input.clone()},
+            ClientStateInternal::NewRoom{ref input, ..}
+                => ClientStateMachineBrief::NewRoom{input: input.clone()},
+            ClientStateInternal::JoinRoom{ref input, ..}
+                => ClientStateMachineBrief::JoinRoom{input: input.clone()},
             ClientStateInternal::WaitPlayer{..} => ClientStateMachineBrief::WaitPlayer,
             ClientStateInternal::WaitReady{..} => ClientStateMachineBrief::WaitReady,
             ClientStateInternal::Gaming { choose, ref game, button, .. }

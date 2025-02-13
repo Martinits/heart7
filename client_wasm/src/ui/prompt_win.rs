@@ -70,8 +70,9 @@ fn draw_input(input: Input, input_title: String, input_color: &str) {
     draw_rect(&PROMPT_INPUT, input_color);
 
     // border height = input_text_h * 0.8
-    let input_text_rect = PROMPT_INPUT.cut_border(Percent(2.0), Percent(0.9/2.8 * 100f64));
-    draw_input_text(&input_text_rect, input.value());
+    // let input_text_rect = PROMPT_INPUT.cut_border(Percent(2.0), Percent(0.9/2.8 * 100f64));
+    // warn!("{:?}", input_text_rect);
+    draw_input_text(&PROMPT_INPUT_TEXT, input.value());
 
     let (title_w, title_h) = get_text_metric(&input_title);
     // let h = PROMPT_INPUT.h + title_h / 2f64;
@@ -93,10 +94,10 @@ fn draw_input(input: Input, input_title: String, input_color: &str) {
     if hidden_input_is_focused() {
         let cursor = input.cursor();
         let cursor_rect = Rect {
-            x: input_text_rect.x + get_text_metric(input.value().split_at(cursor).0).0,
-            y: input_text_rect.y,
+            x: PROMPT_INPUT_TEXT.x + get_text_metric(input.value().split_at(cursor).0).0,
+            y: PROMPT_INPUT_TEXT.y,
             w: 1.0,
-            h: input_text_rect.h,
+            h: PROMPT_INPUT_TEXT.h,
         };
         draw_cursor(cursor_rect);
     }

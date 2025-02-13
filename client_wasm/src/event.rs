@@ -15,11 +15,14 @@ pub fn handle_click(
         handle_click_exit_menu(get_button_num_from_brief(&csbrief), csbrief.exitmenu.1, x, y, tx)?;
     } else {
         match csbrief.fsm {
-            ClientStateMachineBrief::GetServer => handle_click_get_server(x, y, tx)?,
-            ClientStateMachineBrief::AskName{button, is_input}
-                => handle_click_ask_name(x, y, tx, button, is_input)?,
-            ClientStateMachineBrief::NewRoom => handle_click_new_room(x, y, tx)?,
-            ClientStateMachineBrief::JoinRoom => handle_click_join_room(x, y, tx)?,
+            ClientStateMachineBrief::GetServer{input}
+                => handle_click_get_server(x, y, tx, input)?,
+            ClientStateMachineBrief::AskName{button, is_input, input}
+                => handle_click_ask_name(x, y, tx, button, is_input, input)?,
+            ClientStateMachineBrief::NewRoom{input}
+                => handle_click_new_room(x, y, tx, input)?,
+            ClientStateMachineBrief::JoinRoom{input}
+                => handle_click_join_room(x, y, tx, input)?,
             ClientStateMachineBrief::WaitPlayer => handle_click_wait_player(x, y, tx)?,
             ClientStateMachineBrief::WaitReady => handle_click_wait_ready(x, y, tx)?,
             ClientStateMachineBrief::Gaming{ choose, card_num, button, my_turn }
@@ -66,9 +69,47 @@ fn handle_click_esc_button(x: f64, y: f64, tx: Sender<ClientEvent>) -> JsResult<
     Ok(ret)
 }
 
-fn handle_click_prompt_single_button(x: f64, y: f64, tx: Sender<ClientEvent>) -> JsResult<()> {
+fn handle_click_prompt_input_cursor(
+    dx: f64, tx: Sender<ClientEvent>, input: Input
+) {
+    let new_cursor = |cursor| {
+        hidden_input_set_cursor(cursor);
+        spawn_tx_send(
+            tx,
+            ClientEvent::ResetInput(
+                input.clone().with_cursor(cursor)
+            )
+        );
+    };
+
+    let mut width = 0f64;
+    for (i, c) in input.value().chars().enumerate() {
+        let w = get_text_metric(&c.to_string()).0;
+        if dx <= width + w/2.0 {
+            if input.cursor() != i {
+                new_cursor(i);
+            }
+            return;
+        }
+        width += w;
+    }
+
+    let input_len = input.value().len();
+    if input.cursor() != input_len {
+        new_cursor(input_len);
+    }
+}
+
+fn handle_click_prompt_single_button(
+    x: f64, y: f64, tx: Sender<ClientEvent>, input: Input
+) -> JsResult<()> {
     if PROMPT_INPUT.is_clicked_in(x, y) {
         hidden_input_focus();
+        if hidden_input_is_focused() {
+            if PROMPT_INPUT_TEXT.is_clicked_in(x, y) {
+                handle_click_prompt_input_cursor(x - PROMPT_INPUT_TEXT.x, tx, input);
+            }
+        }
     } else {
         hidden_input_blur();
         if PROMPT_BUTTON_1.is_clicked_in(x, y) {
@@ -78,13 +119,23 @@ fn handle_click_prompt_single_button(x: f64, y: f64, tx: Sender<ClientEvent>) ->
     Ok(())
 }
 
-fn handle_click_get_server(x: f64, y: f64, tx: Sender<ClientEvent>) -> JsResult<()> {
-    handle_click_prompt_single_button(x, y, tx)
+fn handle_click_get_server(
+    x: f64, y: f64, tx: Sender<ClientEvent>, input: Input
+) -> JsResult<()> {
+    handle_click_prompt_single_button(x, y, tx, input)
 }
 
-fn handle_click_ask_name(x: f64, y: f64, tx: Sender<ClientEvent>, button: u16, is_input: bool) -> JsResult<()> {
+fn handle_click_ask_name(
+    x: f64, y: f64, tx: Sender<ClientEvent>,
+    button: u16, is_input: bool, input: Input,
+) -> JsResult<()> {
     if PROMPT_INPUT.is_clicked_in(x, y) {
         hidden_input_focus();
+        if hidden_input_is_focused() {
+            if PROMPT_INPUT_TEXT.is_clicked_in(x, y) {
+                handle_click_prompt_input_cursor(x - PROMPT_INPUT_TEXT.x, tx, input);
+            }
+        }
     } else {
         hidden_input_blur();
         if let Some(clicked) = PROMPT_BUTTON_2.iter().position(|b| b.is_clicked_in(x, y)) {
@@ -102,12 +153,16 @@ fn handle_click_ask_name(x: f64, y: f64, tx: Sender<ClientEvent>, button: u16, i
     Ok(())
 }
 
-fn handle_click_new_room(x: f64, y: f64, tx: Sender<ClientEvent>) -> JsResult<()> {
-    handle_click_prompt_single_button(x, y, tx)
+fn handle_click_new_room(
+    x: f64, y: f64, tx: Sender<ClientEvent>, input: Input
+) -> JsResult<()> {
+    handle_click_prompt_single_button(x, y, tx, input)
 }
 
-fn handle_click_join_room(x: f64, y: f64, tx: Sender<ClientEvent>) -> JsResult<()> {
-    handle_click_prompt_single_button(x, y, tx)
+fn handle_click_join_room(
+    x: f64, y: f64, tx: Sender<ClientEvent>, input: Input
+) -> JsResult<()> {
+    handle_click_prompt_single_button(x, y, tx, input)
 }
 
 fn handle_click_wait_player(_x: f64, _y: f64, _tx: Sender<ClientEvent>) -> JsResult<()> {
