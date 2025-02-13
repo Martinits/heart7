@@ -154,7 +154,7 @@ impl Heart7 for Heart7D {
 
         let left = room.player_ready(request.get_ref().playerid as usize)?;
 
-        {
+        if left != 0 {
             let ar = aroom.clone();
             tokio::spawn(async move {
                 let room = ar.read().await;
@@ -162,9 +162,8 @@ impl Heart7 for Heart7D {
                 info!("Sending GameMsg: {:?}", msg);
                 room.send_gamemsg(msg).await;
             });
-        }
-
-        if left == 0 {
+        } else {
+            // start game, skip the fourth WhoReady
             let ar = aroom.clone();
             tokio::spawn(async move {
                 let mut room = ar.write().await;
