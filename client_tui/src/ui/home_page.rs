@@ -1,4 +1,3 @@
-use crate::tui::color::*;
 use ratatui::{
     backend::Backend,
     layout::*,
@@ -8,7 +7,7 @@ use ratatui::{
 };
 use super::*;
 
-pub fn ui_join_room<B: Backend>(frame: &mut Frame<B>, input: Input, msg: String) {
+pub fn ui_home_page<B: Backend>(frame: &mut Frame<B>, input: Input, msg: String, connecting: bool) {
     let prompt = render_prompt_window(frame);
 
     let chunks = Layout::default()
@@ -36,20 +35,28 @@ pub fn ui_join_room<B: Backend>(frame: &mut Frame<B>, input: Input, msg: String)
     let scroll = input.visual_scroll(input_width as usize);
     frame.render_widget(
         Paragraph::new(input.value())
-            .style(Style::default().fg(INPUT_BORDER))
+            .style(Style::default().fg(
+                if connecting {
+                    INPUT_BORDER_BLOCK
+                } else {
+                    INPUT_BORDER
+                }
+            ))
             .scroll((0, scroll as u16))
-            .block(Block::default().borders(Borders::ALL).title("Room ID")),
+            .block(Block::default().borders(Borders::ALL).title("IP:PORT")),
         input_rect,
     );
-    frame.set_cursor(
-        // Put cursor past the end of the input text
-        input_rect.x
-            + ((input.visual_cursor()).max(scroll) - scroll) as u16
-            + 1,
-        // Move one line down, from the border to the input line
-        input_rect.y + 1,
-    );
+    if !connecting {
+        frame.set_cursor(
+            // Put cursor past the end of the input text
+            input_rect.x
+                + ((input.visual_cursor()).max(scroll) - scroll) as u16
+                + 1,
+            // Move one line down, from the border to the input line
+            input_rect.y + 1,
+        );
+    }
 
     let button_rect = rect_cut_center(chunks[2], -3, 20);
-    frame.render_widget(get_button("Join Room!", true), button_rect);
+    frame.render_widget(get_button("GO!", !connecting), button_rect);
 }

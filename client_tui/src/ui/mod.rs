@@ -10,6 +10,7 @@ pub mod game_result;
 pub mod blocked;
 pub mod exit_menu;
 pub mod new_room;
+pub mod color;
 
 pub use home_page::*;
 pub use ask_name::*;
@@ -22,8 +23,7 @@ pub use blocked::*;
 pub use exit_menu::*;
 pub use new_room::*;
 use crate::*;
-
-use super::color::*;
+pub use color::*;
 use ratatui::{
     backend::Backend,
     layout::*,

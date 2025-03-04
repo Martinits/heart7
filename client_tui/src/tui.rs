@@ -1,7 +1,3 @@
-pub mod term_event;
-pub mod ui;
-pub mod color;
-
 use crossterm::event::{DisableMouseCapture, EnableMouseCapture};
 use crossterm::terminal::{self, EnterAlternateScreen, LeaveAlternateScreen};
 use std::io;

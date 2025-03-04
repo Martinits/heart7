@@ -1,4 +1,8 @@
-use tui::term_event::TermEventHandler;
+mod event;
+mod tui;
+mod ui;
+
+use event::TermEventHandler;
 use std::env;
 use std::panic;
 use tokio_util::sync::CancellationToken;
@@ -9,8 +13,6 @@ use clap::Parser;
 use anyhow::Result;
 pub use ::heart7_client::*;
 use std::net::Ipv4Addr;
-
-mod tui;
 use tui::*;
 
 pub const DEFAULT_PORT: u16 = 20007;

@@ -1,4 +1,3 @@
-use crate::tui::color::*;
 use crate::*;
 use ratatui::{
     backend::Backend,
